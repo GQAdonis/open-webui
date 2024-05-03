@@ -25,8 +25,9 @@ if DB_ENGINE == "postgres":
     user=DB_USER,
     password=DB_PASSWORD,
     host=DB_HOST,
-    port=DB_PORT
-)
+    port=DB_PORT,
+    schema=DB_SCHEMA
+    )
     
 else:
     DB = connect(DATABASE_URL)
