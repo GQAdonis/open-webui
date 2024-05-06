@@ -1,7 +1,7 @@
 from peewee import *
 from peewee_migrate import Router
 from playhouse.db_url import connect
-from playhouse.postgres_ext import PostgresqlExtDatabase
+from peewee import PostgresqlDatabase
 from config import SRC_LOG_LEVELS, DATA_DIR, DATABASE_URL, DB_ENGINE, DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_SCHEMA, DB_USER
 import os
 import logging
@@ -20,14 +20,14 @@ else:
 
 DB = None
 if DB_ENGINE == "postgres":
-    DB = PostgresqlExtDatabase(
+    DB = PostgresqlDatabase(
     DB_NAME,
     user=DB_USER,
     password=DB_PASSWORD,
     host=DB_HOST,
-    port=DB_PORT,
-    schema=DB_SCHEMA
+    port=DB_PORT
     )
+    DB.connect()
     
 else:
     DB = connect(DATABASE_URL)
