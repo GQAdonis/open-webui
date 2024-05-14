@@ -2,7 +2,7 @@ from peewee import *
 from peewee_migrate import Router
 from playhouse.db_url import connect
 from playhouse.postgres_ext import PostgresqlExtDatabase
-from config import SRC_LOG_LEVELS, DATA_DIR, DATABASE_URL
+from config import SRC_LOG_LEVELS, DATA_DIR, DATABASE_URL, DB_ENGINE, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_SCHEMA
 import os
 import logging
 
