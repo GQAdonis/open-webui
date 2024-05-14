@@ -4,6 +4,10 @@ import type { ParsedEvent } from 'eventsource-parser';
 type TextStreamUpdate = {
 	done: boolean;
 	value: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	citations?: any;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	error?: any;
 };
 
 // createOpenAITextStream takes a responseBody with a SSE response,
@@ -45,6 +49,16 @@ async function* openAIStreamToIterator(
 			const parsedData = JSON.parse(data);
 			console.log(parsedData);
 
+			if (parsedData.error) {
+				yield { done: true, value: '', error: parsedData.error };
+				break;
+			}
+
+			if (parsedData.citations) {
+				yield { done: false, value: '', citations: parsedData.citations };
+				continue;
+			}
+
 			yield { done: false, value: parsedData.choices?.[0]?.delta?.content ?? '' };
 		} catch (e) {
 			console.error('Error extracting delta from SSE event:', e);
@@ -61,6 +75,10 @@ async function* streamLargeDeltasAsRandomChunks(
 		if (textStreamUpdate.done) {
 			yield textStreamUpdate;
 			return;
+		}
+		if (textStreamUpdate.citations) {
+			yield textStreamUpdate;
+			continue;
 		}
 		let content = textStreamUpdate.value;
 		if (content.length < 5) {
