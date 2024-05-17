@@ -893,7 +893,7 @@
 {#if loaded}
 	<div
 		class="min-h-screen max-h-screen {$showSidebar
-			? 'lg:max-w-[calc(100%-260px)]'
+			? 'md:max-w-[calc(100%-260px)]'
 			: ''} w-full max-w-full flex flex-col"
 	>
 		<Navbar
@@ -931,6 +931,7 @@
 						bind:history
 						bind:messages
 						bind:autoScroll
+						bind:prompt
 						bottomPadding={files.length > 0}
 						{sendPrompt}
 						{continueGeneration}
@@ -946,7 +947,6 @@
 		bind:prompt
 		bind:autoScroll
 		bind:selectedModel={atSelectedModel}
-		suggestionPrompts={selectedModelfile?.suggestionPrompts ?? $config.default_prompt_suggestions}
 		{messages}
 		{submitPrompt}
 		{stopResponse}
