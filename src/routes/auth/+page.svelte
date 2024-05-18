@@ -60,7 +60,7 @@
 			await goto('/');
 		}
 		loaded = true;
-		if ($config?.trusted_header_auth ?? false) {
+		if (($config?.trusted_header_auth ?? false) || $config?.auth === false) {
 			await signInHandler();
 		}
 	});
@@ -76,7 +76,12 @@
 	<div class="fixed m-10 z-50">
 		<div class="flex space-x-2">
 			<div class=" self-center">
-				<img src="{WEBUI_BASE_URL}/static/favicon.png" class=" w-8 rounded-full" alt="logo" />
+				<img
+					crossorigin="anonymous"
+					src="{WEBUI_BASE_URL}/static/favicon.png"
+					class=" w-8 rounded-full"
+					alt="logo"
+				/>
 			</div>
 		</div>
 	</div>
@@ -97,7 +102,7 @@
 		</div> -->
 
 		<div class="w-full sm:max-w-md px-10 min-h-screen flex flex-col text-center">
-			{#if $config?.trusted_header_auth ?? false}
+			{#if ($config?.trusted_header_auth ?? false) || $config?.auth === false}
 				<div class=" my-auto pb-10 w-full">
 					<div
 						class="flex items-center justify-center gap-3 text-xl sm:text-2xl text-center font-bold dark:text-gray-200"

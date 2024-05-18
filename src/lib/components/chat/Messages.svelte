@@ -23,7 +23,7 @@
 	export let regenerateResponse: Function;
 
 	export let prompt;
-	export let suggestionPrompts;
+	export let suggestionPrompts = [];
 	export let processing = '';
 	export let bottomPadding = false;
 	export let autoScroll;
@@ -309,31 +309,33 @@
 									copyToClipboard={copyToClipboardWithToast}
 								/>
 							{:else}
-								<ResponseMessage
-									{message}
-									modelfiles={selectedModelfiles}
-									siblings={history.messages[message.parentId]?.childrenIds ?? []}
-									isLastMessage={messageIdx + 1 === messages.length}
-									{readOnly}
-									{updateChatMessages}
-									{confirmEditResponseMessage}
-									{showPreviousMessage}
-									{showNextMessage}
-									{rateMessage}
-									copyToClipboard={copyToClipboardWithToast}
-									{continueGeneration}
-									{regenerateResponse}
-									on:save={async (e) => {
-										console.log('save', e);
+								{#key message.id}
+									<ResponseMessage
+										{message}
+										modelfiles={selectedModelfiles}
+										siblings={history.messages[message.parentId]?.childrenIds ?? []}
+										isLastMessage={messageIdx + 1 === messages.length}
+										{readOnly}
+										{updateChatMessages}
+										{confirmEditResponseMessage}
+										{showPreviousMessage}
+										{showNextMessage}
+										{rateMessage}
+										copyToClipboard={copyToClipboardWithToast}
+										{continueGeneration}
+										{regenerateResponse}
+										on:save={async (e) => {
+											console.log('save', e);
 
-										const message = e.detail;
-										history.messages[message.id] = message;
-										await updateChatById(localStorage.token, chatId, {
-											messages: messages,
-											history: history
-										});
-									}}
-								/>
+											const message = e.detail;
+											history.messages[message.id] = message;
+											await updateChatById(localStorage.token, chatId, {
+												messages: messages,
+												history: history
+											});
+										}}
+									/>
+								{/key}
 							{/if}
 						</div>
 					</div>
