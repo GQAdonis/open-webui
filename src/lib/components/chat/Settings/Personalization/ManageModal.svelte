@@ -6,7 +6,10 @@
 	const dispatch = createEventDispatcher();
 
 	import Modal from '$lib/components/common/Modal.svelte';
+	import AddMemoryModal from './AddMemoryModal.svelte';
+	import { deleteMemoriesByUserId, deleteMemoryById, getMemories } from '$lib/apis/memories';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
+	import { error } from '@sveltejs/kit';
 
 	const i18n = getContext('i18n');
 
@@ -14,14 +17,16 @@
 
 	let memories = [];
 
+	let showAddMemoryModal = false;
+
 	$: if (show) {
 		(async () => {
-			// chats = await getArchivedChatList(localStorage.token);
+			memories = await getMemories(localStorage.token);
 		})();
 	}
 </script>
 
-<Modal size="lg" bind:show>
+<Modal size="xl" bind:show>
 	<div>
 		<div class=" flex justify-between dark:text-gray-300 px-5 pt-4 pb-1">
 			<div class=" text-lg font-medium self-center">{$i18n.t('Memory')}</div>
@@ -44,10 +49,12 @@
 			</button>
 		</div>
 
-		<div class="flex flex-col md:flex-row w-full px-5 pb-4 md:space-x-4 dark:text-gray-200">
-			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
-				{#if chats.length > 0}
-					<div class="text-left text-sm w-full mb-4 max-h-[22rem] overflow-y-scroll">
+		<div class="flex flex-col w-full px-5 pb-5 dark:text-gray-200">
+			<div
+				class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6 h-[28rem] max-h-screen outline outline-1 rounded-xl outline-gray-100 dark:outline-gray-800 mb-4 mt-1"
+			>
+				{#if memories.length > 0}
+					<div class="text-left text-sm w-full mb-4 overflow-y-scroll">
 						<div class="relative overflow-x-auto">
 							<table class="w-full text-sm text-left text-gray-600 dark:text-gray-400 table-auto">
 								<thead
@@ -60,56 +67,36 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each chats as chat, idx}
-										<tr
-											class="bg-transparent {idx !== chats.length - 1 &&
-												'border-b'} dark:bg-gray-900 dark:border-gray-850 text-xs"
-										>
-											<td class="px-3 py-1 w-2/3">
-												<a href="/c/{chat.id}" target="_blank">
-													<div class=" underline line-clamp-1">
-														{chat.title}
-													</div>
-												</a>
-											</td>
-
-											<td class=" px-3 py-1 hidden md:flex h-[2.5rem]">
-												<div class="my-auto">
-													{dayjs(chat.created_at * 1000).format($i18n.t('MMMM DD, YYYY HH:mm'))}
+									{#each memories as memory}
+										<tr class="border-b dark:border-gray-800 items-center">
+											<td class="px-3 py-1">
+												<div class="line-clamp-1">
+													{memory.content}
 												</div>
 											</td>
-
-											<td class="px-3 py-1 text-right">
+											<td class=" px-3 py-1 hidden md:flex h-[2.5rem]">
+												<div class="my-auto whitespace-nowrap">
+													{dayjs(memory.created_at * 1000).format($i18n.t('MMMM DD, YYYY'))}
+												</div>
+											</td>
+											<td class="px-3 py-1">
 												<div class="flex justify-end w-full">
-													<Tooltip content="Unarchive Chat">
+													<Tooltip content="Delete">
 														<button
 															class="self-center w-fit text-sm px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 															on:click={async () => {
-																unarchiveChatHandler(chat.id);
-															}}
-														>
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																fill="none"
-																viewBox="0 0 24 24"
-																stroke-width="1.5"
-																stroke="currentColor"
-																class="size-4"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15"
-																/>
-															</svg>
-														</button>
-													</Tooltip>
+																const res = await deleteMemoryById(
+																	localStorage.token,
+																	memory.id
+																).catch((error) => {
+																	toast.error(error);
+																	return null;
+																});
 
-													<Tooltip content="Delete Chat">
-														<button
-															class="self-center w-fit text-sm px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-															on:click={async () => {
-																deleteChatHandler(chat.id);
+																if (res) {
+																	toast.success('Memory deleted successfully');
+																	memories = await getMemories(localStorage.token);
+																}
 															}}
 														>
 															<svg
@@ -135,18 +122,44 @@
 								</tbody>
 							</table>
 						</div>
-						<!-- {#each chats as chat}
-							<div>
-								{JSON.stringify(chat)}
-							</div>
-						{/each} -->
 					</div>
 				{:else}
-					<div class="text-left text-sm w-full mb-8">
-						{$i18n.t('You have no archived conversations.')}
+					<div class="text-center flex h-full text-sm w-full">
+						<div class=" my-auto pb-10 px-4 w-full text-gray-500">
+							{$i18n.t('Memories accessible by LLMs will be shown here.')}
+						</div>
 					</div>
 				{/if}
+			</div>
+			<div class="flex text-sm font-medium gap-1.5">
+				<button
+					class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-300 dark:outline-gray-800 rounded-3xl"
+					on:click={() => {
+						showAddMemoryModal = true;
+					}}>Add memory</button
+				>
+				<button
+					class=" px-3.5 py-1.5 font-medium text-red-500 hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-red-300 dark:outline-red-800 rounded-3xl"
+					on:click={async () => {
+						const res = await deleteMemoriesByUserId(localStorage.token).catch((error) => {
+							toast.error(error);
+							return null;
+						});
+
+						if (res) {
+							toast.success('Memory cleared successfully');
+							memories = [];
+						}
+					}}>Clear memory</button
+				>
 			</div>
 		</div>
 	</div>
 </Modal>
+
+<AddMemoryModal
+	bind:show={showAddMemoryModal}
+	on:save={async () => {
+		memories = await getMemories(localStorage.token);
+	}}
+/>

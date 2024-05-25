@@ -5,20 +5,26 @@
 	import { config, models, settings, user } from '$lib/stores';
 	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import ManageModal from './Personalization/ManageModal.svelte';
+	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	const dispatch = createEventDispatcher();
 
 	const i18n = getContext('i18n');
 
 	export let saveSettings: Function;
 
+	let showManageModal = false;
+
 	// Addons
-	let enableMemory = true;
+	let enableMemory = false;
 
 	onMount(async () => {
 		let settings = JSON.parse(localStorage.getItem('settings') ?? '{}');
-		enableMemory = settings?.memory ?? true;
+		enableMemory = settings?.memory ?? false;
 	});
 </script>
+
+<ManageModal bind:show={showManageModal} />
 
 <form
 	class="flex flex-col h-full justify-between space-y-3 text-sm"
@@ -29,9 +35,15 @@
 	<div class="  pr-1.5 overflow-y-scroll max-h-[25rem]">
 		<div>
 			<div class="flex items-center justify-between mb-1">
-				<div class="text-sm font-medium">
-					{$i18n.t('Memory')} <span class=" text-xs text-gray-500">({$i18n.t('Beta')})</span>
-				</div>
+				<Tooltip
+					content="This is an experimental feature, it may not function as expected and is subject to change at any time."
+				>
+					<div class="text-sm font-medium">
+						{$i18n.t('Memory')}
+
+						<span class=" text-xs text-gray-500">({$i18n.t('Experimental')})</span>
+					</div>
+				</Tooltip>
 
 				<div class="mt-1">
 					<Switch
@@ -46,8 +58,8 @@
 
 		<div class="text-xs text-gray-600 dark:text-gray-400">
 			<div>
-				LLMs will become more helpful as you chat, picking up on details and preferences to tailor
-				its responses to you.
+				You can personalize your interactions with LLMs by adding memories through the 'Manage'
+				button below, making them more helpful and tailored to you.
 			</div>
 
 			<!-- <div class="mt-3">
@@ -63,7 +75,10 @@
 		<div class="mt-3 mb-1 ml-1">
 			<button
 				type="button"
-				class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-gray-300 dark:outline-gray-800 rounded-3xl"
+				class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-300 dark:outline-gray-800 rounded-3xl"
+				on:click={() => {
+					showManageModal = true;
+				}}
 			>
 				Manage
 			</button>

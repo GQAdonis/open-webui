@@ -1,8 +1,7 @@
 from peewee import *
 from peewee_migrate import Router
 from playhouse.db_url import connect
-from peewee import PostgresqlDatabase
-from config import SRC_LOG_LEVELS, DATA_DIR, DATABASE_URL, DB_ENGINE, DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_SCHEMA, DB_USER
+from config import SRC_LOG_LEVELS, DATA_DIR, DATABASE_URL, BACKEND_DIR
 import os
 import logging
 
@@ -17,21 +16,10 @@ if os.path.exists(f"{DATA_DIR}/ollama.db"):
 else:
     pass
 
-
-DB = None
-if DB_ENGINE == "postgres":
-    DB = PostgresqlDatabase(
-    DB_NAME,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT
-    )
-    DB.connect()
-    
-else:
-    DB = connect(DATABASE_URL)
-    log.info(f"Connected to a {DB.__class__.__name__} database.")
-    router = Router(DB, migrate_dir="apps/web/internal/migrations", logger=log)
-    router.run()
-    DB.connect(reuse_if_open=True)
+DB = connect(DATABASE_URL)
+log.info(f"Connected to a {DB.__class__.__name__} database.")
+router = Router(
+    DB, migrate_dir=BACKEND_DIR / "apps" / "web" / "internal" / "migrations", logger=log
+)
+router.run()
+DB.connect(reuse_if_open=True)

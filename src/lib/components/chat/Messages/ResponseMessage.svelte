@@ -69,7 +69,7 @@
 
 	let selectedCitation = null;
 
-	$: tokens = marked.lexer(sanitizeResponseContent(message.content));
+	$: tokens = marked.lexer(sanitizeResponseContent(message?.content));
 
 	const renderer = new marked.Renderer();
 
@@ -332,7 +332,11 @@
 <CitationsModal bind:show={showCitationModal} citation={selectedCitation} />
 
 {#key message.id}
-	<div class=" flex w-full message-{message.id}" id="message-{message.id}" dir="{$settings.chatDirection}">
+	<div
+		class=" flex w-full message-{message.id}"
+		id="message-{message.id}"
+		dir={$settings.chatDirection}
+	>
 		<ProfileImage
 			src={modelfiles[message.model]?.imageUrl ??
 				($i18n.language === 'dg-DG' ? `/doge.png` : `${WEBUI_BASE_URL}/static/favicon.png`)}
@@ -387,7 +391,7 @@
 							<div class=" mt-2 mb-1 flex justify-end space-x-1.5 text-sm font-medium">
 								<button
 									id="close-edit-message-button"
-									class=" px-4 py-2 bg-gray-900 hover:bg-gray-850 text-gray-100 transition rounded-3xl"
+									class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 transition rounded-3xl"
 									on:click={() => {
 										cancelEditMessage();
 									}}
@@ -397,7 +401,7 @@
 
 								<button
 									id="save-edit-message-button"
-									class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 transition rounded-3xl"
+									class=" px-4 py-2 bg-gray-900 hover:bg-gray-850 text-gray-100 transition rounded-3xl"
 									on:click={() => {
 										editMessageConfirmHandler();
 									}}
@@ -495,7 +499,7 @@
 									class=" flex justify-start overflow-x-auto buttons text-gray-600 dark:text-gray-500"
 								>
 									{#if siblings.length > 1}
-										<div class="flex self-center" dir="ltr">
+										<div class="flex self-center min-w-fit" dir="ltr">
 											<button
 												class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
 												on:click={() => {
@@ -519,7 +523,7 @@
 											</button>
 
 											<div
-												class="text-sm tracking-widest font-semibold self-center dark:text-gray-100"
+												class="text-sm tracking-widest font-semibold self-center dark:text-gray-100 min-w-fit"
 											>
 												{siblings.indexOf(message.id) + 1}/{siblings.length}
 											</div>
@@ -890,7 +894,9 @@
 													class="{isLastMessage
 														? 'visible'
 														: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition regenerate-response-button"
-													on:click={regenerateResponse}
+													on:click={() => {
+														regenerateResponse(message);
+													}}
 												>
 													<svg
 														xmlns="http://www.w3.org/2000/svg"

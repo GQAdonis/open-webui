@@ -5,7 +5,7 @@
 	import 'highlight.js/styles/github-dark.min.css';
 	import { loadPyodide } from 'pyodide';
 	import { tick } from 'svelte';
-	import PyodideWorker from '../../../workers/pyodide.worker?worker';
+	import PyodideWorker from '$lib/workers/pyodide.worker?worker';
 
 	export let id = '';
 
@@ -30,70 +30,17 @@
 	};
 
 	const checkPythonCode = (str) => {
-		// Check if the string contains typical Python keywords, syntax, or functions
-		const pythonKeywords = [
-			'def',
-			'class',
-			'import',
-			'from',
-			'if',
-			'else',
-			'elif',
-			'for',
-			'while',
-			'try',
-			'except',
-			'finally',
-			'return',
-			'yield',
-			'lambda',
-			'assert',
-			'pass',
-			'break',
-			'continue',
-			'global',
-			'nonlocal',
-			'del',
-			'True',
-			'False',
-			'None',
-			'and',
-			'or',
-			'not',
-			'in',
-			'is',
-			'as',
-			'with'
-		];
-
-		for (let keyword of pythonKeywords) {
-			if (str.includes(keyword)) {
-				return true;
-			}
-		}
-
 		// Check if the string contains typical Python syntax characters
 		const pythonSyntax = [
 			'def ',
-			'class ',
-			'import ',
-			'from ',
-			'if ',
 			'else:',
 			'elif ',
-			'for ',
-			'while ',
 			'try:',
 			'except:',
 			'finally:',
-			'return ',
 			'yield ',
 			'lambda ',
 			'assert ',
-			'pass',
-			'break',
-			'continue',
-			'global ',
 			'nonlocal ',
 			'del ',
 			'True',
@@ -104,29 +51,7 @@
 			' not ',
 			' in ',
 			' is ',
-			' as ',
-			' with ',
-			':',
-			'=',
-			'==',
-			'!=',
-			'>',
-			'<',
-			'>=',
-			'<=',
-			'+',
-			'-',
-			'*',
-			'/',
-			'%',
-			'**',
-			'//',
-			'(',
-			')',
-			'[',
-			']',
-			'{',
-			'}'
+			' with '
 		];
 
 		for (let syntax of pythonSyntax) {
@@ -176,14 +101,18 @@
 			try {
 				const micropip = pyodide.pyimport('micropip');
 
-				await micropip.set_index_urls('https://pypi.org/pypi/{package_name}/json');
+				// await micropip.set_index_urls('https://pypi.org/pypi/{package_name}/json');
 
 				let packages = [
 					code.includes('requests') ? 'requests' : null,
 					code.includes('bs4') ? 'beautifulsoup4' : null,
 					code.includes('numpy') ? 'numpy' : null,
 					code.includes('pandas') ? 'pandas' : null,
-					code.includes('matplotlib') ? 'matplotlib' : null
+					code.includes('matplotlib') ? 'matplotlib' : null,
+					code.includes('sklearn') ? 'scikit-learn' : null,
+					code.includes('scipy') ? 'scipy' : null,
+					code.includes('re') ? 'regex' : null,
+					code.includes('seaborn') ? 'seaborn' : null
 				].filter(Boolean);
 
 				console.log(packages);
@@ -230,8 +159,13 @@ __builtins__.input = input`);
 			code.includes('bs4') ? 'beautifulsoup4' : null,
 			code.includes('numpy') ? 'numpy' : null,
 			code.includes('pandas') ? 'pandas' : null,
-			code.includes('matplotlib') ? 'matplotlib' : null
+			code.includes('sklearn') ? 'scikit-learn' : null,
+			code.includes('scipy') ? 'scipy' : null,
+			code.includes('re') ? 'regex' : null,
+			code.includes('seaborn') ? 'seaborn' : null
 		].filter(Boolean);
+
+		console.log(packages);
 
 		const pyodideWorker = new PyodideWorker();
 
@@ -279,7 +213,7 @@ __builtins__.input = input`);
 			<div class="p-1">{@html lang}</div>
 
 			<div class="flex items-center">
-				{#if lang === 'python' || checkPythonCode(code)}
+				{#if lang === 'python' || (lang === '' && checkPythonCode(code))}
 					{#if executing}
 						<div class="copy-code-button bg-none border-none p-1 cursor-not-allowed">Running</div>
 					{:else}

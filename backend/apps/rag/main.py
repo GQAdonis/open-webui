@@ -28,6 +28,7 @@ from langchain_community.document_loaders import (
     UnstructuredXMLLoader,
     UnstructuredRSTLoader,
     UnstructuredExcelLoader,
+    UnstructuredPowerPointLoader,
     YoutubeLoader,
 )
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -69,6 +70,7 @@ from utils.misc import (
 from utils.utils import get_current_user, get_admin_user
 
 from config import (
+    ENV,
     SRC_LOG_LEVELS,
     UPLOAD_DIR,
     DOCS_DIR,
@@ -260,7 +262,7 @@ async def update_embedding_config(
                 app.state.config.OPENAI_API_BASE_URL = form_data.openai_config.url
                 app.state.config.OPENAI_API_KEY = form_data.openai_config.key
 
-        update_embedding_model(app.state.config.RAG_EMBEDDING_MODEL), True
+        update_embedding_model(app.state.config.RAG_EMBEDDING_MODEL)
 
         app.state.EMBEDDING_FUNCTION = get_embedding_function(
             app.state.config.RAG_EMBEDDING_ENGINE,
@@ -767,6 +769,11 @@ def get_loader(filename: str, file_content_type: str, file_path: str):
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ] or file_ext in ["xls", "xlsx"]:
         loader = UnstructuredExcelLoader(file_path)
+    elif file_content_type in [
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ] or file_ext in ["ppt", "pptx"]:
+        loader = UnstructuredPowerPointLoader(file_path)
     elif file_ext in known_source_ext or (
         file_content_type and file_content_type.find("text/") >= 0
     ):
@@ -951,3 +958,14 @@ def reset(user=Depends(get_admin_user)) -> bool:
         log.exception(e)
 
     return True
+
+
+if ENV == "dev":
+
+    @app.get("/ef")
+    async def get_embeddings():
+        return {"result": app.state.EMBEDDING_FUNCTION("hello world")}
+
+    @app.get("/ef/{text}")
+    async def get_embeddings_text(text: str):
+        return {"result": app.state.EMBEDDING_FUNCTION(text)}

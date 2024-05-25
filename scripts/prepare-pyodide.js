@@ -1,4 +1,14 @@
-const packages = ['requests', 'beautifulsoup4', 'numpy', 'pandas', 'matplotlib'];
+const packages = [
+	'requests',
+	'beautifulsoup4',
+	'numpy',
+	'pandas',
+	'matplotlib',
+	'scikit-learn',
+	'scipy',
+	'regex',
+	'seaborn'
+];
 
 import { loadPyodide } from 'pyodide';
 import { writeFile, copyFile, readdir } from 'fs/promises';

@@ -357,7 +357,7 @@
 				if (inputFiles && inputFiles.length > 0) {
 					inputFiles.forEach((file) => {
 						console.log(file, file.name.split('.').at(-1));
-						if (['image/gif', 'image/jpeg', 'image/png'].includes(file['type'])) {
+						if (['image/gif', 'image/webp', 'image/jpeg', 'image/png'].includes(file['type'])) {
 							let reader = new FileReader();
 							reader.onload = (event) => {
 								files = [
@@ -547,7 +547,9 @@
 							if (inputFiles && inputFiles.length > 0) {
 								const _inputFiles = Array.from(inputFiles);
 								_inputFiles.forEach((file) => {
-									if (['image/gif', 'image/jpeg', 'image/png'].includes(file['type'])) {
+									if (
+										['image/gif', 'image/webp', 'image/jpeg', 'image/png'].includes(file['type'])
+									) {
 										let reader = new FileReader();
 										reader.onload = (event) => {
 											files = [
@@ -584,7 +586,7 @@
 						}}
 					/>
 					<form
-						dir={$settings?.chatDirection}
+						dir={$settings?.chatDirection ?? 'LTR'}
 						class=" flex flex-col relative w-full rounded-3xl px-1.5 bg-gray-50 dark:bg-gray-850 dark:text-gray-100"
 						on:submit|preventDefault={() => {
 							submitPrompt(prompt, user);
@@ -996,7 +998,7 @@
 											id="send-message-button"
 											class="{prompt !== ''
 												? 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 '
-												: 'text-white bg-gray-100 dark:text-gray-900 dark:bg-gray-800 disabled'} transition rounded-full p-1.5 self-center"
+												: 'text-white bg-gray-200 dark:text-gray-900 dark:bg-gray-700 disabled'} transition rounded-full p-1.5 self-center"
 											type="submit"
 											disabled={prompt === ''}
 										>

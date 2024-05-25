@@ -7,6 +7,8 @@
 	import { modelfiles, settings } from '$lib/stores';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
+	import { user as _user } from '$lib/stores';
+
 	const i18n = getContext('i18n');
 
 	const dispatch = createEventDispatcher();
@@ -54,7 +56,7 @@
 	};
 </script>
 
-<div class=" flex w-full user-message" dir="{$settings.chatDirection}">
+<div class=" flex w-full user-message" dir={$settings.chatDirection}>
 	{#if !($settings?.chatBubble ?? true)}
 		<ProfileImage
 			src={message.user
@@ -63,7 +65,7 @@
 				: user?.profile_image_url ?? '/user.png'}
 		/>
 	{/if}
-	<div class="w-full overflow-hidden">
+	<div class="w-full overflow-hidden pl-1">
 		{#if !($settings?.chatBubble ?? true)}
 			<div>
 				<Name>
@@ -74,7 +76,7 @@
 							{$i18n.t('You')}
 							<span class=" text-gray-500 text-sm font-medium">{message?.user ?? ''}</span>
 						{/if}
-					{:else if $settings.showUsername}
+					{:else if $settings.showUsername || $_user.name !== user.name}
 						{user.name}
 					{:else}
 						{$i18n.t('You')}
@@ -199,7 +201,7 @@
 					<div class=" mt-2 mb-1 flex justify-end space-x-1.5 text-sm font-medium">
 						<button
 							id="close-edit-message-button"
-							class=" px-4 py-2 bg-gray-900 hover:bg-gray-850 text-gray-100 transition rounded-3xl"
+							class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 transition rounded-3xl"
 							on:click={() => {
 								cancelEditMessage();
 							}}
@@ -209,7 +211,7 @@
 
 						<button
 							id="save-edit-message-button"
-							class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-800 transition rounded-3xl"
+							class=" px-4 py-2 bg-gray-900 hover:bg-gray-850 text-gray-100 transition rounded-3xl"
 							on:click={() => {
 								editMessageConfirmHandler();
 							}}
@@ -239,7 +241,7 @@
 					>
 						{#if !($settings?.chatBubble ?? true)}
 							{#if siblings.length > 1}
-								<div class="flex self-center">
+								<div class="flex self-center" dir="ltr">
 									<button
 										class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
 										on:click={() => {
@@ -368,7 +370,7 @@
 
 						{#if $settings?.chatBubble ?? true}
 							{#if siblings.length > 1}
-								<div class="flex self-center">
+								<div class="flex self-center" dir="ltr">
 									<button
 										class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
 										on:click={() => {
