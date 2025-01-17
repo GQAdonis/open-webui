@@ -1,0 +1,52 @@
+.prometheus-light * {
+    color: #3D3D3D !important;
+    stroke: #E6522C !important;
+}
+
+.prometheus-light .app > * {
+    background-color: #FFFFFF !important;
+}
+
+.prometheus-light #nav {
+    background-color: #F5F5F5;
+}
+
+.prometheus-light .py-2\.5.my-auto.flex.flex-col.justify-between.h-screen {
+    background: #F5F5F5;
+}
+
+.prometheus-light .bg-white.dark\:bg-gray-800 {
+    background: #FFFFFF;
+}
+
+.prometheus-light .w-4.h-4 {
+    fill: #E6522C;
+}
+
+.prometheus-light #chat-input {
+    background: #F0F0F0;
+    margin: 0.3rem;
+    padding: 0.5rem;
+}
+
+.prometheus-light .hover\:bg-gray-900:hover {
+    background-color: rgba(230, 82, 44, 0.1);
+}
+
+.prometheus-light .message.svelte-1nauejd {
+    color: #3D3D3D !important;
+}
+
+.prometheus-light #dropdownDots {
+    background-color: #F0F0F0;
+}
+
+.prometheus-light .svelte-1ee93ns {
+    --primary: #E6522C !important;
+    --secondary: #3D3D3D !important;
+}
+
+.prometheus-light .svelte-11kvm4p {
+    --primary: #E6522C !important;
+    --secondary: #FFFFFF !important;
+} 

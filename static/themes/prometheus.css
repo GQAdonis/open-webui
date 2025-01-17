@@ -1,0 +1,57 @@
+.prometheus * {
+    color: #FFFFFF !important;
+    stroke: #E6522C !important;
+}
+
+.prometheus .app > * {
+    background-color: #1D1D1D !important;
+}
+
+.prometheus #nav {
+    background-color: #2D2D2D;
+}
+
+.prometheus .py-2\.5.my-auto.flex.flex-col.justify-between.h-screen {
+    background: #2D2D2D;
+}
+
+.prometheus .bg-white.dark\:bg-gray-800 {
+    background: #3D3D3D;
+}
+
+.prometheus .w-4.h-4 {
+    fill: #E6522C;
+}
+
+.prometheus #chat-input {
+    background: #4D4D4D;
+    margin: 0.3rem;
+    padding: 0.5rem;
+}
+
+.prometheus .bg-gradient-to-t.from-white.dark\:from-gray-800.from-40\%.pb-2 {
+    background: #3D3D3D !important;
+    padding-top: 0.6rem;
+}
+
+.prometheus .hover\:bg-gray-900:hover {
+    background-color: rgba(230, 82, 44, 0.2);
+}
+
+.prometheus .message.svelte-1nauejd {
+    color: #FFFFFF !important;
+}
+
+.prometheus #dropdownDots {
+    background-color: #4D4D4D;
+}
+
+.prometheus .svelte-1ee93ns {
+    --primary: #E6522C !important;
+    --secondary: #FFFFFF !important;
+}
+
+.prometheus .svelte-11kvm4p {
+    --primary: #E6522C !important;
+    --secondary: #1D1D1D !important;
+} 
