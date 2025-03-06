@@ -46,6 +46,7 @@
 	let params = {
 		// Advanced
 		stream_response: null,
+		function_calling: null,
 		seed: null,
 		temperature: null,
 		frequency_penalty: null,
@@ -170,7 +171,7 @@
 						placeholder="Select a theme"
 						on:change={() => themeChangeHandler(selectedTheme)}
 					>
-						option value="system">⚙️ {$i18n.t('System')}</option>
+						<option value="system">⚙️ {$i18n.t('System')}</option>
 						<option value="prometheus dark">🔥 Prometheus Dark</option>
 						<option value="prometheus-light light">☀️ Prometheus Light</option>
 					</select>
