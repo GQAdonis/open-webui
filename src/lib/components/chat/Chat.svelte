@@ -1805,6 +1805,14 @@
 			}
 		}
 
+
+			// Log the final prompt sent to LLM
+			console.log("=== FINAL PROMPT SENT TO LLM ===");
+			console.log("Model ID:", model.id);
+			console.log("Messages:", messages);
+			console.log("Stream:", stream);
+			console.log("===================================");
+
 		const res = await generateOpenAIChatCompletion(
 			localStorage.token,
 			{

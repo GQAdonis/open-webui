@@ -175,19 +175,48 @@
 		{onSourceClick}
 		{onTaskClick}
 		{onSave}
-		onUpdate={(token) => {
-			const { lang, text: code } = token;
-
+	onUpdate={(token) => {
+		const { lang, text: code } = token;
+		
+		// Import artifact integration utilities
+		const processArtifactsFromResponse = async () => {
+			try {
+				const { processArtifactsFromResponse } = await import('$lib/utils/artifacts/integration');
+				const artifacts = processArtifactsFromResponse(content, `message_${messageId}`, messageId);
+				if (artifacts.length > 0) {
+					const { artifactStore, uiState } = await import('$lib/stores/artifacts/artifact-store');
+					artifacts.forEach(artifact => {
+						artifactStore.addArtifact(artifact);
+					});
+					uiState.setVisible(true);
+					showArtifacts.set(true);
+					showControls.set(true);
+					return true;
+				}
+			} catch (error) {
+				console.error('Error processing PAS 3.0 artifacts:', error);
+			}
+			return false;
+		};
+		
+		// Try PAS 3.0 artifact detection first
+		processArtifactsFromResponse().then(hasArtifacts => {
+			if (hasArtifacts) {
+				return; // PAS 3.0 artifacts found, skip legacy detection
+			}
+			
+			// Fallback to legacy artifact detection
 			if (
 				($settings?.detectArtifacts ?? true) &&
-				(['html', 'svg'].includes(lang) || (lang === 'xml' && code.includes('svg'))) &&
+				((['html', 'svg', 'tsx', 'jsx', 'svelte'].includes(lang)) || (lang === 'xml' && code.includes('svg'))) &&
 				!$mobile &&
 				$chatId
 			) {
 				showArtifacts.set(true);
 				showControls.set(true);
 			}
-		}}
+		});
+	}}
 		onPreview={async (value) => {
 			console.log('Preview', value);
 			await artifactCode.set(value);

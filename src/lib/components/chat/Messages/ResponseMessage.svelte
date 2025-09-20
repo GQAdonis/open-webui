@@ -969,6 +969,22 @@
 									</button>
 								</Tooltip>
 
+								<!-- Artifact Button -->
+								{#await import("$lib/utils/artifacts/integration") then { hasArtifactInMessage }}
+									{#if hasArtifactInMessage(message.content)}
+										{#await import("$lib/components/artifacts/ArtifactButton.svelte") then { default: ArtifactButton }}
+											<svelte:component 
+												this={ArtifactButton} 
+												messageContent={message.content}
+												messageId={message.id}
+												style="minimal"
+												size="sm"
+												class="{isLastMessage || ($settings?.highContrastMode ?? false) ? 'visible' : 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
+											/>
+										{/await}
+									{/if}
+								{/await}
+
 								{#if $user?.role === 'admin' || ($user?.permissions?.chat?.tts ?? true)}
 									<Tooltip content={$i18n.t('Read Aloud')} placement="bottom">
 										<button

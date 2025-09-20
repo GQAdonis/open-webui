@@ -312,3 +312,5 @@ cypress/screenshots
 .vscode/settings.json
 gcp.json
 litellm_config.yaml
+litellm_config.local.yaml
+*litellm_config*.yaml
