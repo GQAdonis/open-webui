@@ -7,8 +7,8 @@
 
 import { get } from 'svelte/store';
 import { chatId } from '$lib/stores';
-import { classifyIntent, enhancePromptForArtifacts, type IntentClassificationResult } from './intent-classifier';
-import { extractArtifacts, validateArtifact, type ParsedArtifact } from './artifact-parser';
+import { classifyIntent, enhancePromptForArtifacts } from './intent-classifier';
+import { extractArtifacts, validateArtifact } from './artifact-parser';
 import { artifactActions, type ArtifactContainer } from '$lib/stores/artifacts/artifact-store';
 
 export interface ArtifactIntegration {
@@ -303,7 +303,7 @@ export function hasArtifactInMessage(content: string): boolean {
   try {
     const artifacts = extractArtifacts(content);
     return artifacts.length > 0;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

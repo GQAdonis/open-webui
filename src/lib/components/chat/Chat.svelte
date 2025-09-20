@@ -74,6 +74,7 @@
 	import { getTools } from '$lib/apis/tools';
 	import { uploadFile } from '$lib/apis/files';
 	import { createOpenAITextStream } from '$lib/apis/streaming';
+	import { useArtifactIntegration } from '$lib/utils/artifacts/integration';
 
 	import { fade } from 'svelte/transition';
 
@@ -119,6 +120,9 @@
 
 	let selectedModels = [''];
 	let atSelectedModel: Model | undefined;
+
+	// Initialize artifact integration
+	const { preprocessPrompt, postprocessResponse } = useArtifactIntegration();
 	let selectedModelIds = [];
 	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
 
@@ -1373,6 +1377,19 @@
 		if (done) {
 			message.done = true;
 
+			// Process response for artifacts when message is complete
+			const artifactsEnabled = $config?.features?.enable_artifacts ?? true;
+			if (artifactsEnabled) {
+				try {
+					const artifacts = postprocessResponse(message.content, message.id);
+					if (artifacts.length > 0) {
+						console.log(`🚀 [Artifact Integration] Found ${artifacts.length} artifact(s) in response`);
+					}
+				} catch (error) {
+					console.warn('[Artifact Integration] Error processing artifacts:', error);
+				}
+			}
+
 			if ($settings.responseAutoCopy) {
 				copyToClipboard(message.content);
 			}
@@ -1433,6 +1450,13 @@
 
 	const submitPrompt = async (userPrompt, { _raw = false } = {}) => {
 		console.log('submitPrompt', userPrompt, $chatId);
+
+		// Apply artifact preprocessing if not raw mode and artifacts are enabled
+		const artifactsEnabled = $config?.features?.enable_artifacts ?? true; // Default to enabled
+		const processedPrompt = (_raw || !artifactsEnabled) ? userPrompt : preprocessPrompt(userPrompt);
+		if (processedPrompt !== userPrompt) {
+			console.log('🚀 [Artifact Integration] Prompt enhanced for artifact generation');
+		}
 
 		const _selectedModels = selectedModels.map((modelId) =>
 			$models.map((m) => m.id).includes(modelId) ? modelId : ''
@@ -1512,7 +1536,7 @@
 			parentId: messages.length !== 0 ? messages.at(-1).id : null,
 			childrenIds: [],
 			role: 'user',
-			content: userPrompt,
+			content: processedPrompt,  // Use processed (potentially enhanced) prompt
 			files: _files.length > 0 ? _files : undefined,
 			timestamp: Math.floor(Date.now() / 1000), // Unix epoch
 			models: selectedModels

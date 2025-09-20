@@ -21,7 +21,9 @@
     processMessages();
   } else {
     messages = [];
-    artifactStore.clearArtifacts();
+    if ($chatId) {
+      artifactActions.clearChatArtifacts($chatId);
+    }
   }
 
   // Process messages for PAS 3.0 artifacts
@@ -31,7 +33,9 @@
     }
 
     // Clear existing artifacts
-    artifactStore.clearArtifacts();
+    if ($chatId) {
+      artifactActions.clearChatArtifacts($chatId);
+    }
 
     // Process each assistant message for artifacts
     messages.forEach((message, messageIndex) => {
@@ -43,7 +47,7 @@
 
         // Add artifacts to the store
         artifacts.forEach(artifact => {
-          artifactStore.addArtifact(artifact);
+          artifactActions.addArtifact(artifact, $chatId || 'unknown', message.id || `msg_${messageIndex}`);
         });
       }
     });
