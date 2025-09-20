@@ -106,10 +106,6 @@ services:
       - ANONYMIZED_TELEMETRY=false
       
       # Performance Settings
-      
-      # Artifact Support Configuration
-      - PUBLIC_REACT_ARTIFACTS_ENABLED=true
-      - PUBLIC_SVELTE_ARTIFACTS_ENABLED=true
       - ENABLE_BASE_MODELS_CACHE=true
     extra_hosts:
       - host.docker.internal:host-gateway

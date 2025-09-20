@@ -4,18 +4,21 @@ services:
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     ports:
-      - "4000:4000"
+      - "40000:4000"
     volumes:
       - ./litellm_config.yaml:/app/config.yaml
+      - .gcp.json:/etc/litellm/gcp.json
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    env_file:
+      - .env
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
+      # - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
     restart: unless-stopped
     networks:
-      - open-webui-network
+      - openwebui_network
 
 networks:
-  open-webui-network:
+  openwebui_network:
     external: true

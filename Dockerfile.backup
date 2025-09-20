@@ -39,9 +39,6 @@ RUN npm ci --force
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH}
-
-ENV PUBLIC_REACT_ARTIFACTS_ENABLED=true
-ENV PUBLIC_SVELTE_ARTIFACTS_ENABLED=true
 RUN npm run build
 
 ######## WebUI backend ########
