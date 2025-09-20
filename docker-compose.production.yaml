@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: postgres-openwebui
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openwebui
+      POSTGRES_USER: openwebui
+      POSTGRES_PASSWORD: openwebui_secure_password_2024
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "127.0.0.1:5433:5432"  # Changed from 5432 to 5433 to avoid conflict
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openwebui -d openwebui"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openwebui_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "0.0.0.0:11435:11434"  # Changed from 11434 to 11435 to avoid conflict
+    # GPU support for T4
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    networks:
+      - openwebui_network
+
+  open-webui:
+    build:
+      context: .
+      args:
+        OLLAMA_BASE_URL: '/ollama'
+      dockerfile: Dockerfile
+    image: open-webui:local
+    container_name: open-webui
+    restart: unless-stopped
+    volumes:
+      - open-webui:/app/backend/data
+    ports:
+      - "0.0.0.0:3001:8080"  # Changed from 3000 to 3001 to avoid conflict
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    environment:
+      # Database Configuration
+      - DATABASE_URL=postgresql://openwebui:openwebui_secure_password_2024@postgres:5432/openwebui
+      
+      # Ollama Configuration
+      - OLLAMA_BASE_URL=http://ollama:11434
+      
+      # Authentication & Multiuser Support
+      - WEBUI_AUTH=True
+      - ENABLE_SIGNUP=True
+      - ENABLE_LOGIN_FORM=True
+      - ENABLE_API_KEY=True
+      - DEFAULT_USER_ROLE=pending
+      - JWT_EXPIRES_IN=24h
+      
+      # Vector Database Configuration (pgvector)
+      - VECTOR_DB=pgvector
+      - PGVECTOR_DB_URL=postgresql://openwebui:openwebui_secure_password_2024@postgres:5432/openwebui
+      - PGVECTOR_CREATE_EXTENSION=true
+      - PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH=1536
+      
+      # RAG Configuration
+      - ENABLE_RAG_HYBRID_SEARCH=true
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - RAG_TOP_K=5
+      - CHUNK_SIZE=1000
+      - CHUNK_OVERLAP=100
+      
+      # Production Settings
+      - CORS_ALLOW_ORIGIN=https://openweb.prometheusags.ai
+      - FORWARDED_ALLOW_IPS=127.0.0.1
+      - WEBUI_SECRET_KEY=
+      
+      # Privacy Settings
+      - SCARF_NO_ANALYTICS=true
+      - DO_NOT_TRACK=true
+      - ANONYMIZED_TELEMETRY=false
+      
+      # Performance Settings
+      - ENABLE_BASE_MODELS_CACHE=true
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - openwebui_network
+
+volumes:
+  ollama:
+    name: ollama_data
+  open-webui:
+    name: open_webui_data
+  postgres_data:
+    name: postgres_openwebui_data
+
+networks:
+  openwebui_network:
+    name: openwebui_network
+    driver: bridge
