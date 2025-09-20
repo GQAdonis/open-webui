@@ -1,0 +1,53 @@
+model_list:
+  # Bedrock Models
+  - model_name: claude-sonnet-4
+    litellm_params:
+      model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
+      aws_access_key_id: ${AWS_ACCESS_KEY_ID}
+      aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+      aws_region_name: us-east-2
+  
+  - model_name: titan-v2
+    litellm_params:
+      model: bedrock/amazon.titan-text-premier-v1:0
+      aws_access_key_id: ${AWS_ACCESS_KEY_ID}
+      aws_secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+      aws_region_name: us-east-2
+  
+  # Vertex AI Models
+  - model_name: vertex-claude-sonnet-4
+    litellm_params:
+      model: vertex_ai/claude-sonnet-4@20250514
+      vertex_project: prometheus-461323
+      vertex_location: us-east5
+      vertex_credentials_path: /etc/litellm/gcp.json
+  
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: vertex_ai/gemini-2.5-pro-002
+      vertex_project: prometheus-461323
+      vertex_location: us-east5
+      vertex_credentials_path: /etc/litellm/gcp.json
+
+litellm_settings:
+  telemetry: false
+  drop_params: true
+
+general_settings:
+  master_key: sk-litellm-proxy-key
+  database_url: postgresql://litellm_user:postgres@postgres:5432/litellm_db
+  
+# Alternative PostgreSQL connection formats:
+# For cloud databases:
+# database_url: postgresql://username:password@host:port/database_name
+# 
+# For SSL connections:
+# database_url: postgresql://username:password@host:port/database_name?sslmode=require
+#
+# Using environment variables (recommended for security):
+# database_url: ${DATABASE_URL}
+
+# Environment variables to set:
+# AWS_ACCESS_KEY_ID=your_aws_access_key_here
+# AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key_here
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
