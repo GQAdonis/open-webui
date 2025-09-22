@@ -256,13 +256,11 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <dependencies>
 <dependency name="react" version="18.2.0"/>
 <dependency name="react-dom" version="18.2.0"/>
-${isTypeScript ? '<dependency name="@types/react" version="18.2.0"/>\\n<dependency name="@types/react-dom" version="18.2.0"/>' : ''}
+${isTypeScript ? '<dependency name="@types/react" version="18.2.0"/>\n<dependency name="@types/react-dom" version="18.2.0"/>' : ''}
 </dependencies>
 <files>
 <file path="App.${fileExtension}">
-<![CDATA[
-// Your React component code here using ${isTypeScript ? 'TypeScript with TSX' : 'JavaScript with JSX'}
-]]>
+[Your React component code here using ${isTypeScript ? 'TypeScript with TSX' : 'JavaScript with JSX'}]
 </file>
 </files>
 </artifact>`,
@@ -275,9 +273,7 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <description>Brief description of the page</description>
 <files>
 <file path="index.html">
-<![CDATA[
-<!-- Your HTML code here with inline CSS and ${isTypeScript ? 'TypeScript' : 'JavaScript'} -->
-]]>
+[Your HTML code here with inline CSS and ${isTypeScript ? 'TypeScript' : 'JavaScript'}]
 </file>
 </files>
 </artifact>`,
@@ -290,9 +286,7 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <description>Brief description of the component</description>
 <files>
 <file path="Component.svelte">
-<![CDATA[
-<!-- Your Svelte component code here using ${isTypeScript ? 'TypeScript in script lang="ts"' : 'JavaScript'} -->
-]]>
+[Your Svelte component code here using ${isTypeScript ? 'TypeScript in script lang="ts"' : 'JavaScript'}]
 </file>
 </files>
 </artifact>`,
@@ -305,9 +299,7 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <description>Brief description of the document</description>
 <files>
 <file path="document.md">
-<![CDATA[
-<!-- Your Markdown content here -->
-]]>
+[Your Markdown content here]
 </file>
 </files>
 </artifact>`,
@@ -320,9 +312,7 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <description>Brief description of the diagram</description>
 <files>
 <file path="diagram.mmd">
-<![CDATA[
-<!-- Your Mermaid diagram code here -->
-]]>
+[Your Mermaid diagram code here]
 </file>
 </files>
 </artifact>`,
@@ -338,13 +328,11 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <dependency name="react-dom" version="18.2.0"/>
 <dependency name="chart.js" version="4.4.0"/>
 <dependency name="react-chartjs-2" version="5.2.0"/>
-${isTypeScript ? '<dependency name="@types/react" version="18.2.0"/>\\n<dependency name="@types/react-dom" version="18.2.0"/>' : ''}
+${isTypeScript ? '<dependency name="@types/react" version="18.2.0"/>\n<dependency name="@types/react-dom" version="18.2.0"/>' : ''}
 </dependencies>
 <files>
 <file path="Chart.${fileExtension}">
-<![CDATA[
-// Your Chart.js or D3.js visualization code here using ${isTypeScript ? 'TypeScript with TSX' : 'JavaScript with JSX'}
-]]>
+[Your Chart.js or D3.js visualization code here using ${isTypeScript ? 'TypeScript with TSX' : 'JavaScript with JSX'}]
 </file>
 </files>
 </artifact>`,
@@ -357,9 +345,7 @@ IMPORTANT: Please provide your response as a PAS 3.0 compliant artifact. Use the
 <description>Brief description of the code</description>
 <files>
 <file path="code.${fileExtension}">
-<![CDATA[
-// Your code here using ${isTypeScript ? 'TypeScript' : 'JavaScript'}
-]]>
+[Your code here using ${isTypeScript ? 'TypeScript' : 'JavaScript'}]
 </file>
 </files>
 </artifact>`

@@ -1160,6 +1160,16 @@
 		if (selectedModels.length === 0) {
 			toast.error($i18n.t('Model not selected'));
 		} else {
+			// Phase 1: Artifact Integration - Preprocess prompt for artifact enhancement
+			const { preprocessPrompt } = useArtifactIntegration();
+			const enhancedPrompt = preprocessPrompt(userPrompt ? userPrompt : `[PROMPT]`);
+
+			console.log('🎯 [Artifact Integration] Enhanced prompt:', {
+				original: userPrompt?.substring(0, 100),
+				enhanced: enhancedPrompt.substring(0, 100),
+				wasEnhanced: enhancedPrompt !== userPrompt
+			});
+
 			const modelId = selectedModels[0];
 			const model = $models.filter((m) => m.id === modelId).at(0);
 
@@ -1453,9 +1463,14 @@
 
 		// Apply artifact preprocessing if not raw mode and artifacts are enabled
 		const artifactsEnabled = $config?.features?.enable_artifacts ?? true; // Default to enabled
-		const processedPrompt = (_raw || !artifactsEnabled) ? userPrompt : preprocessPrompt(userPrompt);
-		if (processedPrompt !== userPrompt) {
-			console.log('🚀 [Artifact Integration] Prompt enhanced for artifact generation');
+		let processedPrompt = userPrompt;
+
+		if (!_raw && artifactsEnabled) {
+			const { preprocessPrompt } = useArtifactIntegration();
+			processedPrompt = preprocessPrompt(userPrompt);
+			if (processedPrompt !== userPrompt) {
+				console.log('🚀 [Artifact Integration] Prompt enhanced for artifact generation');
+			}
 		}
 
 		const _selectedModels = selectedModels.map((modelId) =>
@@ -2012,7 +2027,14 @@
 	};
 
 	const submitMessage = async (parentId, prompt) => {
-		let userPrompt = prompt;
+		// Apply artifact preprocessing for enhanced prompts
+		const { preprocessPrompt } = useArtifactIntegration();
+		let userPrompt = preprocessPrompt(prompt);
+
+		if (userPrompt !== prompt) {
+			console.log('🚀 [Artifact Integration] submitMessage: Enhanced prompt for artifacts');
+		}
+
 		let userMessageId = uuidv4();
 
 		let userMessage = {
@@ -2050,18 +2072,28 @@
 		if (history.currentId) {
 			let userMessage = history.messages[message.parentId];
 
+			// Apply artifact preprocessing to suggestion prompt if provided
+			let processedSuggestionPrompt = suggestionPrompt;
+			if (suggestionPrompt) {
+				const { preprocessPrompt } = useArtifactIntegration();
+				processedSuggestionPrompt = preprocessPrompt(suggestionPrompt);
+				if (processedSuggestionPrompt !== suggestionPrompt) {
+					console.log('🚀 [Artifact Integration] regenerateResponse: Enhanced suggestion prompt');
+				}
+			}
+
 			if (autoScroll) {
 				scrollToBottom();
 			}
 
 			await sendMessage(history, userMessage.id, {
-				...(suggestionPrompt
+				...(processedSuggestionPrompt
 					? {
 							messages: [
 								...createMessagesList(history, message.id),
 								{
 									role: 'user',
-									content: suggestionPrompt
+									content: processedSuggestionPrompt
 								}
 							]
 						}

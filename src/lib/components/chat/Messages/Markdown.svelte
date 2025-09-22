@@ -6,6 +6,7 @@
 	import markedExtension from '$lib/utils/marked/extension';
 	import markedKatexExtension from '$lib/utils/marked/katex-extension';
 	import { mentionExtension } from '$lib/utils/marked/mention-extension';
+	import artifactExtension from '$lib/utils/marked/artifact-plugin';
 
 	import MarkdownTokens from './Markdown/MarkdownTokens.svelte';
 
@@ -38,6 +39,7 @@
 
 	marked.use(markedKatexExtension(options));
 	marked.use(markedExtension(options));
+	marked.use(artifactExtension(options));
 	marked.use({
 		extensions: [mentionExtension({ triggerChar: '@' }), mentionExtension({ triggerChar: '#' })]
 	});

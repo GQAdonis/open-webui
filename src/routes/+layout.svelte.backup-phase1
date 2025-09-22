@@ -30,8 +30,6 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { Toaster, toast } from 'svelte-sonner';
-	import ArtifactPreviewPanel from '$lib/components/preview/ArtifactPreviewPanel.svelte';
-
 
 	import { executeToolServer, getBackendConfig } from '$lib/apis';
 	import { getSessionUser, userSignOut } from '$lib/apis/auths';
@@ -739,8 +737,4 @@
 	richColors
 	position="top-right"
 	closeButton
-/>
-
-<!-- Artifact Preview Panel -->
-<ArtifactPreviewPanel />
 />

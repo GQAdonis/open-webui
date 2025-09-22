@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
-import { getPrimaryFile, getLanguageFromType } from '$lib/utils/artifacts/artifact-parser';
+import type { ParsedArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
+import { shouldUseSandpack } from '$lib/utils/artifacts/xml-artifact-parser';
 import SandpackRenderer from './renderers/SandpackRenderer.svelte';
 import MarkdownRenderer from './renderers/MarkdownRenderer.svelte';
 import MermaidRenderer from './renderers/MermaidRenderer.svelte';
@@ -39,34 +39,66 @@ console.error('Error updating artifact renderer:', e);
 }
 
 function getRendererType(artifact: ParsedArtifact, viewMode: string): string {
-if (viewMode === 'xml') return 'xml';
-if (viewMode === 'code') return 'code';
+	if (viewMode === 'xml') return 'xml';
+	if (viewMode === 'code') return 'code';
 
-// For preview mode, determine renderer based on artifact type
-switch (artifact.type) {
-case 'application/vnd.react+jsx':
-return 'sandpack-react';
-case 'application/vnd.svelte':
-return 'sandpack-svelte';  
-case 'application/vnd.vue':
-return 'sandpack-vue';
-case 'text/html':
-return 'html';
-case 'text/markdown':
-return 'markdown';
-case 'application/vnd.mermaid':
-return 'mermaid';
-case 'image/svg+xml':
-return 'svg';
-case 'application/json':
-return 'json';
-case 'application/javascript':
-case 'application/typescript':
-case 'text/plain':
-return 'code';
-default:
-return 'code';
+	// For preview mode, determine renderer based on artifact type
+	switch (artifact.type) {
+		case 'application/vnd.react+jsx':
+		case 'application/vnd.react+tsx':
+			return 'sandpack-react';
+		case 'application/vnd.svelte':
+		case 'application/vnd.svelte+ts':
+			return 'sandpack-svelte';
+		case 'text/html':
+			return shouldUseSandpack(artifact.type) ? 'sandpack-html' : 'html';
+		case 'text/markdown':
+			return 'markdown';
+		case 'application/vnd.mermaid':
+			return 'mermaid';
+		case 'image/svg+xml':
+			return 'svg';
+		case 'application/json':
+			return 'json';
+		case 'application/javascript':
+		case 'application/typescript':
+		case 'text/plain':
+			return 'code';
+		default:
+			return 'code';
+	}
 }
+
+function getPrimaryFile(artifact: ParsedArtifact) {
+	return artifact.files && artifact.files.length > 0 ? artifact.files[0] : null;
+}
+
+function getLanguageFromType(type: string): string {
+	switch (type) {
+		case 'application/vnd.react+jsx':
+			return 'jsx';
+		case 'application/vnd.react+tsx':
+			return 'tsx';
+		case 'application/vnd.svelte':
+		case 'application/vnd.svelte+ts':
+			return 'svelte';
+		case 'text/html':
+			return 'html';
+		case 'text/markdown':
+			return 'markdown';
+		case 'application/javascript':
+			return 'javascript';
+		case 'application/typescript':
+			return 'typescript';
+		case 'application/json':
+			return 'json';
+		case 'image/svg+xml':
+			return 'xml';
+		case 'application/vnd.mermaid':
+			return 'mermaid';
+		default:
+			return 'text';
+	}
 }
 
 function handleRendererError(event: CustomEvent) {
@@ -79,15 +111,15 @@ dispatch('load', event.detail);
 }
 
 function copyToClipboard() {
-if (viewMode === 'xml') {
-navigator.clipboard.writeText(artifact.raw);
-} else {
-const primaryFile = getPrimaryFile(artifact);
-if (primaryFile) {
-navigator.clipboard.writeText(primaryFile.content);
-}
-}
-dispatch('copy');
+	if (viewMode === 'xml') {
+		navigator.clipboard.writeText(artifact.rawXml);
+	} else {
+		const primaryFile = getPrimaryFile(artifact);
+		if (primaryFile) {
+			navigator.clipboard.writeText(primaryFile.content);
+		}
+	}
+	dispatch('copy');
 }
 
 function downloadArtifact() {
@@ -203,11 +235,18 @@ on:error={handleRendererError}
 on:load={handleRendererLoad}
 />
 {:else if currentRenderer === 'sandpack-vue'}
-<SandpackRenderer 
-{artifact}
-template="vue"
-on:error={handleRendererError}
-on:load={handleRendererLoad}
+<SandpackRenderer
+	{artifact}
+	template="vue"
+	on:error={handleRendererError}
+	on:load={handleRendererLoad}
+/>
+{:else if currentRenderer === 'sandpack-html'}
+<SandpackRenderer
+	{artifact}
+	template="static"
+	on:error={handleRendererError}
+	on:load={handleRendererLoad}
 />
 {:else if currentRenderer === 'html'}
 <HTMLRenderer 
@@ -240,12 +279,12 @@ on:error={handleRendererError}
 on:load={handleRendererLoad}
 />
 {:else if currentRenderer === 'xml'}
-<CodeRenderer 
-content={artifact.raw}
-language="xml"
-readonly={true}
-on:error={handleRendererError}
-on:load={handleRendererLoad}
+<CodeRenderer
+	content={artifact.rawXml}
+	language="xml"
+	readonly={true}
+	on:error={handleRendererError}
+	on:load={handleRendererLoad}
 />
 {:else}
 <CodeRenderer 

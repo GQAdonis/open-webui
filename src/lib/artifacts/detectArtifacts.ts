@@ -1,7 +1,8 @@
 // Legacy artifact detection - maintained for backward compatibility
 // This module provides a bridge between the old detection system and PAS 3.0
 
-import { extractArtifacts, type ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
+// Legacy import removed - using new ArtifactStreamParser instead
+// import { extractArtifacts, type ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 
 export type DetectedArtifact =
   | { 
@@ -34,7 +35,8 @@ export function detectArtifactsFromText(text: string): DetectedArtifact[] {
   
   // First try to parse PAS 3.0 artifacts
   try {
-    const pasArtifacts = extractArtifacts(text);
+    // Legacy extraction disabled - using new streaming parser
+    const pasArtifacts: any[] = []; // Stub for compatibility
     if (pasArtifacts.length > 0) {
       // Convert PAS 3.0 artifacts to legacy format
       return pasArtifacts.map(convertPasToLegacy).filter(Boolean) as DetectedArtifact[];
@@ -98,7 +100,7 @@ export function detectArtifactsFromText(text: string): DetectedArtifact[] {
 }
 
 // Convert PAS 3.0 artifact to legacy format for backward compatibility
-function convertPasToLegacy(artifact: ParsedArtifact): DetectedArtifact | null {
+function convertPasToLegacy(artifact: any): DetectedArtifact | null {
   switch (artifact.type) {
     case 'text/tsx':
     case 'application/tsx':

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Artifact Test</title>
+</head>
+<body>
+    <h1>Testing Artifact System</h1>
+
+    <h2>Test Content with Artifacts</h2>
+    <p>Here's some regular markdown content.</p>
+
+    <h3>Code Block Test</h3>
+    <pre><code class="language-javascript">
+function hello() {
+    console.log("Hello, World!");
+}
+    </code></pre>
+
+    <h3>Artifact Test</h3>
+    <p>And here's an artifact:</p>
+
+    <artifact identifier="test-counter" type="text/html" title="Simple Counter">
+        <description>A simple counter application</description>
+        <files>
+            <file path="index.html"><![CDATA[
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Counter</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; }
+        .counter { font-size: 2em; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Simple Counter</h1>
+    <div class="counter" id="counter">0</div>
+    <button onclick="increment()">+</button>
+    <button onclick="decrement()">-</button>
+    <button onclick="reset()">Reset</button>
+
+    <script>
+        let count = 0;
+
+        function increment() {
+            count++;
+            document.getElementById('counter').textContent = count;
+        }
+
+        function decrement() {
+            count--;
+            document.getElementById('counter').textContent = count;
+        }
+
+        function reset() {
+            count = 0;
+            document.getElementById('counter').textContent = count;
+        }
+    </script>
+</body>
+</html>
+            ]]></file>
+        </files>
+    </artifact>
+
+    <p>More regular content after the artifact.</p>
+
+    <h3>Another Code Block</h3>
+    <pre><code class="language-python">
+def greet(name):
+    return f"Hello, {name}!"
+
+print(greet("World"))
+    </code></pre>
+
+</body>
+</html>

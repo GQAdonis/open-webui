@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 import { Sandpack } from '@codesandbox/sandpack-react';
-import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
-import { getSandpackTemplate, getSandpackFiles, isTypeScriptArtifact } from '$lib/utils/artifacts/artifact-parser';
+import type { ParsedArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
+import { getSandpackTemplate, getSandpackFiles, isTypeScriptArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
 
 export let artifact: ParsedArtifact;
 export let template: string = '';
