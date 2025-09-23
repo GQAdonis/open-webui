@@ -274,6 +274,24 @@ export function hasArtifactIndicators(content: string): boolean {
 }
 
 /**
+ * Check if a message content contains artifacts
+ * Used by ArtifactButton and ResponseMessage components
+ */
+export function hasArtifactInMessage(content: string): boolean {
+  if (!content) return false;
+
+  try {
+    // Use unified detection to check for artifacts
+    const detectionResult = detectArtifactsUnified(content);
+    return detectionResult.hasArtifacts;
+  } catch (error) {
+    console.warn('Error checking for artifacts in message:', error);
+    // Fallback to quick indicator check
+    return hasArtifactIndicators(content);
+  }
+}
+
+/**
  * Initialize artifact system for a chat session
  */
 export function initializeArtifactSystem(chatId: string): void {
