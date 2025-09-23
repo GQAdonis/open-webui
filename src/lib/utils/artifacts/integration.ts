@@ -59,7 +59,8 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
   enhancePrompt(prompt: string): string {
     console.log("🚀 [Artifact Integration] enhancePrompt called");
     try {
-      const enhanced = enhancePromptForArtifacts(prompt);
+      const classification = classifyIntent(prompt);
+      const enhanced = enhancePromptForArtifacts(prompt, classification);
       console.log("🚀 [Artifact Integration] Enhanced prompt length:", enhanced.length);
       return enhanced;
     } catch (error) {

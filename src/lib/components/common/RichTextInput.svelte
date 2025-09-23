@@ -981,7 +981,13 @@
 			element: element,
 			extensions: [
 				StarterKit.configure({
-					link: link
+					link: link,
+					// Disable StarterKit list extensions to avoid conflicts with ListKit
+					bulletList: false,
+					orderedList: false,
+					listItem: false,
+					// Disable StarterKit codeBlock to avoid conflicts with CodeBlockLowlight
+					codeBlock: false
 				}),
 				Placeholder.configure({ placeholder: () => _placeholder }),
 				SelectionDecoration,

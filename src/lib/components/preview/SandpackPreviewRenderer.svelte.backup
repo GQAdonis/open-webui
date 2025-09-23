@@ -17,15 +17,11 @@
   let codeReactRoot: any = null;
   let loading = true;
   let error: string | null = null;
-  let setupAttempts = 0;
-  let maxAttempts = 3;
   
   const setupSandpack = async () => {
     if (!browser || !containerElement || !code) return;
     
     try {
-      setupAttempts++;
-      loading = true;
       previewActions.setLoading(true);
       error = null;
       
@@ -74,7 +70,7 @@
       const { Sandpack, SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor } = 
         await import('@codesandbox/sandpack-react');
       
-      // Create main preview element with event listeners
+      // Create main preview element
       const sandpackElement = React.createElement(Sandpack, {
         template: 'react',
         files,
@@ -82,6 +78,7 @@
           showConsole: false,
           showRefreshButton: true,
           autoReload: true,
+          // bundlerURL: 'https://preview.prometheusags.ai', // Commented out to use default Sandpack bundler
           recompileMode: 'delayed',
           recompileDelay: 500,
           showNavigator: false,
@@ -129,104 +126,17 @@
         codeReactRoot.render(codeEditorElement);
       }
       
-      // Wait for Sandpack to be ready using multiple strategies
-      let isReady = false;
-      let timeoutId: NodeJS.Timeout;
-      
-      // Strategy 1: Listen for iframe load event
-      const checkForIframe = () => {
-        const iframe = containerElement.querySelector('iframe');
-        if (iframe && !isReady) {
-          iframe.onload = () => {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
-              previewActions.setLoading(false);
-            }
-          };
-          
-          // If iframe is already loaded
-          if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
-              previewActions.setLoading(false);
-            }
-          }
-        }
-      };
-      
-      // Strategy 2: Check periodically for Sandpack elements
-      const checkForSandpackReady = () => {
-        const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
-        const sandpackPreview = containerElement.querySelector('.sp-preview-container');
-        
-        if (sandpackWrapper && sandpackPreview && !isReady) {
-          // Give a small delay to ensure everything is rendered
-          setTimeout(() => {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
-              previewActions.setLoading(false);
-            }
-          }, 500);
-        }
-      };
-      
-      // Start checking for readiness
-      const readinessInterval = setInterval(() => {
-        checkForIframe();
-        checkForSandpackReady();
-        
-        if (isReady) {
-          clearInterval(readinessInterval);
-        }
-      }, 100);
-      
-      // Strategy 3: Fallback timeout (longer for complex components)
-      timeoutId = setTimeout(() => {
-        if (!isReady) {
-          isReady = true;
-          clearInterval(readinessInterval);
-          
-          // Check if Sandpack elements exist at least
-          const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
-          if (sandpackWrapper) {
-            loading = false;
-            previewActions.setLoading(false);
-          } else if (setupAttempts < maxAttempts) {
-            // Retry setup if no Sandpack elements found
-            console.warn('Sandpack setup incomplete, retrying...');
-            setTimeout(() => setupSandpack(), 1000);
-            return;
-          } else {
-            // Give up after max attempts
-            error = 'Preview took too long to load. The component may have errors or dependencies issues.';
-            loading = false;
-            previewActions.setError(error);
-          }
-        }
-      }, 8000); // 8 second timeout
-      
-      // Clean up interval after 10 seconds regardless
-      setTimeout(() => {
-        clearInterval(readinessInterval);
-      }, 10000);
+      previewActions.setLoading(false);
       
     } catch (err) {
       console.error('Sandpack setup failed:', err);
       error = `Failed to setup preview: ${err instanceof Error ? err.message : 'Unknown error'}`;
-      loading = false;
       previewActions.setError(error);
     }
   };
   
   // Reactive updates
   $: if (browser && (code || messageContent)) {
-    setupAttempts = 0; // Reset attempts for new code
     setupSandpack();
   }
   
@@ -273,9 +183,6 @@
           <div class="step">Analyzing code</div>
           <div class="step">Generating files</div>
           <div class="step">Starting bundler</div>
-          {#if setupAttempts > 1}
-            <div class="step retry-step">Retrying setup (attempt {setupAttempts})</div>
-          {/if}
         </div>
       </div>
     </div>
@@ -294,19 +201,9 @@
           <li>Check if the code is valid React/JSX</li>
           <li>Ensure all components are properly exported</li>
           <li>Verify import statements are correct</li>
-          <li>Check browser console for additional errors</li>
           <li>Try refreshing the page</li>
         </ul>
       </details>
-      <button 
-        class="retry-button"
-        on:click={() => {
-          setupAttempts = 0;
-          setupSandpack();
-        }}
-      >
-        Retry Preview
-      </button>
     </div>
   {/if}
   
@@ -384,15 +281,9 @@
     animation: fadeIn 2s ease-in-out infinite alternate;
   }
   
-  .retry-step {
-    color: var(--color-orange-600, #ea580c);
-    font-weight: 500;
-  }
-  
   .step:nth-child(2) { animation-delay: 0.5s; }
   .step:nth-child(3) { animation-delay: 1s; }
   .step:nth-child(4) { animation-delay: 1.5s; }
-  .step:nth-child(5) { animation-delay: 2s; }
   
   @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -454,22 +345,6 @@
   
   .error-details li {
     margin-bottom: 4px;
-  }
-  
-  .retry-button {
-    margin-top: 16px;
-    padding: 8px 16px;
-    background: var(--color-red-600, #dc2626);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  
-  .retry-button:hover {
-    background: var(--color-red-700, #b91c1c);
   }
   
   .preview-container {

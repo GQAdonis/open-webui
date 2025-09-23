@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
   import { previewStore, previewConfig, previewActions, configActions } from '$lib/stores/preview/preview-store';
-  import SandpackPreviewRenderer from './SandpackPreviewRenderer.svelte';
+  import UnifiedSandpackRenderer from '../artifacts/renderers/UnifiedSandpackRenderer.svelte';
   
   // State subscriptions
   $: isVisible = $previewStore.isVisible;
@@ -165,11 +165,15 @@
             </button>
           </div>
         {:else}
-          <SandpackPreviewRenderer 
-            code={$previewStore.code}
-            css={$previewStore.css}
-            title={title}
-            messageContent={$previewStore.messageContent}
+          <UnifiedSandpackRenderer
+            artifact={{
+              type: 'react',
+              title: title || 'React Component',
+              entryCode: $previewStore.code || '',
+              css: $previewStore.css,
+              extraFiles: undefined,
+              dependencies: undefined
+            }}
             showCode={config.showCode}
           />
         {/if}

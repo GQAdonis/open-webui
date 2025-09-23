@@ -48,6 +48,7 @@
 	let createModelObject = '';
 
 	let createModelDigest = '';
+	let createModelTag = '';
 	let createModelPullProgress = null;
 
 	let digest = '';

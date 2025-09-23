@@ -18,8 +18,8 @@
   let loading = true;
   let error: string | null = null;
 
-  // Environment variables
-  const BUNDLER_URL = "https://preview.prometheusags.ai";
+  // Environment variables - commented out to use default Sandpack bundler
+  // const BUNDLER_URL = "https://preview.prometheusags.ai";
 
   const setupSandpack = async () => {
     if (!browser || !sandpackContainer) return;
@@ -101,7 +101,7 @@
           dependencies
         }
       }, {
-        bundlerURL: BUNDLER_URL,
+        // bundlerURL: BUNDLER_URL, // Commented out to use default Sandpack bundler
         startRoute: '/',
         showOpenInCodeSandbox: false
       });

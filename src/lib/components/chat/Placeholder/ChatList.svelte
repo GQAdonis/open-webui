@@ -13,6 +13,7 @@
 	export let chats = [];
 
 	let chatList = null;
+	let show = false;
 
 	const init = async () => {
 		if (chats.length === 0) {
