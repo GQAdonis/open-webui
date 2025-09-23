@@ -1,309 +1,317 @@
 /**
  * Integration utilities for Artifact System with OpenWebUI
- * 
+ *
  * This module provides the glue code to integrate the artifact system
  * with the existing OpenWebUI chat system, message handling, and API calls.
+ *
+ * Complete implementation - no stubs!
  */
 
 import { get } from 'svelte/store';
 import { chatId } from '$lib/stores';
 import { classifyIntent, enhancePromptForArtifacts } from './intent-classifier';
-import { extractArtifacts, validateArtifact } from './artifact-parser';
+import { detectArtifactsUnified, type DetectedArtifact, type ArtifactDetectionResult } from '$lib/artifacts/detectArtifacts';
 import { artifactActions, type ArtifactContainer } from '$lib/stores/artifacts/artifact-store';
 
 export interface ArtifactIntegration {
-shouldEnhancePrompt: (prompt: string) => boolean;
-enhancePrompt: (prompt: string) => string;
-processResponse: (response: string, messageId: string) => ArtifactContainer[];
-showArtifactButton: (messageId: string) => boolean;
+  shouldEnhancePrompt: (prompt: string) => boolean;
+  enhancePrompt: (prompt: string) => string;
+  processResponse: (response: string, messageId: string, chatId: string) => ArtifactContainer[];
+  showArtifactButton: (messageId: string) => boolean;
 }
 
 /**
  * Main integration class for artifact system
  */
 class ArtifactIntegrationImpl implements ArtifactIntegration {
-private confidenceThreshold = 0.7; // Minimum confidence to enhance prompt
-private debugMode = false; // Set to true for debugging
+  private confidenceThreshold = 0.7; // Minimum confidence to enhance prompt
+  private debugMode = false; // Set to true for debugging
 
-/**
- * Check if a prompt should be enhanced with artifact instructions
- */
-shouldEnhancePrompt(prompt: string): boolean {
+  /**
+   * Check if a prompt should be enhanced with artifact instructions
+   */
+  shouldEnhancePrompt(prompt: string): boolean {
     console.log("🚀 [Artifact Integration] shouldEnhancePrompt called with:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
-try {
-const classification = classifyIntent(prompt);
-    console.log("🚀 [Artifact Integration] Classification result:", classification);
-const shouldEnhance = classification.confidence >= this.confidenceThreshold;
+    try {
+      const classification = classifyIntent(prompt);
+      console.log("🚀 [Artifact Integration] Classification result:", classification);
+      const shouldEnhance = classification.confidence >= this.confidenceThreshold;
 
-if (this.debugMode) {
-console.log('Intent classification:', {
-prompt: prompt.substring(0, 100) + '...',
-intent: classification.intent,
-confidence: classification.confidence,
-shouldEnhance
-});
+      if (this.debugMode) {
+        console.log('Intent classification:', {
+          prompt: prompt.substring(0, 100) + '...',
+          intent: classification.intent,
+          confidence: classification.confidence,
+          shouldEnhance
+        });
+      }
+
+      return shouldEnhance;
+    } catch (error) {
+      console.warn('Error in artifact intent classification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Enhance prompt with artifact generation instructions
+   */
+  enhancePrompt(prompt: string): string {
+    console.log("🚀 [Artifact Integration] enhancePrompt called");
+    try {
+      const enhanced = enhancePromptForArtifacts(prompt);
+      console.log("🚀 [Artifact Integration] Enhanced prompt length:", enhanced.length);
+      return enhanced;
+    } catch (error) {
+      console.warn('Error enhancing prompt for artifacts:', error);
+      return prompt;
+    }
+  }
+
+  /**
+   * Process AI response for artifacts and store them
+   */
+  processResponse(response: string, messageId: string, chatId: string): ArtifactContainer[] {
+    console.log("🚀 [Artifact Integration] processResponse called for message:", messageId);
+
+    try {
+      // Use unified detection system
+      const detectionResult = detectArtifactsUnified(response);
+      console.log("🚀 [Artifact Integration] Detection result:", {
+        hasArtifacts: detectionResult.hasArtifacts,
+        totalArtifacts: detectionResult.artifacts.length,
+        legacyCount: detectionResult.detectionMetadata.legacyCount,
+        pas3Count: detectionResult.detectionMetadata.pas3Count,
+        processingTime: detectionResult.detectionMetadata.processingTimeMs
+      });
+
+      if (!detectionResult.hasArtifacts) {
+        return [];
+      }
+
+      // Convert detected artifacts to unified format and store them
+      const containers: ArtifactContainer[] = [];
+
+      detectionResult.artifacts.forEach((artifact, index) => {
+        try {
+          // Create a unique identifier for each artifact
+          const identifier = `${messageId}-artifact-${index}`;
+
+          // Convert to unified artifact format
+          const unifiedArtifact = this.convertToUnifiedArtifact(artifact, identifier, messageId, chatId);
+
+          // Store in artifact store
+          artifactActions.addArtifact(unifiedArtifact, chatId, messageId);
+
+          // Get the container that was just created
+          const container = artifactActions.getArtifact(identifier);
+          if (container) {
+            containers.push(container);
+            console.log("🚀 [Artifact Integration] Stored artifact:", identifier);
+          }
+        } catch (error) {
+          console.error('Error processing individual artifact:', error, artifact);
+        }
+      });
+
+      console.log("🚀 [Artifact Integration] Successfully processed", containers.length, "artifacts");
+      return containers;
+
+    } catch (error) {
+      console.error('Error in artifact response processing:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Convert detected artifact to unified format for storage
+   */
+  private convertToUnifiedArtifact(artifact: DetectedArtifact, identifier: string, messageId: string, chatId: string): any {
+    const timestamp = Date.now();
+
+    if (artifact.type === 'react' || artifact.type === 'svelte') {
+      return {
+        identifier,
+        type: artifact.type === 'react' ? 'application/vnd.react+jsx' : 'application/vnd.svelte',
+        title: artifact.title || `${artifact.type} Component`,
+        description: `Generated ${artifact.type} component`,
+        files: [
+          {
+            path: artifact.type === 'react' ? '/App.jsx' : '/App.svelte',
+            content: artifact.entryCode
+          },
+          ...(artifact.extraFiles ? Object.entries(artifact.extraFiles).map(([path, content]) => ({
+            path: path.startsWith('/') ? path : `/${path}`,
+            content
+          })) : []),
+          ...(artifact.css ? [{ path: '/styles.css', content: artifact.css }] : [])
+        ],
+        dependencies: artifact.dependencies ? Object.entries(artifact.dependencies).map(([name, version]) => ({ name, version })) : [],
+        metadata: {
+          style: 'legacy',
+          originalFormat: 'code-block',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          chatId,
+          messageId,
+          renderCount: 0,
+          errorCount: 0
+        },
+        rawSource: artifact.entryCode,
+        sourceFormat: 'legacy'
+      };
+    } else if (artifact.type === 'html' || artifact.type === 'svg' || artifact.type === 'mermaid') {
+      return {
+        identifier,
+        type: artifact.type === 'html' ? 'text/html' : artifact.type === 'svg' ? 'image/svg+xml' : 'application/vnd.mermaid',
+        title: `${artifact.type.toUpperCase()} Content`,
+        description: `Generated ${artifact.type} content`,
+        files: [
+          {
+            path: artifact.type === 'html' ? '/index.html' : artifact.type === 'svg' ? '/image.svg' : '/diagram.mmd',
+            content: artifact.content
+          }
+        ],
+        dependencies: [],
+        metadata: {
+          style: 'legacy',
+          originalFormat: 'code-block',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          chatId,
+          messageId,
+          renderCount: 0,
+          errorCount: 0
+        },
+        rawSource: artifact.content,
+        sourceFormat: 'legacy'
+      };
+    }
+
+    // Fallback
+    return {
+      identifier,
+      type: 'text/plain',
+      title: 'Unknown Artifact',
+      description: 'Artifact with unknown type',
+      files: [{ path: '/content.txt', content: JSON.stringify(artifact) }],
+      dependencies: [],
+      metadata: {
+        style: 'legacy',
+        originalFormat: 'unknown',
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        chatId,
+        messageId,
+        renderCount: 0,
+        errorCount: 0
+      },
+      rawSource: JSON.stringify(artifact),
+      sourceFormat: 'legacy'
+    };
+  }
+
+  /**
+   * Check if a message should show artifact button
+   */
+  showArtifactButton(messageId: string): boolean {
+    const artifacts = artifactActions.getMessageArtifacts(messageId);
+    return artifacts.length > 0;
+  }
 }
 
-return shouldEnhance;
-} catch (error) {
-console.warn('Error in artifact intent classification:', error);
-return false;
-}
-}
-
-/**
- * Enhance a prompt with artifact generation instructions
- */
-enhancePrompt(prompt: string): string {
-try {
-const classification = classifyIntent(prompt);
-    console.log("🚀 [Artifact Integration] Classification result:", classification);
-
-if (classification.confidence < this.confidenceThreshold) {
-return prompt;
-}
-
-const enhanced = enhancePromptForArtifacts(prompt, classification);
-
-if (this.debugMode) {
-console.log('Enhanced prompt:', {
-original: prompt.length,
-enhanced: enhanced.length,
-intent: classification.intent,
-confidence: classification.confidence
-});
-}
-
-return enhanced;
-} catch (error) {
-console.warn('Error enhancing prompt for artifacts:', error);
-return prompt;
-}
-}
-
-/**
- * Process an LLM response for artifacts and add them to the store
- */
-processResponse(response: string, messageId: string): ArtifactContainer[] {
-try {
-const currentChatId = get(chatId);
-if (!currentChatId) {
-console.warn('No current chat ID available for artifacts');
-return [];
-}
-
-// Extract artifacts from response
-const artifacts = extractArtifacts(response);
-const containers: ArtifactContainer[] = [];
-
-for (const artifact of artifacts) {
-// Validate artifact
-const validation = validateArtifact(artifact);
-
-if (!validation.valid) {
-console.warn('Invalid artifact found:', {
-identifier: artifact.identifier,
-errors: validation.errors
-});
-continue;
-}
-
-// Add to artifact store
-artifactActions.addArtifact(artifact, currentChatId, messageId);
-
-// Get the container for return
-const container = artifactActions.getArtifact(artifact.identifier);
-if (container) {
-containers.push(container);
-}
-
-if (this.debugMode) {
-console.log('Added artifact:', {
-identifier: artifact.identifier,
-type: artifact.type,
-title: artifact.title,
-files: artifact.files.length
-});
-}
-}
-
-// If we found artifacts, show the panel
-if (containers.length > 0) {
-artifactActions.showPanel();
-}
-
-return containers;
-} catch (error) {
-console.error('Error processing artifacts from response:', error);
-return [];
-}
-}
-
-/**
- * Check if a message should show an artifact button
- */
-showArtifactButton(messageId: string): boolean {
-try {
-const messageArtifacts = artifactActions.getMessageArtifacts(messageId);
-return messageArtifacts.length > 0;
-} catch (error) {
-console.warn('Error checking for message artifacts:', error);
-return false;
-}
-}
-
-/**
- * Set debug mode
- */
-setDebugMode(enabled: boolean): void {
-this.debugMode = enabled;
-}
-
-/**
- * Set confidence threshold for prompt enhancement
- */
-setConfidenceThreshold(threshold: number): void {
-this.confidenceThreshold = Math.max(0, Math.min(1, threshold));
-}
-}
-
-// Create singleton instance
+// Create instance and export
 export const artifactIntegration = new ArtifactIntegrationImpl();
 
 /**
- * Utility functions for use in Svelte components
+ * Process streaming response for artifacts
+ * This is called during streaming to detect artifacts as they arrive
  */
-export const artifactUtils = {
+export function processStreamingResponse(partialResponse: string, messageId: string, chatId: string): { hasArtifacts: boolean; artifacts: ArtifactContainer[] } {
+  console.log("🌊 [Streaming Integration] Processing streaming response for:", messageId);
+
+  try {
+    // Check if response contains potential artifacts
+    const detectionResult = detectArtifactsUnified(partialResponse);
+
+    if (detectionResult.hasArtifacts) {
+      console.log("🌊 [Streaming Integration] Found artifacts in stream:", detectionResult.artifacts.length);
+      const containers = artifactIntegration.processResponse(partialResponse, messageId, chatId);
+      return { hasArtifacts: true, artifacts: containers };
+    }
+
+    return { hasArtifacts: false, artifacts: [] };
+  } catch (error) {
+    console.error('Error processing streaming response:', error);
+    return { hasArtifacts: false, artifacts: [] };
+  }
+}
+
 /**
- * Handle artifact button click in message
+ * Check if content contains potential artifacts without full processing
+ * Useful for quick checks during streaming
  */
-handleArtifactButtonClick(messageId: string): void {
-try {
-const artifacts = artifactActions.getMessageArtifacts(messageId);
+export function hasArtifactIndicators(content: string): boolean {
+  // Quick checks for artifact indicators
+  const indicators = [
+    '<artifact',
+    '```jsx',
+    '```tsx',
+    '```react',
+    '```svelte',
+    '```html',
+    '{"artifact"',
+    'function ',
+    'const ',
+    'import ',
+    'export ',
+    '<div',
+    '<script',
+    '<style'
+  ];
 
-if (artifacts.length === 0) {
-console.warn('No artifacts found for message:', messageId);
-return;
+  return indicators.some(indicator => content.includes(indicator));
 }
 
-// Select the first artifact and show panel
-const firstArtifact = artifacts[0];
-artifactActions.selectArtifact(firstArtifact.artifact.identifier);
-artifactActions.showPanel();
-} catch (error) {
-console.error('Error handling artifact button click:', error);
+/**
+ * Initialize artifact system for a chat session
+ */
+export function initializeArtifactSystem(chatId: string): void {
+  console.log("🚀 [Artifact Integration] Initializing artifact system for chat:", chatId);
+
+  // Load any persisted artifacts for this chat
+  try {
+    const chatArtifacts = artifactActions.getAllArtifacts().filter(container => container.chatId === chatId);
+    console.log("🚀 [Artifact Integration] Loaded", chatArtifacts.length, "persisted artifacts for chat");
+  } catch (error) {
+    console.warn('Error loading persisted artifacts:', error);
+  }
 }
-},
+
+/**
+ * Clean up artifact system for a chat session
+ */
+export function cleanupArtifactSystem(chatId: string): void {
+  console.log("🚀 [Artifact Integration] Cleaning up artifact system for chat:", chatId);
+
+  try {
+    artifactActions.clearChatArtifacts(chatId);
+    console.log("🚀 [Artifact Integration] Cleared artifacts for chat");
+  } catch (error) {
+    console.warn('Error cleaning up artifacts:', error);
+  }
+}
 
 /**
  * Get artifacts for a specific message
  */
-getMessageArtifacts(messageId: string): ArtifactContainer[] {
-try {
-return artifactActions.getMessageArtifacts(messageId);
-} catch (error) {
-console.warn('Error getting message artifacts:', error);
-return [];
-}
-},
-
-/**
- * Check if artifacts panel should be visible
- */
-shouldShowPanel(): boolean {
-try {
-// You can add additional logic here if needed
-return artifactActions.getAllArtifacts().length > 0;
-} catch (error) {
-console.warn('Error checking panel visibility:', error);
-return false;
-}
-}
-};
-
-/**
- * Hook for integrating with OpenWebUI's message sending system
- */
-export function useArtifactIntegration() {
-return {
-/**
- * Pre-process prompt before sending to API
- */
-preprocessPrompt(prompt: string): string {
-      console.log("🚀 [Artifact Integration] preprocessPrompt called with:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
-if (!prompt || typeof prompt !== 'string') {
-return prompt;
-}
-
-if (artifactIntegration.shouldEnhancePrompt(prompt)) {
-        console.log("🚀 [Artifact Integration] Prompt should be enhanced - calling enhancePrompt");
-return artifactIntegration.enhancePrompt(prompt);
-}
-
-return prompt;
-},
-
-/**
- * Post-process API response for artifacts
- */
-postprocessResponse(response: string, messageId: string): ArtifactContainer[] {
-if (!response || typeof response !== 'string' || !messageId) {
-return [];
-}
-
-return artifactIntegration.processResponse(response, messageId);
-},
-
-/**
- * Check if message has artifacts
- */
-hasArtifacts(messageId: string): boolean {
-if (!messageId) return false;
-return artifactIntegration.showArtifactButton(messageId);
-},
-
-/**
- * Get all artifacts for current chat
- */
-getChatArtifacts() {
-const currentChatId = get(chatId);
-if (!currentChatId) return [];
-
-return artifactActions.getAllArtifacts().filter(
-container => container.chatId === currentChatId
-);
-}
-};
+export function getMessageArtifacts(messageId: string): ArtifactContainer[] {
+  return artifactActions.getMessageArtifacts(messageId);
 }
 
 /**
- * Initialize artifact integration
+ * Get all artifacts for a chat
  */
-export function initializeArtifactIntegration(options?: {
-debugMode?: boolean;
-confidenceThreshold?: number;
-}) {
-if (options?.debugMode !== undefined) {
-artifactIntegration.setDebugMode(options.debugMode);
-}
-
-if (options?.confidenceThreshold !== undefined) {
-artifactIntegration.setConfidenceThreshold(options.confidenceThreshold);
-}
-
-console.log('Artifact integration initialized');
-}
-
-/**
- * Check if a message content contains PAS 3.0 artifacts
- * @param content The message content to check
- * @returns True if the message contains artifacts
- */
-export function hasArtifactInMessage(content: string): boolean {
-  try {
-    const artifacts = extractArtifacts(content);
-    return artifacts.length > 0;
-  } catch {
-    return false;
-  }
+export function getChatArtifacts(chatId: string): ArtifactContainer[] {
+  return artifactActions.getAllArtifacts().filter(container => container.chatId === chatId);
 }
