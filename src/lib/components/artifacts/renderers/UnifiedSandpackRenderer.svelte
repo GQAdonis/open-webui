@@ -19,6 +19,7 @@
   let error: string | null = null;
   let setupAttempts = 0;
   let maxAttempts = 3;
+  let isSettingUp = false;
 
   // Determine if this is a legacy or PAS 3.0 artifact
   const isLegacyArtifact = (art: any): art is DetectedArtifact => {
@@ -26,9 +27,10 @@
   };
 
   const setupSandpack = async () => {
-    if (!browser || !containerElement) return;
+    if (!browser || !containerElement || isSettingUp) return;
 
     try {
+      isSettingUp = true;
       setupAttempts++;
       loading = true;
       error = null;
@@ -141,6 +143,7 @@
               isReady = true;
               clearTimeout(timeoutId);
               loading = false;
+              isSettingUp = false;
               dispatch('load', { artifact, template: sandpackConfig.template });
             }
           };
@@ -151,6 +154,7 @@
               isReady = true;
               clearTimeout(timeoutId);
               loading = false;
+              isSettingUp = false;
               dispatch('load', { artifact, template: sandpackConfig.template });
             }
           }
@@ -168,6 +172,7 @@
               isReady = true;
               clearTimeout(timeoutId);
               loading = false;
+              isSettingUp = false;
               dispatch('load', { artifact, template: sandpackConfig.template });
             }
           }, 500);
@@ -194,16 +199,19 @@
           const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
           if (sandpackWrapper) {
             loading = false;
+            isSettingUp = false;
             dispatch('load', { artifact, template: sandpackConfig.template });
           } else if (setupAttempts < maxAttempts) {
             // Retry setup if no Sandpack elements found
             console.warn('🎨 [Unified Renderer] Sandpack setup incomplete, retrying...');
+            isSettingUp = false; // Reset flag before retry
             setTimeout(() => setupSandpack(), 1000);
             return;
           } else {
             // Give up after max attempts
             error = 'Preview took too long to load. The component may have errors or dependency issues.';
             loading = false;
+            isSettingUp = false;
             dispatch('error', { message: error, artifact });
           }
         }
@@ -218,6 +226,7 @@
       console.error('🎨 [Unified Renderer] Sandpack setup failed:', err);
       error = `Failed to setup preview: ${err instanceof Error ? err.message : 'Unknown error'}`;
       loading = false;
+      isSettingUp = false;
       dispatch('error', { message: error, error: err, artifact });
     }
   };
@@ -422,24 +431,49 @@ export default app;`
     };
   }
 
-  // Reactive updates
-  $: if (browser && artifact) {
-    setupAttempts = 0;
-    setupSandpack();
+  // Reactive updates - with guards to prevent infinite loops
+  let lastArtifactId: string | undefined;
+  let lastShowCode: boolean | undefined;
+
+  $: if (browser && artifact && !loading) {
+    const currentArtifactId = isLegacyArtifact(artifact)
+      ? `${artifact.type}-${artifact.entryCode?.substring(0, 50)}`
+      : `${artifact.type}-${artifact.identifier}`;
+
+    // Only setup if artifact actually changed
+    if (currentArtifactId !== lastArtifactId) {
+      lastArtifactId = currentArtifactId;
+      setupAttempts = 0;
+      setupSandpack();
+    }
   }
 
-  $: if (browser && containerElement && showCode !== undefined) {
-    // Re-setup when code view toggles
-    setTimeout(() => setupSandpack(), 100);
+  $: if (browser && containerElement && showCode !== lastShowCode && !loading) {
+    // Only re-setup when showCode actually changes, not on initial mount
+    if (lastShowCode !== undefined) {
+      lastShowCode = showCode;
+      setTimeout(() => setupSandpack(), 100);
+    } else {
+      lastShowCode = showCode;
+    }
   }
 
   onMount(() => {
     if (browser) {
+      // Initialize tracking variables
+      lastShowCode = showCode;
+      if (artifact) {
+        lastArtifactId = isLegacyArtifact(artifact)
+          ? `${artifact.type}-${artifact.entryCode?.substring(0, 50)}`
+          : `${artifact.type}-${artifact.identifier}`;
+      }
       setupSandpack();
     }
   });
 
   onDestroy(() => {
+    isSettingUp = false; // Reset flag on cleanup
+
     if (reactRoot) {
       try {
         reactRoot.unmount();
