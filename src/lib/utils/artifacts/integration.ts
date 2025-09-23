@@ -315,3 +315,35 @@ export function getMessageArtifacts(messageId: string): ArtifactContainer[] {
 export function getChatArtifacts(chatId: string): ArtifactContainer[] {
   return artifactActions.getAllArtifacts().filter(container => container.chatId === chatId);
 }
+
+/**
+ * React-style hook for artifact integration
+ * Used by Chat.svelte for preprocessing prompts and postprocessing responses
+ */
+export function useArtifactIntegration() {
+  return {
+    preprocessPrompt: (prompt: string) => {
+      console.log("🎯 [useArtifactIntegration] Preprocessing prompt");
+
+      // Check if prompt should be enhanced with artifact instructions
+      if (artifactIntegration.shouldEnhancePrompt(prompt)) {
+        return artifactIntegration.enhancePrompt(prompt);
+      }
+
+      return prompt;
+    },
+
+    postprocessResponse: (response: string, messageId: string, chatId: string) => {
+      console.log("🎯 [useArtifactIntegration] Postprocessing response for message:", messageId);
+
+      // Process response for artifacts
+      const containers = artifactIntegration.processResponse(response, messageId, chatId);
+
+      return {
+        processedResponse: response,
+        artifacts: containers,
+        hasArtifacts: containers.length > 0
+      };
+    }
+  };
+}
