@@ -5,7 +5,7 @@
   import { artifactIntegration } from '$lib/utils/artifacts/integration';
   import { createMessagesList } from '$lib/utils';
   import ArtifactPanel from '$lib/components/artifacts/ArtifactPanel.svelte';
-  import ReactArtifactRenderer from './ReactArtifactRenderer.svelte';
+  import UnifiedSandpackRenderer from '../artifacts/renderers/UnifiedSandpackRenderer.svelte';
 
   const i18n = getContext('i18n');
   const dispatch = createEventDispatcher();
@@ -175,11 +175,12 @@
         </div>
         <div class="p-4 h-full">
           {#if legacyArtifactCode.type === 'application/vnd.react+jsx'}
-            <ReactArtifactRenderer 
+            <UnifiedSandpackRenderer
               artifact={{
+                type: 'react',
                 title: legacyArtifactCode.title,
                 entryCode: legacyArtifactCode.entryCode
-              }} 
+              }}
             />
           {:else if legacyArtifactCode.type === 'text/html'}
             <div class="w-full h-96 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
