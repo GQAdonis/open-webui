@@ -10,13 +10,13 @@
 import { get } from 'svelte/store';
 import { chatId } from '$lib/stores';
 import { classifyIntent, enhancePromptForArtifacts } from './intent-classifier';
-import { detectArtifactsUnified, type DetectedArtifact, type ArtifactDetectionResult } from '$lib/artifacts/detectArtifacts';
+import { detectArtifactsUnified, detectArtifactsFromText, type DetectedArtifact, type ArtifactDetectionResult } from '$lib/artifacts/detectArtifacts';
 import { artifactActions, type ArtifactContainer } from '$lib/stores/artifacts/artifact-store';
 
 export interface ArtifactIntegration {
   shouldEnhancePrompt: (prompt: string) => boolean;
   enhancePrompt: (prompt: string) => string;
-  processResponse: (response: string, messageId: string, chatId: string) => ArtifactContainer[];
+  processResponse: (response: string, messageId: string, chatId: string) => Promise<ArtifactContainer[]>;
   showArtifactButton: (messageId: string) => boolean;
 }
 
@@ -72,12 +72,12 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
   /**
    * Process AI response for artifacts and store them
    */
-  processResponse(response: string, messageId: string, chatId: string): ArtifactContainer[] {
+  async processResponse(response: string, messageId: string, chatId: string): Promise<ArtifactContainer[]> {
     console.log("🚀 [Artifact Integration] processResponse called for message:", messageId);
 
     try {
       // Use unified detection system
-      const detectionResult = detectArtifactsUnified(response);
+      const detectionResult = await detectArtifactsUnified(response);
       console.log("🚀 [Artifact Integration] Detection result:", {
         hasArtifacts: detectionResult.hasArtifacts,
         totalArtifacts: detectionResult.artifacts.length,
@@ -228,16 +228,16 @@ export const artifactIntegration = new ArtifactIntegrationImpl();
  * Process streaming response for artifacts
  * This is called during streaming to detect artifacts as they arrive
  */
-export function processStreamingResponse(partialResponse: string, messageId: string, chatId: string): { hasArtifacts: boolean; artifacts: ArtifactContainer[] } {
+export async function processStreamingResponse(partialResponse: string, messageId: string, chatId: string): Promise<{ hasArtifacts: boolean; artifacts: ArtifactContainer[] }> {
   console.log("🌊 [Streaming Integration] Processing streaming response for:", messageId);
 
   try {
     // Check if response contains potential artifacts
-    const detectionResult = detectArtifactsUnified(partialResponse);
+    const detectionResult = await detectArtifactsUnified(partialResponse);
 
     if (detectionResult.hasArtifacts) {
       console.log("🌊 [Streaming Integration] Found artifacts in stream:", detectionResult.artifacts.length);
-      const containers = artifactIntegration.processResponse(partialResponse, messageId, chatId);
+      const containers = await artifactIntegration.processResponse(partialResponse, messageId, chatId);
       return { hasArtifacts: true, artifacts: containers };
     }
 
@@ -282,9 +282,9 @@ export function hasArtifactInMessage(content: string): boolean {
   if (!content) return false;
 
   try {
-    // Use unified detection to check for artifacts
-    const detectionResult = detectArtifactsUnified(content);
-    return detectionResult.hasArtifacts;
+    // Use synchronous artifact detection for quick checks
+    const artifacts = detectArtifactsFromText(content);
+    return artifacts.length > 0;
   } catch (error) {
     console.warn('Error checking for artifacts in message:', error);
     // Fallback to quick indicator check
@@ -352,11 +352,11 @@ export function useArtifactIntegration() {
       return prompt;
     },
 
-    postprocessResponse: (response: string, messageId: string, chatId: string) => {
+    postprocessResponse: async (response: string, messageId: string, chatId: string) => {
       console.log("🎯 [useArtifactIntegration] Postprocessing response for message:", messageId);
 
       // Process response for artifacts
-      const containers = artifactIntegration.processResponse(response, messageId, chatId);
+      const containers = await artifactIntegration.processResponse(response, messageId, chatId);
 
       return {
         processedResponse: response,

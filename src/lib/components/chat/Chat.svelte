@@ -76,6 +76,10 @@
 	import { createOpenAITextStream } from '$lib/apis/streaming';
 	import { useArtifactIntegration } from '$lib/utils/artifacts/integration';
 
+	// Phase 3.4: Prompt Enhancement Integration
+	import { promptEnhancer } from '$lib/services/prompt-enhancer';
+	import type { PromptEnhancementRequest } from '$lib/types/enhanced-artifacts';
+
 	import { fade } from 'svelte/transition';
 
 	import Banner from '../common/Banner.svelte';
@@ -1473,6 +1477,62 @@
 			}
 		}
 
+		// Phase 3.4: Apply prompt enhancement based on intent classification
+		if (!_raw) {
+			try {
+				// Check if we have recent intent classification results
+				const intentData = localStorage.getItem('lastIntentClassification');
+				let shouldEnhance = false;
+				let intentResult = null;
+
+				if (intentData) {
+					const parsed = JSON.parse(intentData);
+					// Use intent data if it's recent (within 30 seconds) and matches prompt
+					const isRecent = (Date.now() - parsed.timestamp) < 30000;
+					const promptMatches = parsed.prompt === userPrompt.trim();
+
+					if (isRecent && promptMatches && parsed.shouldEnhance) {
+						shouldEnhance = true;
+						intentResult = parsed;
+						console.log('🎯 [Chat] Using cached intent classification result');
+					}
+				}
+
+				if (shouldEnhance && intentResult) {
+					console.log('🚀 [Chat] Enhancing prompt based on intent classification');
+
+					const enhancementRequest: PromptEnhancementRequest = {
+						originalPrompt: processedPrompt,
+						context: {
+							chatHistory: history?.messages || [],
+							sessionId: $chatId || 'default',
+							userIntent: 'create_artifact',
+							detectedKeywords: intentResult.detectedKeywords || []
+						},
+						enhancementType: 'artifact_creation',
+						targetFramework: intentResult.suggestedFramework || 'react'
+					};
+
+					const enhancedResult = await promptEnhancer.enhancePrompt(enhancementRequest);
+
+					if (enhancedResult.wasEnhanced) {
+						processedPrompt = enhancedResult.enhancedPrompt;
+						console.log('🚀 [Chat] Prompt successfully enhanced:', {
+							original: userPrompt.substring(0, 100) + '...',
+							enhanced: processedPrompt.substring(0, 100) + '...',
+							confidence: enhancedResult.confidence
+						});
+
+						// Clean up the cached intent data
+						localStorage.removeItem('lastIntentClassification');
+					}
+				}
+			} catch (error) {
+				console.warn('🚀 [Chat] Prompt enhancement failed:', error);
+				// Continue with original prompt if enhancement fails
+			}
+		}
+
 		const _selectedModels = selectedModels.map((modelId) =>
 			$models.map((m) => m.id).includes(modelId) ? modelId : ''
 		);
@@ -2488,10 +2548,32 @@
 									}}
 									on:submit={async (e) => {
 										clearDraft();
-										if (e.detail || files.length > 0) {
-											await tick();
 
-											submitPrompt(e.detail.replaceAll('\n\n', '\n'));
+										// Handle both old and new event formats
+										const eventData = e.detail;
+										let promptText = '';
+
+										if (typeof eventData === 'string') {
+											// Legacy format - just the prompt string
+											promptText = eventData;
+										} else if (eventData && typeof eventData === 'object') {
+											// New format with intent data
+											promptText = eventData.prompt || '';
+
+											// Store intent data for prompt enhancement
+											if (eventData.intentClassification && eventData.shouldEnhance) {
+												localStorage.setItem('lastIntentClassification', JSON.stringify({
+													...eventData.intentClassification,
+													timestamp: Date.now(),
+													prompt: promptText.trim()
+												}));
+												console.log('🎯 [Chat] Stored intent classification for prompt enhancement');
+											}
+										}
+
+										if (promptText || files.length > 0) {
+											await tick();
+											submitPrompt(promptText.replaceAll('\n\n', '\n'));
 										}
 									}}
 								/>

@@ -79,6 +79,10 @@
 	import { getSuggestionRenderer } from '../common/RichTextInput/suggestions';
 	import CommandSuggestionList from './MessageInput/CommandSuggestionList.svelte';
 
+	// Phase 3.4: Intent Classification Integration
+	import { intentClassifier } from '$lib/services/intent-classifier';
+	import type { IntentClassificationRequest } from '$lib/types/intent-classifier';
+
 	const i18n = getContext('i18n');
 
 	export let onChange: Function = () => {};
@@ -354,6 +358,65 @@
 		}
 	};
 
+	// Phase 3.4: Intent Classification Integration
+	const classifyIntent = async (prompt: string): Promise<boolean> => {
+		if (!prompt?.trim() || isClassifyingIntent) {
+			return false;
+		}
+
+		try {
+			isClassifyingIntent = true;
+			console.log('🎯 [MessageInput] Classifying intent for prompt:', prompt.substring(0, 100) + '...');
+
+			const request: IntentClassificationRequest = {
+				prompt: prompt.trim(),
+				sessionId: history?.currentId || 'default',
+				timestamp: new Date()
+			};
+
+			const result = await intentClassifier.classifyIntent(request);
+			lastIntentResult = result;
+
+			console.log('🎯 [MessageInput] Intent classification result:', {
+				shouldEnhance: result.shouldEnhance,
+				confidence: result.confidence,
+				keywords: result.detectedKeywords
+			});
+
+			// Store intent result in localStorage for other components to access
+			if (result.shouldEnhance && result.confidence > 0.7) {
+				localStorage.setItem('lastIntentClassification', JSON.stringify({
+					...result,
+					timestamp: Date.now(),
+					prompt: request.prompt
+				}));
+			}
+
+			return result.shouldEnhance;
+		} catch (error) {
+			console.warn('🎯 [MessageInput] Intent classification failed:', error);
+			lastIntentResult = null;
+			return false;
+		} finally {
+			isClassifyingIntent = false;
+		}
+	};
+
+	// Enhanced submit handler with intent classification
+	const handleSubmit = async (promptText: string) => {
+		console.log('📤 [MessageInput] Handling submit with intent classification');
+
+		// Classify intent before submission
+		const shouldEnhance = await classifyIntent(promptText);
+
+		// Dispatch submit event with intent metadata
+		dispatch('submit', {
+			prompt: promptText,
+			intentClassification: lastIntentResult,
+			shouldEnhance
+		});
+	};
+
 	let command = '';
 	export let showCommands = false;
 	$: showCommands = ['/', '#', '@'].includes(command?.charAt(0)) || '\\#' === command?.slice(0, 2);
@@ -368,6 +431,10 @@
 	// Safari has a bug where compositionend is not triggered correctly #16615
 	// when using the virtual keyboard on iOS.
 	let compositionEndedAt = -2e8;
+
+	// Phase 3.4: Intent Classification State
+	let isClassifyingIntent = false;
+	let lastIntentResult = null;
 	const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 	function inOrNearComposition(event: Event) {
 		if (isComposing) {
@@ -1017,16 +1084,16 @@
 								document.getElementById('chat-input')?.focus();
 
 								if ($settings?.speechAutoSend ?? false) {
-									dispatch('submit', prompt);
+									await handleSubmit(prompt);
 								}
 							}}
 						/>
 					{:else}
 						<form
 							class="w-full flex flex-col gap-1.5"
-							on:submit|preventDefault={() => {
+							on:submit|preventDefault={async () => {
 								// check if selectedModels support image input
-								dispatch('submit', prompt);
+								await handleSubmit(prompt);
 							}}
 						>
 							<div
@@ -1292,7 +1359,7 @@
 																	if (enterPressed) {
 																		e.preventDefault();
 																		if (prompt !== '' || files.length > 0) {
-																			dispatch('submit', prompt);
+																			await handleSubmit(prompt);
 																		}
 																	}
 																}

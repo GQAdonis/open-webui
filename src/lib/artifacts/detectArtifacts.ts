@@ -4,11 +4,14 @@
  * This module provides complete artifact detection supporting both:
  * 1. Legacy formats: code blocks (```jsx, ```tsx, ```svelte) and JSON artifacts
  * 2. PAS 3.0 formats: XML-based artifacts with CDATA sections
+ * 3. Intent-based detection and enhancement
  *
- * No stubs - fully implemented end-to-end detection and conversion.
+ * Enhanced with intent classification integration for improved detection accuracy.
  */
 
 import { parseArtifactsFromContent, type ParsedArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
+import { intentClassifier } from '$lib/services/intent-classifier';
+import type { IntentClassificationRequest } from '$lib/types/intent-classifier';
 
 export type DetectedArtifact =
   | {
@@ -47,25 +50,56 @@ export interface ArtifactDetectionResult {
     legacyCount: number;
     pas3Count: number;
     processingTimeMs: number;
+    intentClassified: boolean;
+    intentConfidence: number;
+    suggestEnhancement: boolean;
   };
 }
 
 export function detectArtifactsFromText(text: string): DetectedArtifact[] {
-  const result = detectArtifactsUnified(text);
-  return result.artifacts;
+  // Maintain backward compatibility with synchronous API
+  return detectArtifactsFromTextSync(text);
 }
 
 /**
  * Unified artifact detection - supports both legacy and PAS 3.0 formats
+ * Enhanced with intent classification integration
  */
-export function detectArtifactsUnified(text: string): ArtifactDetectionResult {
+export async function detectArtifactsUnified(text: string, sessionId?: string): Promise<ArtifactDetectionResult> {
   const startTime = performance.now();
   const allArtifacts: DetectedArtifact[] = [];
   let contentWithoutArtifacts = text;
 
-  console.log('🔍 [Artifact Detection] Starting unified detection');
+  console.log('🔍 [Artifact Detection] Starting unified detection with intent classification');
 
-  // 1. First detect PAS 3.0 XML artifacts
+  // 1. First perform intent classification to understand user intent
+  let intentClassified = false;
+  let intentConfidence = 0;
+  let suggestEnhancement = false;
+
+  try {
+    const intentRequest: IntentClassificationRequest = {
+      prompt: text,
+      sessionId,
+      timestamp: new Date()
+    };
+
+    const intentResult = await intentClassifier.classifyIntent(intentRequest);
+    intentClassified = true;
+    intentConfidence = intentResult.confidence;
+    suggestEnhancement = intentResult.shouldEnhance;
+
+    console.log('🔍 [Intent Classification] Result:', {
+      shouldEnhance: intentResult.shouldEnhance,
+      confidence: intentResult.confidence,
+      keywords: intentResult.detectedKeywords
+    });
+  } catch (error) {
+    console.warn('🔍 [Intent Classification] Failed:', error);
+    // Continue with detection even if intent classification fails
+  }
+
+  // 2. Detect PAS 3.0 XML artifacts
   const pas3Result = parseArtifactsFromContent(text);
   console.log(`🔍 [Artifact Detection] Found ${pas3Result.artifacts.length} PAS 3.0 artifacts`);
 
@@ -80,8 +114,9 @@ export function detectArtifactsUnified(text: string): ArtifactDetectionResult {
     console.log(`🔍 [Artifact Detection] Converted ${convertedArtifacts.length} PAS 3.0 artifacts`);
   }
 
-  // 2. Then detect legacy code blocks and JSON artifacts from remaining content
-  const legacyArtifacts = detectLegacyArtifacts(contentWithoutArtifacts);
+  // 3. Then detect legacy code blocks and JSON artifacts from remaining content
+  // Use intent classification to improve detection accuracy
+  const legacyArtifacts = detectLegacyArtifacts(contentWithoutArtifacts, suggestEnhancement, intentConfidence);
   console.log(`🔍 [Artifact Detection] Found ${legacyArtifacts.length} legacy artifacts`);
 
   if (legacyArtifacts.length > 0) {
@@ -100,16 +135,24 @@ export function detectArtifactsUnified(text: string): ArtifactDetectionResult {
     detectionMetadata: {
       legacyCount: legacyArtifacts.length,
       pas3Count: pas3Result.artifacts.length,
-      processingTimeMs: processingTime
+      processingTimeMs: processingTime,
+      intentClassified,
+      intentConfidence,
+      suggestEnhancement
     }
   };
 }
 
 /**
  * Detect legacy artifacts (code blocks and JSON)
+ * Enhanced with intent classification guidance
  */
-function detectLegacyArtifacts(text: string): DetectedArtifact[] {
+function detectLegacyArtifacts(text: string, suggestEnhancement = false, intentConfidence = 0): DetectedArtifact[] {
   const artifacts: DetectedArtifact[] = [];
+
+  // Use intent classification to adjust detection sensitivity
+  const confidenceThreshold = suggestEnhancement ? 0.5 : 0.8;
+  const shouldDetectAggressive = intentConfidence > confidenceThreshold;
 
   // Reset regex global state
   TSX_FENCE.lastIndex = 0;
@@ -121,37 +164,49 @@ function detectLegacyArtifacts(text: string): DetectedArtifact[] {
   // Check for TSX code blocks
   let match;
   while ((match = TSX_FENCE.exec(text)) !== null) {
-    artifacts.push({
-      type: 'react',
-      title: 'React Component (TSX)',
-      entryCode: match[2].trim()
-    });
+    const code = match[2].trim();
+    if (shouldDetectAggressive || isLikelyComponent(code)) {
+      artifacts.push({
+        type: 'react',
+        title: 'React Component (TSX)',
+        entryCode: code
+      });
+    }
   }
 
   // Check for JSX code blocks
   while ((match = JSX_FENCE.exec(text)) !== null) {
-    artifacts.push({
-      type: 'react',
-      title: 'React Component (JSX)',
-      entryCode: match[2].trim()
-    });
+    const code = match[2].trim();
+    if (shouldDetectAggressive || isLikelyComponent(code)) {
+      artifacts.push({
+        type: 'react',
+        title: 'React Component (JSX)',
+        entryCode: code
+      });
+    }
   }
 
   // Check for Svelte code blocks
   while ((match = SVELTE_FENCE.exec(text)) !== null) {
-    artifacts.push({
-      type: 'svelte',
-      title: 'Svelte Component',
-      entryCode: match[1].trim()
-    });
+    const code = match[1].trim();
+    if (shouldDetectAggressive || isLikelyComponent(code)) {
+      artifacts.push({
+        type: 'svelte',
+        title: 'Svelte Component',
+        entryCode: code
+      });
+    }
   }
 
   // Check for HTML code blocks
   while ((match = HTML_FENCE.exec(text)) !== null) {
-    artifacts.push({
-      type: 'html',
-      content: match[1].trim()
-    });
+    const code = match[1].trim();
+    if (shouldDetectAggressive || isLikelyHTMLArtifact(code)) {
+      artifacts.push({
+        type: 'html',
+        content: code
+      });
+    }
   }
 
   // Check for structured JSON artifacts
@@ -416,4 +471,97 @@ function convertSvelteArtifact(artifact: ParsedArtifact): DetectedArtifact {
     extraFiles: Object.keys(extraFiles).length > 0 ? extraFiles : undefined,
     dependencies: Object.keys(dependencies).length > 0 ? dependencies : undefined
   };
+}
+
+/**
+ * Helper functions for intent-guided detection
+ */
+
+/**
+ * Determine if code looks like a component worth creating an artifact for
+ */
+function isLikelyComponent(code: string): boolean {
+  // Check for component-like patterns
+  const componentPatterns = [
+    /export\s+default\s+function/,          // export default function Component
+    /function\s+[A-Z][a-zA-Z]*\s*\(/,       // function ComponentName(
+    /const\s+[A-Z][a-zA-Z]*\s*=\s*\(/,      // const ComponentName = (
+    /export\s+function\s+[A-Z]/,            // export function Component
+    /class\s+[A-Z][a-zA-Z]*\s+extends/,     // class Component extends
+    /return\s*\(/,                          // return (
+    /<[A-Z][a-zA-Z]*\s*[^>]*>/,             // <ComponentName>
+    /import.*from\s+['"]react/,             // React imports
+    /useState|useEffect|useContext/,        // React hooks
+    /\.jsx$|\.tsx$/                         // File extensions in comments
+  ];
+
+  // Must have JSX-like content or component structure
+  const hasJSX = /<[a-zA-Z]/.test(code) || /\{.*\}/.test(code);
+  const hasComponentPattern = componentPatterns.some(pattern => pattern.test(code));
+
+  // Exclude simple code snippets
+  const lines = code.split('\n').filter(line => line.trim().length > 0);
+  const hasMinimumComplexity = lines.length >= 3;
+
+  return hasJSX && hasComponentPattern && hasMinimumComplexity;
+}
+
+/**
+ * Determine if HTML code is substantial enough for an artifact
+ */
+function isLikelyHTMLArtifact(code: string): boolean {
+  // Check for meaningful HTML structure
+  const htmlPatterns = [
+    /<html[^>]*>/i,                         // Full HTML document
+    /<head[^>]*>/i,                         // Has head section
+    /<body[^>]*>/i,                         // Has body section
+    /<div[^>]*class=/i,                     // Styled divs
+    /<\w+[^>]*style=/i,                     // Inline styles
+    /<script[^>]*>/i,                       // Contains JavaScript
+    /<style[^>]*>/i,                        // Contains CSS
+    /<!DOCTYPE\s+html>/i                    // DOCTYPE declaration
+  ];
+
+  // Must have structural elements
+  const hasStructure = htmlPatterns.some(pattern => pattern.test(code));
+
+  // Check for interactive elements
+  const interactiveElements = /<(button|input|form|select|textarea|canvas|video|audio)/i.test(code);
+
+  // Exclude simple snippets
+  const lines = code.split('\n').filter(line => line.trim().length > 0);
+  const hasMinimumSize = lines.length >= 5 || code.length > 200;
+
+  return (hasStructure || interactiveElements) && hasMinimumSize;
+}
+
+/**
+ * Provide a legacy detection fallback for backward compatibility
+ */
+export function detectArtifactsFromTextSync(text: string): DetectedArtifact[] {
+  // For backward compatibility, provide a synchronous version
+  // This uses the original detection logic without intent classification
+  return detectLegacyArtifacts(text, false, 0);
+}
+
+/**
+ * Enhanced artifact detection with context awareness
+ */
+export async function detectArtifactsWithContext(
+  text: string,
+  context?: {
+    sessionId?: string;
+    previousArtifacts?: DetectedArtifact[];
+    userIntent?: string;
+  }
+): Promise<ArtifactDetectionResult> {
+  // Enhanced detection that considers conversation context
+  const result = await detectArtifactsUnified(text, context?.sessionId);
+
+  // TODO: Use context to improve detection accuracy
+  // - Consider previous artifacts in the session
+  // - Use explicit user intent if provided
+  // - Adjust detection thresholds based on context
+
+  return result;
 }

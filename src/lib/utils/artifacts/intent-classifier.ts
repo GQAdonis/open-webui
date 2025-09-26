@@ -39,7 +39,18 @@ const ARTIFACT_PATTERNS = {
     /jsx.*component/i,
     /tsx.*component/i,
     /functional.*component/i,
-    /react.*hook/i
+    /react.*hook/i,
+    // Add missing common patterns
+    /create.*component/i,
+    /simple.*react.*counter/i,
+    /react.*counter/i,
+    /counter.*component/i,
+    /button.*component/i,
+    /make.*component/i,
+    /build.*component/i,
+    /create.*simple.*react/i,
+    /react.*element/i,
+    /interactive.*element/i
   ],
   [ArtifactIntent.HTML_PAGE]: [
     /create.*html.*page/i,

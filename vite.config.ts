@@ -28,5 +28,11 @@ export default defineConfig({
 	},
 	esbuild: {
 		pure: process.env.ENV === 'dev' ? [] : ['console.log', 'console.debug', 'console.error']
+	},
+	test: {
+		globals: true,
+		environment: 'jsdom',
+		setupFiles: ['tests/setup.ts'],
+		include: ['src/**/*.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}']
 	}
 });

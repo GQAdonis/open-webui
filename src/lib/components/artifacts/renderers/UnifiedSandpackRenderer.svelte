@@ -3,6 +3,8 @@
   import { browser } from '$app/environment';
   import type { DetectedArtifact } from '$lib/artifacts/detectArtifacts';
   import type { ParsedArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
+  import { RendererStateMachine } from '$lib/services/renderer-state-machine';
+  import type { RendererState } from '$lib/services/renderer-state-machine';
 
   export let artifact: DetectedArtifact | ParsedArtifact;
   export let height: string = '400px';
@@ -20,14 +22,27 @@
   let setupAttempts = 0;
   let maxAttempts = 3;
   let isSettingUp = false;
+  let abortController: AbortController | null = null;
+
+  // State machine integration
+  let stateMachine: RendererStateMachine;
+  let currentState: RendererState = 'idle';
+  let stateUnsubscribe: (() => void) | null = null;
 
   // Determine if this is a legacy or PAS 3.0 artifact
   const isLegacyArtifact = (art: any): art is DetectedArtifact => {
     return 'entryCode' in art || 'content' in art;
   };
 
-  const setupSandpack = async () => {
+  const setupSandpack = async (): Promise<void> => {
     if (!browser || !containerElement || isSettingUp) return;
+
+    // Abort any previous setup
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+    const signal = abortController.signal;
 
     try {
       isSettingUp = true;
@@ -35,12 +50,52 @@
       loading = true;
       error = null;
 
+      // Check if aborted
+      if (signal.aborted) return;
+
+      // Initialize state machine if not already done
+      if (!stateMachine) {
+        const artifactType = isLegacyArtifact(artifact) ? artifact.type : artifact.type;
+        const componentId = `unified-renderer-${Math.random().toString(36).substr(2, 9)}`;
+        stateMachine = new RendererStateMachine(componentId, artifactType);
+
+        // Subscribe to state changes
+        stateUnsubscribe = stateMachine.onStateChange((newState, context) => {
+          currentState = newState;
+          loading = !['ready', 'error', 'timeout'].includes(newState);
+
+          // Update component state based on state machine
+          if (newState === 'error' || newState === 'timeout') {
+            error = context.error || 'Unknown error occurred';
+            loading = false;
+            isSettingUp = false;
+            dispatch('error', { message: error, artifact });
+          } else if (newState === 'ready') {
+            loading = false;
+            isSettingUp = false;
+            dispatch('load', { artifact, template: 'sandpack' });
+          }
+        });
+      }
+
+      // Start the state machine
+      stateMachine.send('START');
+
       console.log(`🎨 [Unified Renderer] Setup attempt ${setupAttempts} for artifact:`,
         isLegacyArtifact(artifact) ? artifact.type : artifact.type);
+
+      // State: Loading dependencies
+      stateMachine.send('DEPENDENCIES_LOADED');
+
+      // Check if aborted before async operations
+      if (signal.aborted) return;
 
       // Import React dependencies
       const React = await import('react');
       const { createRoot } = await import('react-dom/client');
+
+      // Check if aborted after imports
+      if (signal.aborted) return;
 
       // Clean up previous instances
       if (reactRoot) {
@@ -59,10 +114,14 @@
         codeContainerElement.innerHTML = '';
       }
 
+      // State: Configuring sandbox
+      stateMachine.send('CONFIG_READY');
+
       // Generate Sandpack configuration based on artifact type
       const sandpackConfig = generateSandpackConfig(artifact);
       if (!sandpackConfig) {
-        throw new Error('Unable to generate Sandpack configuration for this artifact type');
+        stateMachine.send('ERROR', 'Unable to generate Sandpack configuration for this artifact type');
+        return;
       }
 
       console.log('🎨 [Unified Renderer] Generated config:', {
@@ -71,9 +130,18 @@
         dependencyCount: Object.keys(sandpackConfig.dependencies).length
       });
 
+      // Check if aborted before Sandpack import
+      if (signal.aborted) return;
+
       // Import Sandpack components
       const { Sandpack, SandpackProvider, SandpackLayout, SandpackCodeEditor } =
         await import('@codesandbox/sandpack-react');
+
+      // Check if aborted after Sandpack import
+      if (signal.aborted) return;
+
+      // State: Mounting components
+      stateMachine.send('MOUNTED');
 
       // Create main preview element
       const sandpackElement = React.createElement(Sandpack, {
@@ -130,97 +198,199 @@
         codeReactRoot.render(codeEditorElement);
       }
 
-      // Wait for Sandpack to be ready using multiple strategies
+      // Enhanced timeout configuration for different phases
       let isReady = false;
       let timeoutId: NodeJS.Timeout;
+      let currentPhase = 'initialization';
+      let phaseStartTime = Date.now();
 
-      // Strategy 1: Listen for iframe load event
+      const phaseTimeouts = {
+        initialization: 3000,  // 3s for initial setup
+        iframeLoad: 8000,      // 8s for iframe loading
+        contentReady: 15000,   // 15s total for content readiness
+        fallbackMax: 25000     // 25s absolute maximum
+      };
+
+      // State: Bundling code
+      stateMachine.send('BUNDLED');
+
+      const completeSetup = (reason: string) => {
+        if (!isReady) {
+          isReady = true;
+          clearTimeout(timeoutId);
+          console.log(`✅ [Unified Renderer] Setup completed: ${reason}`);
+
+          // State: Rendering complete
+          stateMachine.send('RENDERED');
+        }
+      };
+
+      // Strategy 1: Listen for iframe load event with enhanced error detection
       const checkForIframe = () => {
         const iframe = containerElement.querySelector('iframe');
         if (iframe && !isReady) {
+          currentPhase = 'iframeLoad';
+
           iframe.onload = () => {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
+            currentPhase = 'contentReady';
+            completeSetup('iframe loaded');
+          };
+
+          iframe.onerror = (err) => {
+            console.error('🔴 [Unified Renderer] Iframe load error:', err);
+            if (setupAttempts < maxAttempts) {
+              console.warn('🔄 [Unified Renderer] Retrying due to iframe error...');
               isSettingUp = false;
-              dispatch('load', { artifact, template: sandpackConfig.template });
+              stateMachine.send('RETRY');
+              setTimeout(() => setupSandpack(), 1500);
+            } else {
+              const errorMsg = 'Preview iframe failed to load. This may be due to CSP restrictions or network issues.';
+              stateMachine.send('ERROR', errorMsg);
             }
           };
 
           // If iframe is already loaded
           if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
-              isSettingUp = false;
-              dispatch('load', { artifact, template: sandpackConfig.template });
-            }
+            currentPhase = 'contentReady';
+            completeSetup('iframe already loaded');
           }
         }
       };
 
-      // Strategy 2: Check periodically for Sandpack elements
+      // Strategy 2: Check for Sandpack elements with better error detection
       const checkForSandpackReady = () => {
         const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
         const sandpackPreview = containerElement.querySelector('.sp-preview-container');
+        const sandpackError = containerElement.querySelector('.sp-error, .sp-console-error');
 
-        if (sandpackWrapper && sandpackPreview && !isReady) {
-          setTimeout(() => {
-            if (!isReady) {
-              isReady = true;
-              clearTimeout(timeoutId);
-              loading = false;
-              isSettingUp = false;
-              dispatch('load', { artifact, template: sandpackConfig.template });
-            }
-          }, 500);
-        }
-      };
+        // Check for errors first
+        if (sandpackError && !isReady) {
+          const errorText = sandpackError.textContent || 'Unknown Sandpack error';
+          console.error('🔴 [Unified Renderer] Sandpack error detected:', errorText);
 
-      // Start checking for readiness
-      const readinessInterval = setInterval(() => {
-        checkForIframe();
-        checkForSandpackReady();
-
-        if (isReady) {
-          clearInterval(readinessInterval);
-        }
-      }, 100);
-
-      // Strategy 3: Fallback timeout
-      timeoutId = setTimeout(() => {
-        if (!isReady) {
-          isReady = true;
-          clearInterval(readinessInterval);
-
-          // Check if Sandpack elements exist at least
-          const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
-          if (sandpackWrapper) {
+          if (setupAttempts < maxAttempts) {
+            console.warn('🔄 [Unified Renderer] Retrying due to Sandpack error...');
+            isSettingUp = false;
+            setTimeout(() => setupSandpack(), 2000);
+          } else {
+            error = `Preview error: ${errorText}`;
             loading = false;
             isSettingUp = false;
-            dispatch('load', { artifact, template: sandpackConfig.template });
+            dispatch('error', { message: error, artifact });
+          }
+          return true; // Error handled
+        }
+
+        if (sandpackWrapper && sandpackPreview && !isReady) {
+          currentPhase = 'contentReady';
+          // Give it a moment to fully render before marking as ready
+          setTimeout(() => {
+            if (!isReady) {
+              completeSetup('Sandpack elements detected');
+            }
+          }, 300);
+        }
+
+        return false; // No error
+      };
+
+      // Strategy 3: Network and bundling timeout detection
+      const checkForNetworkIssues = () => {
+        const loadingIndicators = containerElement.querySelectorAll('.sp-loading, .sp-spinner');
+        const networkError = containerElement.querySelector('.sp-network-error');
+
+        if (networkError) {
+          console.error('🔴 [Unified Renderer] Network error detected');
+          if (setupAttempts < maxAttempts) {
+            isSettingUp = false;
+            setTimeout(() => setupSandpack(), 3000);
+          } else {
+            error = 'Network error loading preview. Check your internet connection.';
+            loading = false;
+            isSettingUp = false;
+            dispatch('error', { message: error, artifact });
+          }
+          return true;
+        }
+
+        return false;
+      };
+
+      // Start enhanced readiness polling
+      const readinessInterval = setInterval(() => {
+        const elapsed = Date.now() - phaseStartTime;
+
+        // Check for completion or errors
+        if (isReady) {
+          clearInterval(readinessInterval);
+          return;
+        }
+
+        // Check strategies in order
+        checkForIframe();
+        if (checkForSandpackReady()) return; // Error handled, stop polling
+        if (checkForNetworkIssues()) return; // Error handled, stop polling
+
+        // Phase-specific timeout handling
+        const currentTimeout = phaseTimeouts[currentPhase] || phaseTimeouts.fallbackMax;
+
+        if (elapsed > currentTimeout) {
+          console.warn(`⏰ [Unified Renderer] Phase timeout: ${currentPhase} after ${elapsed}ms`);
+
+          // Try to move to next phase or retry
+          if (currentPhase === 'initialization' && elapsed < phaseTimeouts.iframeLoad) {
+            currentPhase = 'iframeLoad';
+            phaseStartTime = Date.now();
+          } else if (currentPhase === 'iframeLoad' && elapsed < phaseTimeouts.contentReady) {
+            currentPhase = 'contentReady';
+            phaseStartTime = Date.now();
           } else if (setupAttempts < maxAttempts) {
-            // Retry setup if no Sandpack elements found
-            console.warn('🎨 [Unified Renderer] Sandpack setup incomplete, retrying...');
-            isSettingUp = false; // Reset flag before retry
-            setTimeout(() => setupSandpack(), 1000);
+            // Retry the entire setup
+            clearInterval(readinessInterval);
+            console.warn(`🔄 [Unified Renderer] Retrying setup (attempt ${setupAttempts + 1}/${maxAttempts})`);
+            isSettingUp = false;
+            setTimeout(() => setupSandpack(), 2000);
             return;
           } else {
-            // Give up after max attempts
-            error = 'Preview took too long to load. The component may have errors or dependency issues.';
+            // Final failure
+            clearInterval(readinessInterval);
+            const totalElapsed = Date.now() - phaseStartTime;
+            error = `Preview timeout in ${currentPhase} phase (${Math.round(totalElapsed/1000)}s). This may indicate bundling issues or heavy dependencies.`;
+            loading = false;
+            isSettingUp = false;
+            dispatch('error', { message: error, artifact });
+            return;
+          }
+        }
+      }, 200); // Check every 200ms for more responsive detection
+
+      // Absolute safety timeout to prevent infinite waiting
+      timeoutId = setTimeout(() => {
+        if (!isReady) {
+          clearInterval(readinessInterval);
+          const totalElapsed = Date.now() - phaseStartTime;
+          console.error(`🔴 [Unified Renderer] Absolute timeout reached: ${totalElapsed}ms in phase ${currentPhase}`);
+
+          // Last chance - check if anything rendered despite timeout
+          const sandpackWrapper = containerElement.querySelector('.sp-wrapper');
+          const iframe = containerElement.querySelector('iframe');
+
+          if (sandpackWrapper || iframe) {
+            console.warn('🎯 [Unified Renderer] Elements found despite timeout, allowing preview');
+            completeSetup('elements found after timeout');
+          } else {
+            error = `Preview failed: absolute timeout (${Math.round(totalElapsed/1000)}s). Sandpack may be experiencing issues or dependencies are too heavy.`;
             loading = false;
             isSettingUp = false;
             dispatch('error', { message: error, artifact });
           }
         }
-      }, 8000); // 8 second timeout
+      }, phaseTimeouts.fallbackMax);
 
-      // Clean up interval after 10 seconds regardless
+      // Enhanced cleanup after extended period
       setTimeout(() => {
         clearInterval(readinessInterval);
-      }, 10000);
+      }, phaseTimeouts.fallbackMax + 2000);
 
     } catch (err) {
       console.error('🎨 [Unified Renderer] Sandpack setup failed:', err);
@@ -434,25 +604,35 @@ export default app;`
   // Reactive updates - with guards to prevent infinite loops
   let lastArtifactId: string | undefined;
   let lastShowCode: boolean | undefined;
+  let pendingSetup: Promise<void> | null = null;
 
-  $: if (browser && artifact && !loading) {
+  $: if (browser && artifact && !loading && !isSettingUp) {
     const currentArtifactId = isLegacyArtifact(artifact)
       ? `${artifact.type}-${artifact.entryCode?.substring(0, 50)}`
       : `${artifact.type}-${artifact.identifier}`;
 
-    // Only setup if artifact actually changed
-    if (currentArtifactId !== lastArtifactId) {
+    // Only setup if artifact actually changed and no setup is in progress
+    if (currentArtifactId !== lastArtifactId && !pendingSetup) {
       lastArtifactId = currentArtifactId;
       setupAttempts = 0;
-      setupSandpack();
+      pendingSetup = setupSandpack().finally(() => {
+        pendingSetup = null;
+      });
     }
   }
 
-  $: if (browser && containerElement && showCode !== lastShowCode && !loading) {
+  $: if (browser && containerElement && showCode !== lastShowCode && !loading && !isSettingUp) {
     // Only re-setup when showCode actually changes, not on initial mount
-    if (lastShowCode !== undefined) {
+    if (lastShowCode !== undefined && !pendingSetup) {
       lastShowCode = showCode;
-      setTimeout(() => setupSandpack(), 100);
+      pendingSetup = new Promise(resolve => {
+        setTimeout(() => {
+          setupSandpack().finally(() => {
+            pendingSetup = null;
+            resolve();
+          });
+        }, 100);
+      });
     } else {
       lastShowCode = showCode;
     }
@@ -473,6 +653,28 @@ export default app;`
 
   onDestroy(() => {
     isSettingUp = false; // Reset flag on cleanup
+
+    // Abort any pending setup
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+
+    // Cancel pending setup promise
+    if (pendingSetup) {
+      pendingSetup = null;
+    }
+
+    // Clean up state machine
+    if (stateUnsubscribe) {
+      stateUnsubscribe();
+      stateUnsubscribe = null;
+    }
+
+    if (stateMachine) {
+      stateMachine.destroy();
+      stateMachine = null;
+    }
 
     if (reactRoot) {
       try {
@@ -501,12 +703,14 @@ export default app;`
         <div class="loading-spinner"></div>
         <p class="loading-text">Setting up interactive preview...</p>
         <div class="loading-steps">
-          <div class="step">Loading Sandpack runtime</div>
-          <div class="step">Analyzing artifact structure</div>
-          <div class="step">Generating configuration</div>
-          <div class="step">Starting bundler</div>
-          {#if setupAttempts > 1}
-            <div class="step retry-step">Retrying setup (attempt {setupAttempts})</div>
+          <div class="step" class:active={currentState === 'initializing'}>Loading Sandpack runtime</div>
+          <div class="step" class:active={currentState === 'loading'}>Loading dependencies</div>
+          <div class="step" class:active={currentState === 'configuring'}>Generating configuration</div>
+          <div class="step" class:active={currentState === 'mounting'}>Mounting components</div>
+          <div class="step" class:active={currentState === 'bundling'}>Bundling code</div>
+          <div class="step" class:active={currentState === 'rendering'}>Rendering preview</div>
+          {#if currentState === 'retrying'}
+            <div class="step retry-step active">Retrying setup (attempt {setupAttempts})</div>
           {/if}
         </div>
       </div>
@@ -613,13 +817,25 @@ export default app;`
   .step {
     font-size: 12px;
     color: var(--color-gray-600, #4b5563);
-    opacity: 0.7;
-    animation: fadeIn 2s ease-in-out infinite alternate;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+
+  .step.active {
+    opacity: 1;
+    color: var(--color-blue-600, #2563eb);
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
   }
 
   .retry-step {
     color: var(--color-orange-600, #ea580c);
     font-weight: 500;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 
   .step:nth-child(2) { animation-delay: 0.5s; }

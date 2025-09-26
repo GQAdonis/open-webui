@@ -69,7 +69,7 @@ if (parsed) {
 artifacts.push(parsed);
 }
 } catch (error) {
-console.warn('Failed to parse artifact:', error);
+console.log('🔧 [Debug] Error parsing artifact:', error);
 }
 }
 
@@ -81,12 +81,17 @@ return artifacts;
  */
 export function parseArtifact(artifactXml: string): ParsedArtifact | null {
 try {
+console.log('🔧 [Debug] parseArtifact called with:', artifactXml.substring(0, 100) + '...');
 // Create a DOM parser
 const parser = new DOMParser();
 const doc = parser.parseFromString(artifactXml, 'text/xml');
 
 const artifactElement = doc.querySelector('artifact');
-if (!artifactElement) return null;
+console.log('🔧 [Debug] artifactElement found:', !!artifactElement);
+if (!artifactElement) {
+  console.log('🔧 [Debug] No artifact element found in parsed doc');
+  return null;
+}
 
 // Extract required attributes
 const identifier = artifactElement.getAttribute('identifier');

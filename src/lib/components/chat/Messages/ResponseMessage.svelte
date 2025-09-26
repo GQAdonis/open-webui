@@ -972,13 +972,15 @@
 								<!-- Artifact Button -->
 								{#await import("$lib/utils/artifacts/integration") then { hasArtifactInMessage }}
 									{#if hasArtifactInMessage(message.content)}
-										{#await import("$lib/components/artifacts/ArtifactButton.svelte") then { default: ArtifactButton }}
-											<svelte:component 
-												this={ArtifactButton} 
+										{#await import("$lib/components/artifacts/EnhancedPreviewButton.svelte") then { default: EnhancedPreviewButton }}
+											<svelte:component
+												this={EnhancedPreviewButton}
 												messageContent={message.content}
 												messageId={message.id}
 												style="minimal"
 												size="sm"
+												enableIntentClassification={true}
+												showRetryInfo={false}
 												class="{isLastMessage || ($settings?.highContrastMode ?? false) ? 'visible' : 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
 											/>
 										{/await}

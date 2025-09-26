@@ -48,6 +48,9 @@
 	import UpdateInfoToast from '$lib/components/layout/UpdateInfoToast.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 
+	// Phase 3.4: Performance Monitoring Dashboard (development only)
+	import PerformanceMonitorDashboard from '$lib/components/debug/PerformanceMonitorDashboard.svelte';
+
 	const i18n = getContext('i18n');
 
 	let loaded = false;
@@ -363,6 +366,9 @@
 				{/if}
 			{/if}
 		</div>
+
+		<!-- Phase 3.4: Performance Monitoring Dashboard (development/debug mode only) -->
+		<PerformanceMonitorDashboard />
 	</div>
 {/if}
 

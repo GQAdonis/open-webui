@@ -20,6 +20,12 @@ import { ArtifactStreamParser } from '$lib/artifacts/ArtifactStreamParser';
 import { artifactEvents, artifactSubscriptions } from '$lib/artifacts/ArtifactChannel';
 import { resetForNewMessage, setRenderMode, incrementArtifactCount, markStreamComplete } from '$lib/state/renderMode';
 
+// Phase 3.4: Enhanced Artifact Detection - Import unified detection system
+import { detectArtifactsUnified } from '$lib/artifacts/detectArtifacts';
+
+// Phase 3.4: Performance Monitoring - Import timeout handling
+import { performanceMonitor } from '$lib/services/performance-monitor';
+
 export let id;
 export let content;
 
@@ -251,6 +257,109 @@ async function tryAddToLegacyStore(artifact: any) {
 	} catch (error) {
 		console.warn('Failed to add artifact to legacy store:', error);
 	}
+}
+
+// Phase 3.4: Enhanced Artifact Detection Integration with Performance Monitoring
+async function processContentWithUnifiedDetection(content: string) {
+	if (!content || !done) {
+		return; // Only process completed messages to avoid interfering with streaming
+	}
+
+	// Start performance monitoring for artifact detection
+	const sessionId = `content-render-${messageId}`;
+	performanceMonitor.startMonitoring(sessionId);
+	const operationId = performanceMonitor.startOperation(sessionId, 'artifactDetection');
+
+	try {
+		console.log('🔍 [ContentRenderer] Running unified artifact detection with performance monitoring');
+
+		// Use the unified detection system with timeout handling
+		const detectionPromise = detectArtifactsUnified(content, messageId);
+		const detectionResult = await performanceMonitor.createTimeoutPromise(
+			detectionPromise,
+			'artifactDetection',
+			'Content Renderer Artifact Detection'
+		);
+
+		const detectionTime = performanceMonitor.endOperation(operationId, sessionId, 'artifactDetection', true);
+
+		if (detectionResult.hasArtifacts) {
+			console.log(`🚀 [ContentRenderer] Unified detection found ${detectionResult.artifacts.length} artifacts in ${detectionTime}ms:`, {
+				legacyCount: detectionResult.detectionMetadata.legacyCount,
+				pas3Count: detectionResult.detectionMetadata.pas3Count,
+				intentClassified: detectionResult.detectionMetadata.intentClassified,
+				intentConfidence: detectionResult.detectionMetadata.intentConfidence
+			});
+
+			// Update UI state
+			if (!hasDetectedArtifacts) {
+				hasDetectedArtifacts = true;
+				showArtifacts.set(true);
+				showControls.set(true);
+				openPreviewPanelForArtifact();
+			}
+
+			// Process each detected artifact with performance tracking
+			const processingStartTime = Date.now();
+			detectionResult.artifacts.forEach((artifact, index) => {
+				// Convert to legacy format for compatibility
+				const legacyArtifact = {
+					identifier: `unified-${messageId}-${index}`,
+					type: artifact.type === 'react' ? 'application/vnd.react+jsx' :
+						  artifact.type === 'svelte' ? 'application/vnd.svelte' :
+						  artifact.type === 'html' ? 'text/html' : 'text/plain',
+					title: artifact.title || `${artifact.type} Artifact`,
+					description: '',
+					dependencies: Object.entries(artifact.dependencies || {}).map(([name, version]) => ({ name, version })),
+					files: [{
+						path: artifact.type === 'react' ? 'App.jsx' :
+							  artifact.type === 'svelte' ? 'App.svelte' : 'index.html',
+						content: artifact.entryCode || artifact.content || ''
+					}],
+					rawXml: `<artifact type="${artifact.type}" title="${artifact.title || ''}">${artifact.entryCode || artifact.content || ''}</artifact>`
+				};
+
+				// Add to legacy store for backward compatibility
+				tryAddToLegacyStore({ attrs: { type: artifact.type }, code: artifact.entryCode || artifact.content, raw: legacyArtifact.rawXml });
+
+				// Emit events for other components
+				artifactEvents.emitArtifact(messageId, { artifact: legacyArtifact });
+				incrementArtifactCount();
+			});
+
+			const processingTime = Date.now() - processingStartTime;
+			console.log(`✅ [ContentRenderer] Processed ${detectionResult.artifacts.length} artifacts in ${processingTime}ms`);
+
+			// Emit completion event
+			artifactEvents.emitStreamComplete(messageId, detectionResult.artifacts.length);
+		}
+	} catch (error) {
+		console.warn('🔍 [ContentRenderer] Unified artifact detection failed:', error);
+
+		// Record failure
+		performanceMonitor.endOperation(operationId, sessionId, 'artifactDetection', false);
+
+		// Check if it's a timeout error
+		if (error.message.includes('timed out')) {
+			console.error('⏰ [ContentRenderer] Artifact detection timed out - this may indicate performance issues');
+		}
+	} finally {
+		// Stop performance monitoring and log final metrics
+		const finalMetrics = performanceMonitor.stopMonitoring(sessionId);
+		if (finalMetrics) {
+			console.log('📊 [ContentRenderer] Final performance metrics:', {
+				sessionId: sessionId.substring(0, 20),
+				totalTime: finalMetrics.duration,
+				operations: Object.keys(finalMetrics.operations).length,
+				memoryUsage: finalMetrics.memoryUsage?.percentage
+			});
+		}
+	}
+}
+
+// Run unified detection when content and message are complete
+$: if (done && content && messageId) {
+	processContentWithUnifiedDetection(content);
 }
 
 // Phase 3: Preview Panel Integration Functions
