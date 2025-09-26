@@ -1,0 +1,192 @@
+<testsuites id="" name="" tests="4" failures="4" skipped="0" errors="0" time="68.703484">
+<testsuite name="e2e-test-page.spec.js" timestamp="2025-09-25T00:26:53.237Z" hostname="chromium" tests="4" failures="4" skipped="0" time="58.12" errors="0">
+<testcase name="E2E Test Page Artifact Validation › should handle indirect artifact scenario - TSX code block with Preview button" classname="e2e-test-page.spec.js" time="14.982">
+<failure message="e2e-test-page.spec.js:16:3 should handle indirect artifact scenario - TSX code block with Preview button" type="FAILURE">
+<![CDATA[  [chromium] › e2e-test-page.spec.js:16:3 › E2E Test Page Artifact Validation › should handle indirect artifact scenario - TSX code block with Preview button 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('h1:has-text("E2E Test Chat Interface")')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('h1:has-text("E2E Test Chat Interface")')
+
+
+      24 |
+      25 |     // Verify we're on the test page
+    > 26 |     await expect(page.locator('h1:has-text("E2E Test Chat Interface")')).toBeVisible();
+         |                                                                          ^
+      27 |     console.log('✅ Test page loaded successfully');
+      28 |
+      29 |     // Find the chat input
+        at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:26:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🧪 Starting indirect artifact scenario test...
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="E2E Test Page Artifact Validation › should handle direct artifact scenario - XML CDATA with automatic preview" classname="e2e-test-page.spec.js" time="15.279">
+<failure message="e2e-test-page.spec.js:88:3 should handle direct artifact scenario - XML CDATA with automatic preview" type="FAILURE">
+<![CDATA[  [chromium] › e2e-test-page.spec.js:88:3 › E2E Test Page Artifact Validation › should handle direct artifact scenario - XML CDATA with automatic preview 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('h1:has-text("E2E Test Chat Interface")')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('h1:has-text("E2E Test Chat Interface")')
+
+
+       96 |
+       97 |     // Verify we're on the test page
+    >  98 |     await expect(page.locator('h1:has-text("E2E Test Chat Interface")')).toBeVisible();
+          |                                                                          ^
+       99 |     console.log('✅ Test page loaded successfully');
+      100 |
+      101 |     // Find the chat input
+        at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:98:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🧪 Starting direct artifact scenario test...
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="E2E Test Page Artifact Validation › should verify environment gating works correctly" classname="e2e-test-page.spec.js" time="13.469">
+<failure message="e2e-test-page.spec.js:173:3 should verify environment gating works correctly" type="FAILURE">
+<![CDATA[  [chromium] › e2e-test-page.spec.js:173:3 › E2E Test Page Artifact Validation › should verify environment gating works correctly 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('h1:has-text("E2E Test Chat Interface")')
+    Expected: visible
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 10000ms
+      - waiting for locator('h1:has-text("E2E Test Chat Interface")')
+
+
+      178 |
+      179 |     // The page should load in test environment (localhost)
+    > 180 |     await expect(page.locator('h1:has-text("E2E Test Chat Interface")')).toBeVisible();
+          |                                                                          ^
+      181 |     console.log('✅ Test page accessible in test environment');
+      182 |
+      183 |     // Verify artifact support indicators
+        at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:180:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🧪 Testing environment gating...
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="E2E Test Page Artifact Validation › should handle error scenarios gracefully" classname="e2e-test-page.spec.js" time="14.39">
+<failure message="e2e-test-page.spec.js:191:3 should handle error scenarios gracefully" type="FAILURE">
+<![CDATA[  [chromium] › e2e-test-page.spec.js:191:3 › E2E Test Page Artifact Validation › should handle error scenarios gracefully 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  locator('[data-testid="send-button"]')
+    Expected: disabled
+    Received: <element(s) not found>
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeDisabled" with timeout 10000ms
+      - waiting for locator('[data-testid="send-button"]')
+
+
+      199 |
+      200 |     // Test empty input
+    > 201 |     await expect(sendButton).toBeDisabled();
+          |                              ^
+      202 |     console.log('✅ Send button disabled for empty input');
+      203 |
+      204 |     // Test generic input (should get fallback response)
+        at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:201:30
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[🧪 Testing error scenarios...
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/video.webm]]
+
+[[ATTACHMENT|../test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

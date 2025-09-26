@@ -1,0 +1,407 @@
+{
+  "config": {
+    "configFile": "/usr/local/src/open-webui/playwright.config.ts",
+    "rootDir": "/usr/local/src/open-webui/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "./playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./test-output/test-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "./test-output/junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/usr/local/src/open-webui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/usr/local/src/open-webui/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.55.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "e2e-test-page.spec.js",
+      "file": "e2e-test-page.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "E2E Test Page Artifact Validation",
+          "file": "e2e-test-page.spec.js",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should handle indirect artifact scenario - TSX code block with Preview button",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 14982,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:26:74",
+                        "location": {
+                          "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                          "column": 74,
+                          "line": 26
+                        },
+                        "snippet": "  24 |\n  25 |     // Verify we're on the test page\n> 26 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n     |                                                                          ^\n  27 |     console.log('✅ Test page loaded successfully');\n  28 |\n  29 |     // Find the chat input"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                            "column": 74,
+                            "line": 26
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n\n  24 |\n  25 |     // Verify we're on the test page\n> 26 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n     |                                                                          ^\n  27 |     console.log('✅ Test page loaded successfully');\n  28 |\n  29 |     // Find the chat input\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:26:74"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🧪 Starting indirect artifact scenario test...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-25T00:26:54.724Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-2d4ea-e-block-with-Preview-button-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                        "column": 74,
+                        "line": 26
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cfc2046f8864e88d155a-167114464df13b41aa0d",
+              "file": "e2e-test-page.spec.js",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "should handle direct artifact scenario - XML CDATA with automatic preview",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15279,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:98:74",
+                        "location": {
+                          "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                          "column": 74,
+                          "line": 98
+                        },
+                        "snippet": "   96 |\n   97 |     // Verify we're on the test page\n>  98 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n      |                                                                          ^\n   99 |     console.log('✅ Test page loaded successfully');\n  100 |\n  101 |     // Find the chat input"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                            "column": 74,
+                            "line": 98
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n\n   96 |\n   97 |     // Verify we're on the test page\n>  98 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n      |                                                                          ^\n   99 |     console.log('✅ Test page loaded successfully');\n  100 |\n  101 |     // Find the chat input\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:98:74"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🧪 Starting direct artifact scenario test...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-25T00:27:12.659Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-6814e-DATA-with-automatic-preview-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                        "column": 74,
+                        "line": 98
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cfc2046f8864e88d155a-b2eaeb3c106c83a18d28",
+              "file": "e2e-test-page.spec.js",
+              "line": 88,
+              "column": 3
+            },
+            {
+              "title": "should verify environment gating works correctly",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 13469,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:180:74",
+                        "location": {
+                          "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                          "column": 74,
+                          "line": 180
+                        },
+                        "snippet": "  178 |\n  179 |     // The page should load in test environment (localhost)\n> 180 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n      |                                                                          ^\n  181 |     console.log('✅ Test page accessible in test environment');\n  182 |\n  183 |     // Verify artifact support indicators"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                            "column": 74,
+                            "line": 180
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m()\u001b[22m failed\n\nLocator:  locator('h1:has-text(\"E2E Test Chat Interface\")')\nExpected: visible\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('h1:has-text(\"E2E Test Chat Interface\")')\u001b[22m\n\n\n  178 |\n  179 |     // The page should load in test environment (localhost)\n> 180 |     await expect(page.locator('h1:has-text(\"E2E Test Chat Interface\")')).toBeVisible();\n      |                                                                          ^\n  181 |     console.log('✅ Test page accessible in test environment');\n  182 |\n  183 |     // Verify artifact support indicators\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:180:74"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🧪 Testing environment gating...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-25T00:27:30.364Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-25939-ment-gating-works-correctly-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                        "column": 74,
+                        "line": 180
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cfc2046f8864e88d155a-448fea29723241d388f7",
+              "file": "e2e-test-page.spec.js",
+              "line": 173,
+              "column": 3
+            },
+            {
+              "title": "should handle error scenarios gracefully",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 14390,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m()\u001b[22m failed\n\nLocator:  locator('[data-testid=\"send-button\"]')\nExpected: disabled\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"send-button\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m()\u001b[22m failed\n\nLocator:  locator('[data-testid=\"send-button\"]')\nExpected: disabled\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"send-button\"]')\u001b[22m\n\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:201:30",
+                        "location": {
+                          "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                          "column": 30,
+                          "line": 201
+                        },
+                        "snippet": "  199 |\n  200 |     // Test empty input\n> 201 |     await expect(sendButton).toBeDisabled();\n      |                              ^\n  202 |     console.log('✅ Send button disabled for empty input');\n  203 |\n  204 |     // Test generic input (should get fallback response)"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                            "column": 30,
+                            "line": 201
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeDisabled\u001b[2m()\u001b[22m failed\n\nLocator:  locator('[data-testid=\"send-button\"]')\nExpected: disabled\nReceived: <element(s) not found>\nTimeout:  10000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeDisabled\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid=\"send-button\"]')\u001b[22m\n\n\n  199 |\n  200 |     // Test empty input\n> 201 |     await expect(sendButton).toBeDisabled();\n      |                              ^\n  202 |     console.log('✅ Send button disabled for empty input');\n  203 |\n  204 |     // Test generic input (should get fallback response)\n    at /usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js:201:30"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "🧪 Testing error scenarios...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-09-25T00:27:46.445Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/usr/local/src/open-webui/test-results/e2e-test-page-E2E-Test-Pag-c9b38--error-scenarios-gracefully-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/usr/local/src/open-webui/tests/e2e/e2e-test-page.spec.js",
+                        "column": 30,
+                        "line": 201
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "cfc2046f8864e88d155a-a25a7ba26c938e4ff678",
+              "file": "e2e-test-page.spec.js",
+              "line": 191,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-09-25T00:26:52.504Z",
+    "duration": 68703.484,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 4,
+    "flaky": 0
+  }
+}

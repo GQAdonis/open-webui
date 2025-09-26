@@ -1,0 +1,404 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { PUBLIC_REACT_ARTIFACTS_ENABLED, PUBLIC_SVELTE_ARTIFACTS_ENABLED } from '$env/static/public';
+	import { browser } from '$app/environment';
+	import ReactArtifactRenderer from '$lib/components/chat/ReactArtifactRenderer.svelte';
+	import SvelteArtifactRenderer from '$lib/components/chat/SvelteArtifactRenderer.svelte';
+
+	// Mock data for testing
+	let mockMessages: any[] = [];
+	let currentInput = '';
+	let isLoading = false;
+	let showPreview = false;
+	let artifactContent = '';
+	let artifactType: 'react' | 'svelte' | null = null;
+
+	// Environment check - only available in development/test mode
+	let isTestEnvironment = false;
+
+	onMount(() => {
+		// Check if this is a test environment
+		const isTest = browser && (
+			location.hostname === 'localhost' ||
+			location.hostname === '127.0.0.1' ||
+			location.search.includes('e2e=true')
+		);
+
+		if (!isTest) {
+			// Redirect to main app if not in test environment
+			window.location.href = '/';
+			return;
+		}
+
+		isTestEnvironment = true;
+	});
+
+	// Mock LLM responses for testing
+	const mockResponses = {
+		tsxButton: {
+			type: 'react',
+			content: `import React from 'react';
+
+export default function BlackGoldButton() {
+  const handleClick = () => {
+    console.log('Black and gold button clicked!');
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        backgroundColor: '#000000',
+        color: '#FFD700',
+        border: '2px solid #FFD700',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = '#FFD700';
+        e.target.style.color = '#000000';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.backgroundColor = '#000000';
+        e.target.style.color = '#FFD700';
+      }}
+    >
+      Click Me
+    </button>
+  );
+}`,
+			codeBlock: `\`\`\`tsx
+import React from 'react';
+
+export default function BlackGoldButton() {
+  const handleClick = () => {
+    console.log('Black and gold button clicked!');
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        backgroundColor: '#000000',
+        color: '#FFD700',
+        border: '2px solid #FFD700',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = '#FFD700';
+        e.target.style.color = '#000000';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.backgroundColor = '#000000';
+        e.target.style.color = '#FFD700';
+      }}
+    >
+      Click Me
+    </button>
+  );
+}
+\`\`\``
+		},
+		artifactXml: `<artifact identifier="black-gold-button" type="application/vnd.librechat.react" title="Black and Gold Button Component">
+<![CDATA[
+import React from 'react';
+
+export default function BlackGoldButton() {
+  const handleClick = () => {
+    console.log('Black and gold button clicked!');
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      style={{
+        backgroundColor: '#000000',
+        color: '#FFD700',
+        border: '2px solid #FFD700',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+      }}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = '#FFD700';
+        e.target.style.color = '#000000';
+      }}
+      onMouseLeave={(e) => {
+        e.target.style.backgroundColor = '#000000';
+        e.target.style.color = '#FFD700';
+      }}
+    >
+      Click Me
+    </button>
+  );
+}
+]]>
+</artifact>`
+	};
+
+	function handleSendMessage() {
+		if (!currentInput.trim()) return;
+
+		isLoading = true;
+
+		// Add user message
+		mockMessages = [...mockMessages, {
+			role: 'user',
+			content: currentInput
+		}];
+
+		// Simulate API delay
+		setTimeout(() => {
+			let response = '';
+
+			// Check for TSX button request (indirect scenario)
+			if (currentInput.toLowerCase().includes('tsx') &&
+				currentInput.toLowerCase().includes('button') &&
+				currentInput.toLowerCase().includes('black') &&
+				currentInput.toLowerCase().includes('gold')) {
+
+				response = `I'll create a TSX component for a black and gold button:
+
+${mockResponses.tsxButton.codeBlock}
+
+This component creates a stylish black button with gold text and borders. The button has hover effects that invert the colors for better user interaction feedback.`;
+			}
+			// Check for direct artifact request
+			else if (currentInput.toLowerCase().includes('artifact') ||
+					 currentInput.toLowerCase().includes('component')) {
+
+				response = `I'll create a React component artifact for you:
+
+${mockResponses.artifactXml}`;
+			}
+			else {
+				response = "I'm a test assistant. Try asking for a 'TSX component that is a button that is black and gold' to test artifact functionality.";
+			}
+
+			// Add assistant response
+			mockMessages = [...mockMessages, {
+				role: 'assistant',
+				content: response
+			}];
+
+			currentInput = '';
+			isLoading = false;
+		}, 1000);
+	}
+
+	function openPreview(content: string, type: 'react' | 'svelte' = 'react') {
+		artifactContent = content;
+		artifactType = type;
+		showPreview = true;
+	}
+
+	function closePreview() {
+		showPreview = false;
+		artifactContent = '';
+		artifactType = null;
+	}
+
+	// Extract code from code blocks for preview
+	function extractCodeFromBlock(content: string): string {
+		const codeBlockRegex = /```(?:tsx|jsx|react)?\s*([\s\S]*?)\s*```/;
+		const match = content.match(codeBlockRegex);
+		return match ? match[1].trim() : '';
+	}
+
+	// Extract code from XML CDATA
+	function extractCodeFromXml(content: string): string {
+		const cdataRegex = /<!\[CDATA\[([\s\S]*?)\]\]>/;
+		const match = content.match(cdataRegex);
+		return match ? match[1].trim() : '';
+	}
+
+	// Handle keyboard shortcuts
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Enter' && !event.shiftKey) {
+			event.preventDefault();
+			handleSendMessage();
+		}
+	}
+</script>
+
+{#if !isTestEnvironment}
+	<div class="flex items-center justify-center min-h-screen">
+		<div class="text-center">
+			<h1 class="text-2xl font-bold mb-4">Redirecting...</h1>
+			<p>This page is only available in test environments.</p>
+		</div>
+	</div>
+{:else}
+	<div class="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+		<!-- Header -->
+		<div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+			<h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+				E2E Test Chat Interface
+			</h1>
+			<p class="text-sm text-gray-600 dark:text-gray-400">
+				Test environment for artifact rendering - React: {PUBLIC_REACT_ARTIFACTS_ENABLED}, Svelte: {PUBLIC_SVELTE_ARTIFACTS_ENABLED}
+			</p>
+		</div>
+
+		<!-- Messages Area -->
+		<div class="flex-1 overflow-y-auto p-4 space-y-4">
+			{#each mockMessages as message}
+				<div class="flex {message.role === 'user' ? 'justify-end' : 'justify-start'}">
+					<div class="max-w-2xl {message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'} rounded-lg px-4 py-2 shadow">
+						<div class="font-medium mb-1 text-sm opacity-75">
+							{message.role === 'user' ? 'You' : 'Assistant'}
+						</div>
+						<div class="whitespace-pre-wrap">
+							{message.content}
+						</div>
+
+						<!-- Preview buttons for code blocks -->
+						{#if message.role === 'assistant' && message.content.includes('```')}
+							<div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+								<button
+									class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+									data-testid="preview-button"
+									on:click={() => openPreview(extractCodeFromBlock(message.content), 'react')}
+								>
+									Preview Component
+								</button>
+							</div>
+						{/if}
+
+						<!-- Auto-open artifact for XML responses -->
+						{#if message.role === 'assistant' && message.content.includes('<artifact')}
+							<div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+								<button
+									class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
+									data-testid="artifact-button"
+									on:click={() => openPreview(extractCodeFromXml(message.content), 'react')}
+								>
+									Open Artifact
+								</button>
+								<!-- Auto-open for testing -->
+								{#if message.content.includes('artifact') && !showPreview}
+									{setTimeout(() => openPreview(extractCodeFromXml(message.content), 'react'), 500)}
+								{/if}
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/each}
+
+			{#if isLoading}
+				<div class="flex justify-start">
+					<div class="bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow">
+						<div class="flex items-center space-x-2">
+							<div class="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+							<span class="text-gray-600 dark:text-gray-400">Assistant is typing...</span>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Input Area -->
+		<div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+			<div class="flex space-x-2">
+				<textarea
+					bind:value={currentInput}
+					on:keydown={handleKeyDown}
+					placeholder="Type your message here... Try: 'generate code for a TSX component that is a button that is black and gold'"
+					class="flex-1 resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					rows="3"
+					data-testid="chat-input"
+				></textarea>
+				<button
+					on:click={handleSendMessage}
+					disabled={isLoading || !currentInput.trim()}
+					class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors self-end"
+					data-testid="send-button"
+				>
+					Send
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Artifact Preview Modal -->
+	{#if showPreview && artifactContent}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="artifact-modal">
+			<div class="bg-white dark:bg-gray-800 rounded-lg w-full max-w-4xl h-3/4 flex flex-col">
+				<!-- Modal Header -->
+				<div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+						Component Preview
+					</h2>
+					<button
+						on:click={closePreview}
+						class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+						data-testid="close-preview"
+					>
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<!-- Modal Content -->
+				<div class="flex-1 p-4 overflow-hidden">
+					<div class="h-full border border-gray-200 dark:border-gray-600 rounded-lg">
+						{#if artifactType === 'react' && PUBLIC_REACT_ARTIFACTS_ENABLED === 'true'}
+							<ReactArtifactRenderer
+								content={artifactContent}
+								className="h-full"
+								data-testid="react-artifact-renderer"
+							/>
+						{:else if artifactType === 'svelte' && PUBLIC_SVELTE_ARTIFACTS_ENABLED === 'true'}
+							<SvelteArtifactRenderer
+								content={artifactContent}
+								className="h-full"
+								data-testid="svelte-artifact-renderer"
+							/>
+						{:else}
+							<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+								<div class="text-center">
+									<p class="text-lg font-medium mb-2">Artifact Type Not Supported</p>
+									<p class="text-sm">
+										{artifactType} artifacts are not enabled or supported in this environment.
+									</p>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+{/if}
+
+<style>
+	/* Ensure the chat input textarea behaves properly */
+	textarea {
+		min-height: 60px;
+		max-height: 120px;
+	}
+
+	/* Dark mode support */
+	@media (prefers-color-scheme: dark) {
+		:global(body) {
+			background-color: #111827;
+			color: #f9fafb;
+		}
+	}
+</style>
