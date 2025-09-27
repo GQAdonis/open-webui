@@ -5,15 +5,15 @@ import { browser } from '$app/environment';
 import UnifiedSandpackRenderer from '$lib/components/artifacts/renderers/UnifiedSandpackRenderer.svelte';
 
 // Mock data for testing
-let mockMessages: any[] = [];
-let currentInput = '';
-let isLoading = false;
-let showPreview = false;
-let artifactContent = '';
-let artifactType: 'react' | 'svelte' | null = null;
+let mockMessages: any[] = $state([]);
+let currentInput = $state('');
+let isLoading = $state(false);
+let showPreview = $state(false);
+let artifactContent = $state('');
+let artifactType: 'react' | 'svelte' | null = $state(null);
 
 // Environment check - only available in development/test mode
-let isTestEnvironment = false;
+let isTestEnvironment = $state(false);
 
 onMount(() => {
 // Check if this is a test environment
@@ -282,7 +282,7 @@ Test environment for artifact rendering - React: {PUBLIC_REACT_ARTIFACTS_ENABLED
 <button
 class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
 data-testid="preview-button"
-on:click={() => openPreview(extractCodeFromBlock(message.content), 'react')}
+onclick={() => openPreview(extractCodeFromBlock(message.content), 'react')}
 >
 Preview Component
 </button>
@@ -295,7 +295,7 @@ Preview Component
 <button
 class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
 data-testid="artifact-button"
-on:click={() => openPreview(extractCodeFromXml(message.content), 'react')}
+onclick={() => openPreview(extractCodeFromXml(message.content), 'react')}
 >
 Open Artifact
 </button>
@@ -326,14 +326,14 @@ Open Artifact
 <div class="flex space-x-2">
 <textarea
 bind:value={currentInput}
-on:keydown={handleKeyDown}
+onkeydown={handleKeyDown}
 placeholder="Type your message here... Try: 'generate code for a TSX component that is a button that is black and gold'"
 class="flex-1 resize-none border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 rows="3"
 data-testid="chat-input"
 ></textarea>
 <button
-on:click={handleSendMessage}
+onclick={handleSendMessage}
 disabled={isLoading || !currentInput.trim()}
 class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors self-end"
 data-testid="send-button"
@@ -354,7 +354,7 @@ Send
 Component Preview
 </h2>
 <button
-on:click={closePreview}
+onclick={closePreview}
 class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
 data-testid="close-preview"
 >

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { tick, getContext, onMount, onDestroy } from 'svelte';
 	import { config, settings } from '$lib/stores';
@@ -13,23 +15,37 @@
 
 	const i18n = getContext('i18n');
 
-	export let recording = false;
-	export let transcribe = true;
-	export let displayMedia = false;
 
-	export let echoCancellation = true;
-	export let noiseSuppression = true;
-	export let autoGainControl = true;
 
-	export let className = ' p-2.5 w-full max-w-full';
 
-	export let onCancel = () => {};
-	export let onConfirm = (data) => {};
+	interface Props {
+		recording?: boolean;
+		transcribe?: boolean;
+		displayMedia?: boolean;
+		echoCancellation?: boolean;
+		noiseSuppression?: boolean;
+		autoGainControl?: boolean;
+		className?: string;
+		onCancel?: any;
+		onConfirm?: any;
+	}
 
-	let loading = false;
+	let {
+		recording = $bindable(false),
+		transcribe = true,
+		displayMedia = false,
+		echoCancellation = true,
+		noiseSuppression = true,
+		autoGainControl = true,
+		className = ' p-2.5 w-full max-w-full',
+		onCancel = () => {},
+		onConfirm = (data) => {}
+	}: Props = $props();
+
+	let loading = $state(false);
 	let confirmed = false;
 
-	let durationSeconds = 0;
+	let durationSeconds = $state(0);
 	let durationCounter = null;
 
 	let transcription = '';
@@ -45,11 +61,6 @@
 		durationSeconds = 0;
 	};
 
-	$: if (recording) {
-		startRecording();
-	} else {
-		stopRecording();
-	}
 
 	const formatSeconds = (seconds) => {
 		const minutes = Math.floor(seconds / 60);
@@ -67,7 +78,7 @@
 	const MIN_DECIBELS = -45;
 	let VISUALIZER_BUFFER_LENGTH = 300;
 
-	let visualizerData = Array(VISUALIZER_BUFFER_LENGTH).fill(0);
+	let visualizerData = $state(Array(VISUALIZER_BUFFER_LENGTH).fill(0));
 
 	// Function to calculate the RMS level from time domain data
 	const calculateRMS = (data: Uint8Array) => {
@@ -362,10 +373,9 @@
 	};
 
 	let resizeObserver;
-	let containerWidth;
+	let containerWidth = $state();
 
-	let maxVisibleItems = 300;
-	$: maxVisibleItems = Math.floor(containerWidth / 5); // 2px width + 0.5px gap
+	let maxVisibleItems = $state(300);
 
 	onMount(() => {
 		// listen to width changes
@@ -387,6 +397,16 @@
 		// remove resize observer
 		resizeObserver.disconnect();
 	});
+	run(() => {
+		if (recording) {
+			startRecording();
+		} else {
+			stopRecording();
+		}
+	});
+	run(() => {
+		maxVisibleItems = Math.floor(containerWidth / 5);
+	}); // 2px width + 0.5px gap
 </script>
 
 <div
@@ -406,7 +426,7 @@
 
 
              rounded-full"
-			on:click={async () => {
+			onclick={async () => {
 				stopRecording();
 				onCancel();
 			}}
@@ -433,7 +453,7 @@
                     
                     inline-block h-full"
 						style="height: {Math.min(100, Math.max(14, rms * 100))}%;"
-					/>
+					></div>
 				</div>
 			{/each}
 		</div>
@@ -505,42 +525,32 @@
 								}
 							}
 						</style><g class="spinner_OSmW"
-							><rect x="11" y="1" width="2" height="5" opacity=".14" /><rect
-								x="11"
+							><rect x="11" y="1" width="2" height="5" opacity=".14"></rect><rect x="11"
 								y="1"
 								width="2"
 								height="5"
 								transform="rotate(30 12 12)"
-								opacity=".29"
-							/><rect
-								x="11"
+								opacity=".29"></rect><rect x="11"
 								y="1"
 								width="2"
 								height="5"
 								transform="rotate(60 12 12)"
-								opacity=".43"
-							/><rect
-								x="11"
+								opacity=".43"></rect><rect x="11"
 								y="1"
 								width="2"
 								height="5"
 								transform="rotate(90 12 12)"
-								opacity=".57"
-							/><rect
-								x="11"
+								opacity=".57"></rect><rect x="11"
 								y="1"
 								width="2"
 								height="5"
 								transform="rotate(120 12 12)"
-								opacity=".71"
-							/><rect
-								x="11"
+								opacity=".71"></rect><rect x="11"
 								y="1"
 								width="2"
 								height="5"
 								transform="rotate(150 12 12)"
-								opacity=".86"
-							/><rect x="11" y="1" width="2" height="5" transform="rotate(180 12 12)" /></g
+								opacity=".86"></rect><rect x="11" y="1" width="2" height="5" transform="rotate(180 12 12)"></rect></g
 						></svg
 					>
 				</div>
@@ -548,7 +558,7 @@
 				<button
 					type="button"
 					class="p-1.5 bg-indigo-500 text-white dark:bg-indigo-500 dark:text-blue-950 rounded-full"
-					on:click={async () => {
+					onclick={async () => {
 						await confirmRecording();
 					}}
 				>
@@ -560,7 +570,7 @@
 						stroke="currentColor"
 						class="size-4"
 					>
-						<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"></path>
 					</svg>
 				</button>
 			{/if}

@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Cannot subscribe to stores that are not declared at the top level of the component
+https://svelte.dev/e/store_invalid_scoped_subscription -->
 <script lang="ts">
 	import { v4 as uuidv4 } from 'uuid';
 	import { toast } from 'svelte-sonner';
@@ -322,7 +324,7 @@
 	const showMessage = async (message: any) => {
 		await tick();
 
-		const _chatId = JSON.parse(JSON.stringify($chatId));
+	const _chatId = JSON.parse(JSON.stringify(get(chatId)));
 		let _messageId = JSON.parse(JSON.stringify(message.id));
 
 		let messageChildrenIds = [];
@@ -359,7 +361,7 @@
 	const chatEventHandler = async (event: any, cb: any) => {
 		console.log(event);
 
-		if (event.chat_id === $chatId) {
+	if (event.chat_id === get(chatId)) {
 			await tick();
 			let message = history.messages[event.message_id];
 
@@ -405,9 +407,9 @@
 				} else if (type === 'chat:title') {
 					chatTitle.set(data);
 					currentChatPage.set(1);
-					await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 				} else if (type === 'chat:tags') {
-					chat = await getChatById(localStorage.token, $chatId);
+		chat = await getChatById(localStorage.token, get(chatId));
 					allTags.set(await getAllTags(localStorage.token));
 				} else if (type === 'source' || type === 'citation') {
 					if (data?.type === 'code_execution') {
@@ -978,13 +980,13 @@
 			temporaryChatEnabled.set(false);
 		}
 
-		chat = await getChatById(localStorage.token, $chatId).catch(async (error) => {
+	chat = await getChatById(localStorage.token, get(chatId)).catch(async (error) => {
 			await goto('/');
 			return null;
 		});
 
 		if (chat) {
-			tags = await getTagsById(localStorage.token, $chatId).catch(async (error) => {
+		tags = await getTagsById(localStorage.token, get(chatId)).catch(async (error) => {
 				return [];
 			});
 
@@ -1033,7 +1035,7 @@
 				}
 				}
 
-				const taskRes = await getTaskIdsByChatId(localStorage.token, $chatId).catch((error) => {
+			const taskRes = await getTaskIdsByChatId(localStorage.token, get(chatId)).catch((error) => {
 					return null;
 				});
 
@@ -1072,9 +1074,9 @@
 				...(m.sources ? { sources: m.sources } : {})
 			})),
 			filter_ids: selectedFilterIds.length > 0 ? selectedFilterIds : undefined,
-			model_item: $models.find((m) => m.id === modelId),
-			chat_id: chatId,
-			session_id: ($socket as any)?.id,
+		model_item: get(models).find((m) => m.id === modelId),
+		chat_id: chatId,
+		session_id: (get(socket) as any)?.id,
 			id: responseMessageId
 		};
 
@@ -1101,10 +1103,10 @@
 			}
 		}
 
-		await tick();
+	await tick();
 
-		if ($chatId == chatId) {
-			if (!$temporaryChatEnabled) {
+	if (get(chatId) == chatId) {
+		if (!get(temporaryChatEnabled)) {
 				chat = await updateChatById(localStorage.token, chatId, {
 					models: selectedModels,
 					messages: messages,
@@ -1113,8 +1115,8 @@
 					files: chatFiles
 				});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 			}
 		}
 
@@ -1136,7 +1138,7 @@
 			})),
 			...(event ? { event: event } : {}),
 			chat_id: chatId,
-			session_id: ($socket as any)?.id,
+			session_id: (get(socket) as any)?.id,
 			id: responseMessageId
 		};
 
@@ -1159,8 +1161,8 @@
 			}
 		}
 
-		if ($chatId == chatId) {
-			if (!$temporaryChatEnabled) {
+	if (get(chatId) == chatId) {
+		if (!get(temporaryChatEnabled)) {
 				chat = await updateChatById(localStorage.token, chatId, {
 					models: selectedModels,
 					messages: messages,
@@ -1169,15 +1171,15 @@
 					files: chatFiles
 				});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 			}
 		}
 	};
 
 	const getChatEventEmitter = async (modelId: string, chatId: string = '') => {
-		return setInterval(() => {
-			$socket?.emit('usage', {
+	return setInterval(() => {
+			get(socket)?.emit('usage', {
 				action: 'chat',
 				model: modelId,
 				chat_id: chatId
@@ -1201,7 +1203,7 @@
 			});
 
 			const modelId = selectedModels[0];
-			const model = $models.filter((m) => m.id === modelId).at(0)!;
+		const model = get(models).filter((m) => m.id === modelId).at(0)!;
 
 			const messages = createMessagesList(history, history.currentId);
 			const parentMessage = messages.length !== 0 ? messages.at(-1) : null;
@@ -1256,7 +1258,7 @@
 	};
 
 	const addMessages = async ({ modelId, parentId, messages }: { modelId: string; parentId: string; messages: any[] }) => {
-		const model = $models.filter((m) => m.id === modelId).at(0);
+	const model = get(models).filter((m) => m.id === modelId).at(0);
 
 		let parentMessage = history.messages[parentId];
 		let currentParentId = parentMessage ? parentMessage.id : null;
@@ -1319,7 +1321,7 @@
 		if (messages.length === 0) {
 			await initChatHandler(history);
 		} else {
-			await saveChatHandler($chatId, history);
+			await saveChatHandler(get(chatId), history);
 		}
 	};
 
@@ -1426,7 +1428,7 @@
 			const artifactsEnabled = ($config as any)?.features?.enable_artifacts ?? true;
 			if (artifactsEnabled) {
 				try {
-					const artifacts = await postprocessResponse(message.content, message.id, $chatId);
+				const artifacts = await postprocessResponse(message.content, message.id, get(chatId));
 					if ((artifacts as any).length > 0) {
 						console.log(`🚀 [Artifact Integration] Found ${(artifacts as any).length} artifact(s) in response`);
 					}
@@ -1494,7 +1496,7 @@
 	//////////////////////////
 
 	const submitPrompt = async (userPrompt: string, { _raw = false }: { _raw?: boolean } = {}) => {
-		console.log('submitPrompt', userPrompt, $chatId);
+	console.log('submitPrompt', userPrompt, get(chatId));
 
 		// Apply artifact preprocessing if not raw mode and artifacts are enabled
 		const artifactsEnabled = ($config as any)?.features?.enable_artifacts ?? true; // Default to enabled
@@ -1534,7 +1536,7 @@
 
 					const enhancementRequest: PromptEnhancementRequest = {
 						originalPrompt: processedPrompt,
-						sessionId: $chatId || 'default'
+					sessionId: get(chatId) || 'default'
 					};
 
 					const enhancedResult = await promptEnhancer.enhancePrompt(enhancementRequest);
@@ -1557,9 +1559,9 @@
 			}
 		}
 
-		const _selectedModels = selectedModels.map((modelId) =>
-			$models.map((m) => m.id).includes(modelId) ? modelId : ''
-		);
+	const _selectedModels = selectedModels.map((modelId) =>
+		get(models).map((m) => m.id).includes(modelId) ? modelId : ''
+	);
 
 		if (JSON.stringify(selectedModels) !== JSON.stringify(_selectedModels)) {
 			selectedModels = _selectedModels;
@@ -1693,7 +1695,7 @@
 			scrollToBottom();
 		}
 
-		let _chatId = JSON.parse(JSON.stringify($chatId));
+	let _chatId = JSON.parse(JSON.stringify(get(chatId)));
 		_history = JSON.parse(JSON.stringify(_history));
 
 		console.log('🚀 [sendMessage] History messages after deep copy:', Object.keys(_history.messages));
@@ -1709,7 +1711,7 @@
 
 		// Create response messages for each selected model
 		for (const [_modelIdx, modelId] of selectedModelIds.entries()) {
-			const model = $models.filter((m) => m.id === modelId).at(0)!;
+		const model = get(models).filter((m) => m.id === modelId).at(0)!;
 
 			if (model) {
 				let responseMessageId = uuidv4();
@@ -1778,7 +1780,7 @@
 		await Promise.all(
 			selectedModelIds.map(async (modelId, _modelIdx) => {
 				console.log('modelId', modelId);
-				const model = $models.filter((m) => m.id === modelId).at(0);
+			const model = get(models).filter((m) => m.id === modelId).at(0);
 
 				if (model) {
 					// If there are image files, check if model is vision capable
@@ -1815,7 +1817,7 @@
 		);
 
 		currentChatPage.set(1);
-		chats.set(await getChatList(localStorage.token, $currentChatPage));
+	chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 	};
 
 	const getFeatures = () => {
@@ -1996,41 +1998,41 @@
 				model: model.id,
 				messages: messages,
 				params: {
-					...($settings as any)?.params,
-					...params,
-					stop:
-						((params as any)?.stop ?? ($settings as any)?.params?.stop ?? undefined)
-							? ((params as any)?.stop.split(',').map((token: string) => token.trim()) ?? ($settings as any).params.stop)
+			...(get(settings) as any)?.params,
+			...params,
+			stop:
+				((params as any)?.stop ?? (get(settings) as any)?.params?.stop ?? undefined)
+					? ((params as any)?.stop.split(',').map((token: string) => token.trim()) ?? (get(settings) as any).params.stop)
 							: undefined
 				},
 				files: (files?.length ?? 0) > 0 ? files : undefined,
 				filter_ids: selectedFilterIds.length > 0 ? selectedFilterIds : undefined,
 				tool_ids: toolIds.length > 0 ? toolIds : undefined,
-				tool_servers: ($toolServers ?? []).filter(
+		tool_servers: (get(toolServers) ?? []).filter(
 					(server: any, idx: number) => toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
 				),
 				features: getFeatures(),
-				variables: {
-					...getPromptVariables($user?.name, $settings?.userLocation ? userLocation : undefined)
-				},
-				model_item: $models.find((m) => m.id === model.id),
-				session_id: $socket?.id,
-				chat_id: $chatId,
+		variables: {
+			...getPromptVariables(get(user)?.name, get(settings)?.userLocation ? userLocation : undefined)
+		},
+		model_item: get(models).find((m) => m.id === model.id),
+		session_id: get(socket)?.id,
+		chat_id: get(chatId),
 				id: responseMessageId,
 
 				background_tasks: {
-					...(!$temporaryChatEnabled &&
+			...(!get(temporaryChatEnabled) &&
 					(messages.length == 1 ||
 						(messages.length == 2 &&
 							messages.at(0)?.role === 'system' &&
 							messages.at(1)?.role === 'user')) &&
 					(selectedModels[0] === model.id || atSelectedModel !== undefined)
 						? {
-								title_generation: $settings?.title?.auto ?? true,
-								tags_generation: $settings?.autoTags ?? true
+						title_generation: get(settings)?.title?.auto ?? true,
+						tags_generation: get(settings)?.autoTags ?? true
 							}
 						: {}),
-					follow_up_generation: $settings?.autoFollowUps ?? true
+			follow_up_generation: get(settings)?.autoFollowUps ?? true
 				},
 
 				...(stream && (model.info?.meta?.capabilities?.usage ?? false)
@@ -2256,15 +2258,15 @@
 
 	const continueResponse = async () => {
 		console.log('continueResponse');
-		const _chatId = JSON.parse(JSON.stringify($chatId));
+	const _chatId = JSON.parse(JSON.stringify(get(chatId)));
 
 		if (history.currentId && history.messages[history.currentId].done == true) {
 			const responseMessage = history.messages[history.currentId];
 			responseMessage.done = false;
 			await tick();
 
-			const model = $models
-				.filter((m) => m.id === (responseMessage?.selectedModelId ?? responseMessage.model))
+		const model = get(models)
+			.filter((m) => m.id === (responseMessage?.selectedModelId ?? responseMessage.model))
 				.at(0);
 
 			if (model) {
@@ -2317,7 +2319,7 @@
 
 			if (res && res instanceof Response && res.ok && res.body && generating) {
 				generationController = controller;
-				const splitLargeChunks = typeof $settings.splitLargeChunks === 'boolean' ? $settings.splitLargeChunks : false;
+			const splitLargeChunks = typeof get(settings).splitLargeChunks === 'boolean' ? get(settings).splitLargeChunks : false;
 				const textStream = await createOpenAITextStream(res.body, splitLargeChunks);
 				for await (const update of textStream) {
 					const { value, done, sources, error, usage } = update;
@@ -2349,22 +2351,22 @@
 	};
 
 	const initChatHandler = async (history: HistoryType) => {
-		let _chatId = $chatId;
-		if (!$temporaryChatEnabled) {
+	let _chatId = get(chatId);
+	if (!get(temporaryChatEnabled)) {
 			chat = await createNewChat(
 				localStorage.token,
 				{
 						id: _chatId,
 						title: tr('New Chat'),
 					models: selectedModels,
-					system: $settings.system ?? undefined,
+			system: get(settings).system ?? undefined,
 					params: params,
 					history: history,
 					messages: createMessagesList(history, history.currentId),
 					tags: [],
 					timestamp: Date.now()
 				},
-				($selectedFolder as any)?.id
+		(get(selectedFolder) as any)?.id
 			);
 
 			_chatId = chat.id;
@@ -2374,7 +2376,7 @@
 
 			await tick();
 
-			await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 			currentChatPage.set(1);
 
 			selectedFolder.set(null);
@@ -2388,8 +2390,8 @@
 	};
 
 	const saveChatHandler = async (_chatId: string, history: HistoryType) => {
-		if ($chatId == _chatId) {
-			if (!$temporaryChatEnabled) {
+	if (get(chatId) == _chatId) {
+		if (!get(temporaryChatEnabled)) {
 				chat = await updateChatById(localStorage.token, _chatId, {
 					models: selectedModels,
 					history: history,
@@ -2398,7 +2400,7 @@
 					files: chatFiles
 				});
 				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 			}
 		}
 	};
@@ -2444,7 +2446,7 @@
 
 			if (res) {
 				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await chats.set(await getChatList(localStorage.token, get(currentChatPage)));
 				await pinnedChats.set(await getPinnedChatList(localStorage.token));
 
 				toast.success(tr('Chat moved successfully'));
@@ -2463,7 +2465,7 @@
 	</title>
 </svelte:head>
 
-<audio id="audioElement" src="" style="display: none;" />
+<audio id="audioElement" src="" style="display: none;"></audio>
 
 <EventConfirmDialog
 	bind:show={showEventConfirmation}
@@ -2493,28 +2495,20 @@
 	{#if !loading}
 		<div in:fade={{ duration: 50 }} class="w-full h-full flex flex-col">
 			{#if selectedFolderMeta?.background_image_url}
-				<div
-					class="absolute {$showSidebar
+				<div class="absolute {$showSidebar
 						? 'md:max-w-[calc(100%-260px)] md:translate-x-[260px]'
 						: ''} top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
-					style="background-image: url({selectedFolderMeta?.background_image_url})  "
-				/>
+					style="background-image: url({selectedFolderMeta?.background_image_url})  "></div>
 
-				<div
-					class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 dark:from-gray-900 dark:to-gray-900/90 z-0"
-				/>
+				<div class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 dark:from-gray-900 dark:to-gray-900/90 z-0"></div>
 			{:else if $settings?.backgroundImageUrl ?? $config?.license_metadata?.background_image_url ?? null}
-				<div
-					class="absolute {$showSidebar
+				<div class="absolute {$showSidebar
 						? 'md:max-w-[calc(100%-260px)] md:translate-x-[260px]'
 						: ''} top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
 					style="background-image: url({$settings?.backgroundImageUrl ??
-						$config?.license_metadata?.background_image_url})  "
-				/>
+						$config?.license_metadata?.background_image_url})  "></div>
 
-				<div
-					class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 dark:from-gray-900 dark:to-gray-900/90 z-0"
-				/>
+				<div class="absolute top-0 left-0 w-full h-full bg-linear-to-t from-white to-white/85 dark:from-gray-900 dark:to-gray-900/90 z-0"></div>
 			{/if}
 
 			<div class="w-full h-full flex horizontal">
@@ -2649,7 +2643,7 @@
 											await uploadGoogleDriveFile(data);
 										}
 									}}
-									on:submit={async (e) => {
+									onsubmit={async (e) => {
 										clearDraft();
 
 										// Handle both old and new event formats
@@ -2720,7 +2714,7 @@
 											await uploadYoutubeTranscription(data);
 										}
 									}}
-									on:submit={async (e) => {
+									onsubmit={async (e) => {
 										clearDraft();
 										if (e.detail || files.length > 0) {
 											await tick();

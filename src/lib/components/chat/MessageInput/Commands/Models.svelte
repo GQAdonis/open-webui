@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Fuse from 'fuse.js';
 
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
@@ -10,11 +12,15 @@
 
 	const i18n = getContext('i18n');
 
-	export let query = '';
-	export let onSelect = (e) => {};
 
-	let selectedIdx = 0;
-	export let filteredItems = [];
+	let selectedIdx = $state(0);
+	interface Props {
+		query?: string;
+		onSelect?: any;
+		filteredItems?: any;
+	}
+
+	let { query = '', onSelect = (e) => {}, filteredItems = $bindable([]) }: Props = $props();
 
 	let fuse = new Fuse(
 		$models
@@ -34,15 +40,19 @@
 		}
 	);
 
-	$: filteredItems = query
-		? fuse.search(query).map((e) => {
-				return e.item;
-			})
-		: $models.filter((model) => !model?.info?.meta?.hidden);
+	run(() => {
+		filteredItems = query
+			? fuse.search(query).map((e) => {
+					return e.item;
+				})
+			: $models.filter((model) => !model?.info?.meta?.hidden);
+	});
 
-	$: if (query) {
-		selectedIdx = 0;
-	}
+	run(() => {
+		if (query) {
+			selectedIdx = 0;
+		}
+	});
 
 	export const selectUp = () => {
 		selectedIdx = Math.max(0, selectedIdx - 1);
@@ -72,13 +82,13 @@
 					? 'bg-gray-50 dark:bg-gray-800 selected-command-option-button'
 					: ''}"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					onSelect({ type: 'model', data: model });
 				}}
-				on:mousemove={() => {
+				onmousemove={() => {
 					selectedIdx = modelIdx;
 				}}
-				on:focus={() => {}}
+				onfocus={() => {}}
 				data-selected={modelIdx === selectedIdx}
 			>
 				<div class="flex text-black dark:text-gray-100 line-clamp-1">

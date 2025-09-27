@@ -5,7 +5,7 @@
   
   const dispatch = createEventDispatcher();
   
-  let selectedSample = 'basicReact';
+  let selectedSample = $state('basicReact');
   
   const samples = {
     basicReact: {
@@ -76,13 +76,13 @@
     
     <div class="flex space-x-2">
       <button 
-        on:click={copySample}
+        onclick={copySample}
         class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
       >
         Copy to Clipboard
       </button>
       <button 
-        on:click={insertIntoChat}
+        onclick={insertIntoChat}
         class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
       >
         Insert into Chat

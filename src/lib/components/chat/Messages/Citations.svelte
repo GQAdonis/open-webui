@@ -1,22 +1,28 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { getContext } from 'svelte';
 	import CitationModal from './Citations/CitationModal.svelte';
 
 	const i18n = getContext('i18n');
 
-	export let id = '';
-	export let sources = [];
+	interface Props {
+		id?: string;
+		sources?: any;
+	}
 
-	let citations = [];
-	let showPercentage = false;
-	let showRelevance = true;
+	let { id = '', sources = [] }: Props = $props();
+
+	let citations = $state([]);
+	let showPercentage = $state(false);
+	let showRelevance = $state(true);
 
 	let citationModal = null;
 
-	let showCitations = false;
-	let showCitationModal = false;
+	let showCitations = $state(false);
+	let showCitationModal = $state(false);
 
-	let selectedCitation: any = null;
+	let selectedCitation: any = $state(null);
 
 	export const showSourceModal = (sourceIdx) => {
 		if (citations[sourceIdx]) {
@@ -50,7 +56,7 @@
 		return distances.every((d) => d !== undefined && d >= -1 && d <= 1);
 	}
 
-	$: {
+	run(() => {
 		citations = sources.reduce((acc, source) => {
 			if (Object.keys(source).length === 0) {
 				return acc;
@@ -95,7 +101,7 @@
 
 		showRelevance = calculateShowRelevance(citations);
 		showPercentage = shouldShowPercentage(citations);
-	}
+	});
 
 	const decodeString = (str: string) => {
 		try {
@@ -118,7 +124,7 @@
 	<div class=" py-1 -mx-0.5 w-full flex gap-1 items-center flex-wrap">
 		<button
 			class="text-xs font-medium text-gray-600 dark:text-gray-300 px-3.5 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center gap-1 border border-gray-50 dark:border-gray-850"
-			on:click={() => {
+			onclick={() => {
 				showCitations = !showCitations;
 			}}
 		>
@@ -153,7 +159,7 @@
 				<button
 					id={`source-${id}-${idx + 1}`}
 					class="no-toggle outline-hidden flex dark:text-gray-300 bg-transparent text-gray-600 rounded-xl gap-1.5 items-center"
-					on:click={() => {
+					onclick={() => {
 						showCitationModal = true;
 						selectedCitation = citation;
 					}}

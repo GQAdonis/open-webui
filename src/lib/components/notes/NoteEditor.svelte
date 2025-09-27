@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	import { v4 as uuidv4 } from 'uuid';
 	import fileSaver from 'file-saver';
@@ -57,7 +59,9 @@
 	}
 
 	// Assuming $i18n.languages is an array of language codes
-	$: loadLocale($i18n.languages);
+	run(() => {
+		loadLocale($i18n.languages);
+	});
 
 	import { deleteNoteById, getNoteById, updateNoteById } from '$lib/apis/notes';
 
@@ -89,10 +93,14 @@
 	import AiMenu from './AIMenu.svelte';
 	import AdjustmentsHorizontalOutline from '../icons/AdjustmentsHorizontalOutline.svelte';
 
-	export let id: null | string = null;
+	interface Props {
+		id?: null | string;
+	}
 
-	let editor = null;
-	let note = null;
+	let { id = null }: Props = $props();
+
+	let editor = $state(null);
+	let note = $state(null);
 
 	const newNote = {
 		title: '',
@@ -110,39 +118,39 @@
 		access_control: {}
 	};
 
-	let files = [];
-	let messages = [];
+	let files = $state([]);
+	let messages = $state([]);
 
-	let wordCount = 0;
-	let charCount = 0;
+	let wordCount = $state(0);
+	let charCount = $state(0);
 
-	let versionIdx = null;
-	let selectedModelId = null;
+	let versionIdx = $state(null);
+	let selectedModelId = $state(null);
 
-	let recording = false;
-	let displayMediaRecord = false;
+	let recording = $state(false);
+	let displayMediaRecord = $state(false);
 
-	let showPanel = false;
-	let selectedPanel = 'chat';
+	let showPanel = $state(false);
+	let selectedPanel = $state('chat');
 
-	let selectedContent = null;
+	let selectedContent = $state(null);
 
-	let showDeleteConfirm = false;
-	let showAccessControlModal = false;
+	let showDeleteConfirm = $state(false);
+	let showAccessControlModal = $state(false);
 
-	let ignoreBlur = false;
-	let titleInputFocused = false;
-	let titleGenerating = false;
+	let ignoreBlur = $state(false);
+	let titleInputFocused = $state(false);
+	let titleGenerating = $state(false);
 
-	let dragged = false;
-	let loading = false;
+	let dragged = $state(false);
+	let loading = $state(false);
 
-	let editing = false;
-	let streaming = false;
+	let editing = $state(false);
+	let streaming = $state(false);
 
-	let stopResponseFlag = false;
+	let stopResponseFlag = $state(false);
 
-	let inputElement = null;
+	let inputElement = $state(null);
 
 	const init = async () => {
 		loading = true;
@@ -184,9 +192,11 @@
 		}, 200);
 	};
 
-	$: if (id) {
-		init();
-	}
+	run(() => {
+		if (id) {
+			init();
+		}
+	});
 
 	function areContentsEqual(a, b) {
 		return JSON.stringify(a) === JSON.stringify(b);
@@ -956,7 +966,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 										<button
 											id="sidebar-toggle-button"
 											class=" cursor-pointer flex rounded-lg hover:bg-gray-100 dark:hover:bg-gray-850 transition cursor-"
-											on:click={() => {
+											onclick={() => {
 												showSidebar.set(!$showSidebar);
 											}}
 										>
@@ -976,10 +986,10 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 								disabled={(note?.user_id !== $user?.id && $user?.role !== 'admin') ||
 									titleGenerating}
 								required
-								on:focus={() => {
+								onfocus={() => {
 									titleInputFocused = true;
 								}}
-								on:blur={(e) => {
+								onblur={(e) => {
 									// check if target is generate button
 									if (ignoreBlur) {
 										ignoreBlur = false;
@@ -1001,10 +1011,10 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 											id="generate-title-button"
 											disabled={(note?.user_id !== $user?.id && $user?.role !== 'admin') ||
 												titleGenerating}
-											on:mouseenter={() => {
+											onmouseenter={() => {
 												ignoreBlur = true;
 											}}
-											on:click={(e) => {
+											onclick={(e) => {
 												e.preventDefault();
 												e.stopImmediatePropagation();
 												e.stopPropagation();
@@ -1025,7 +1035,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 										<div class="flex items-center gap-0.5 self-center min-w-fit" dir="ltr">
 											<button
 												class="self-center p-1 hover:enabled:bg-black/5 dark:hover:enabled:bg-white/5 dark:hover:enabled:text-white hover:enabled:text-black rounded-md transition disabled:cursor-not-allowed disabled:text-gray-500 disabled:hover:text-gray-500"
-												on:click={() => {
+												onclick={() => {
 													editor.chain().focus().undo().run();
 													// versionNavigateHandler('prev');
 												}}
@@ -1036,7 +1046,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 
 											<button
 												class="self-center p-1 hover:enabled:bg-black/5 dark:hover:enabled:bg-white/5 dark:hover:enabled:text-white hover:enabled:text-black rounded-md transition disabled:cursor-not-allowed disabled:text-gray-500 disabled:hover:text-gray-500"
-												on:click={() => {
+												onclick={() => {
 													editor.chain().focus().redo().run();
 													// versionNavigateHandler('next');
 												}}
@@ -1051,7 +1061,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 								<Tooltip placement="top" content={$i18n.t('Chat')} className="cursor-pointer">
 									<button
 										class="p-1.5 bg-transparent hover:bg-white/5 transition rounded-lg"
-										on:click={() => {
+										onclick={() => {
 											if (showPanel && selectedPanel === 'chat') {
 												showPanel = false;
 											} else {
@@ -1069,7 +1079,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 								<Tooltip placement="top" content={$i18n.t('Controls')} className="cursor-pointer">
 									<button
 										class="p-1.5 bg-transparent hover:bg-white/5 transition rounded-lg"
-										on:click={() => {
+										onclick={() => {
 											if (showPanel && selectedPanel === 'settings') {
 												showPanel = false;
 											} else {
@@ -1127,7 +1137,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 					<div class="  px-2.5">
 						<div
 							class=" flex w-full bg-transparent overflow-x-auto scrollbar-none"
-							on:wheel={(e) => {
+							onwheel={(e) => {
 								if (e.deltaY !== 0) {
 									e.preventDefault();
 									e.currentTarget.scrollLeft += e.deltaY;
@@ -1165,7 +1175,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 
 								<button
 									class=" flex items-center gap-1 w-fit py-1 px-1.5 rounded-lg min-w-fit"
-									on:click={() => {
+									onclick={() => {
 										showAccessControlModal = true;
 									}}
 									disabled={note?.user_id !== $user?.id && $user?.role !== 'admin'}
@@ -1396,7 +1406,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 							{#if editing}
 								<button
 									class="p-2 flex justify-center items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition shrink-0"
-									on:click={() => {
+									onclick={() => {
 										stopResponseHandler();
 									}}
 									type="button"

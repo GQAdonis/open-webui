@@ -1,17 +1,20 @@
 <script lang="ts">
+  import { createBubbler, stopPropagation } from 'svelte/legacy';
+
+  const bubble = createBubbler();
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
   import { previewStore, previewConfig, previewActions, configActions } from '$lib/stores/preview/preview-store';
   import UnifiedSandpackRenderer from '../artifacts/renderers/UnifiedSandpackRenderer.svelte';
   
   // State subscriptions
-  $: isVisible = $previewStore.isVisible;
-  $: config = $previewConfig;
-  $: loading = $previewStore.loading;
-  $: error = $previewStore.error;
-  $: title = $previewStore.title;
+  let isVisible = $derived($previewStore.isVisible);
+  let config = $derived($previewConfig);
+  let loading = $derived($previewStore.loading);
+  let error = $derived($previewStore.error);
+  let title = $derived($previewStore.title);
   
-  let panelElement: HTMLDivElement;
+  let panelElement: HTMLDivElement = $state();
   let isAnimating = false;
   
   // Handle escape key
@@ -74,8 +77,8 @@
   <div 
     class="preview-backdrop"
     class:visible={isVisible}
-    on:click={handleBackdropClick}
-    on:keydown={handleKeydown}
+    onclick={handleBackdropClick}
+    onkeydown={handleKeydown}
     role="dialog"
     aria-modal="true"
     aria-labelledby="preview-title"
@@ -88,8 +91,8 @@
       class:position-right={config.position === 'right'}
       class:position-left={config.position === 'left'}
       style="width: {config.width}%"
-      on:click|stopPropagation
-      on:keydown|stopPropagation
+      onclick={stopPropagation(bubble('click'))}
+      onkeydown={stopPropagation(bubble('keydown'))}
     >
       <!-- Panel Header -->
       <div class="preview-header">
@@ -110,27 +113,27 @@
             <button
               class="header-button"
               class:active={config.showCode}
-              on:click={toggleCodeView}
+              onclick={toggleCodeView}
               title="Toggle code view"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
               </svg>
             </button>
             
             <!-- Toggle Fullscreen -->
             <button
               class="header-button"
-              on:click={toggleFullscreen}
+              onclick={toggleFullscreen}
               title={config.width >= 90 ? 'Exit fullscreen' : 'Fullscreen'}
             >
               {#if config.width >= 90}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               {:else}
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4m-4 0l4 4m8-4h4m0 0v4m0-4l-4 4M4 16v4m0 0h4m-4 0l4-4m16 4v-4m0 4h-4m4 0l-4-4" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4m-4 0l4 4m8-4h4m0 0v4m0-4l-4 4M4 16v4m0 0h4m-4 0l4-4m16 4v-4m0 4h-4m4 0l-4-4"></path>
                 </svg>
               {/if}
             </button>
@@ -138,11 +141,11 @@
             <!-- Close Button -->
             <button
               class="header-button close-button"
-              on:click={closePanel}
+              onclick={closePanel}
               title="Close preview"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6m0 12L6 6" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6m0 12L6 6"></path>
               </svg>
             </button>
           </div>
@@ -155,12 +158,12 @@
           <div class="error-container">
             <div class="error-icon">
               <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
             <h3 class="error-title">Preview Error</h3>
             <p class="error-message">{error}</p>
-            <button class="retry-button" on:click={() => previewActions.clearError()}>
+            <button class="retry-button" onclick={() => previewActions.clearError()}>
               Try Again
             </button>
           </div>

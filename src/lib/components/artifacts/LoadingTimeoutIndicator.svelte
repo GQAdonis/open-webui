@@ -3,37 +3,39 @@ Loading Timeout Indicator Component for Artifact System
 Reusable component for tracking loading states with timeout visualization
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { createEventDispatcher, onDestroy } from 'svelte';
 
-  export let isLoading = false;
-  export let startTime: number | null = null;
-  export let timeoutMs = 30000; // 30 seconds default
-  export let showProgress = true;
-  export let showTimer = true;
-  export let warningThreshold = 0.75; // Show warning at 75% of timeout
-  export let componentId: string | null = null;
-  export let label = 'Loading...';
+  interface Props {
+    isLoading?: boolean;
+    startTime?: number | null;
+    timeoutMs?: number; // 30 seconds default
+    showProgress?: boolean;
+    showTimer?: boolean;
+    warningThreshold?: number; // Show warning at 75% of timeout
+    componentId?: string | null;
+    label?: string;
+  }
+
+  let {
+    isLoading = false,
+    startTime = null,
+    timeoutMs = 30000,
+    showProgress = true,
+    showTimer = true,
+    warningThreshold = 0.75,
+    componentId = null,
+    label = 'Loading...'
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
-  let currentTime = Date.now();
+  let currentTime = $state(Date.now());
   let timeoutTimer: NodeJS.Timeout | null = null;
   let progressTimer: NodeJS.Timeout | null = null;
 
-  // Reactive calculations
-  $: elapsedMs = startTime ? currentTime - startTime : 0;
-  $: progressPercent = Math.min((elapsedMs / timeoutMs) * 100, 100);
-  $: remainingMs = Math.max(timeoutMs - elapsedMs, 0);
-  $: remainingSeconds = Math.ceil(remainingMs / 1000);
-  $: isWarning = progressPercent >= (warningThreshold * 100);
-  $: isTimeout = elapsedMs >= timeoutMs && isLoading;
 
-  // Start monitoring when loading begins
-  $: if (isLoading && startTime) {
-    startMonitoring();
-  } else {
-    stopMonitoring();
-  }
 
   function startMonitoring() {
     stopMonitoring(); // Clear any existing timers
@@ -73,6 +75,21 @@ Reusable component for tracking loading states with timeout visualization
   onDestroy(() => {
     stopMonitoring();
   });
+  // Reactive calculations
+  let elapsedMs = $derived(startTime ? currentTime - startTime : 0);
+  let progressPercent = $derived(Math.min((elapsedMs / timeoutMs) * 100, 100));
+  let remainingMs = $derived(Math.max(timeoutMs - elapsedMs, 0));
+  let remainingSeconds = $derived(Math.ceil(remainingMs / 1000));
+  let isWarning = $derived(progressPercent >= (warningThreshold * 100));
+  let isTimeout = $derived(elapsedMs >= timeoutMs && isLoading);
+  // Start monitoring when loading begins
+  run(() => {
+    if (isLoading && startTime) {
+      startMonitoring();
+    } else {
+      stopMonitoring();
+    }
+  });
 </script>
 
 {#if isLoading}
@@ -98,12 +115,12 @@ Reusable component for tracking loading states with timeout visualization
 
       <button
         class="cancel-btn"
-        on:click={handleCancel}
+        onclick={handleCancel}
         title="Cancel loading"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
@@ -127,9 +144,9 @@ Reusable component for tracking loading states with timeout visualization
     {#if isWarning && !isTimeout}
       <div class="warning-message">
         <svg class="warning-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-          <path d="M12 9v4"/>
-          <path d="m12 17 .01 0"/>
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+          <path d="M12 9v4"></path>
+          <path d="m12 17 .01 0"></path>
         </svg>
         Taking longer than expected...
       </div>

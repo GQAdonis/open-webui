@@ -4,16 +4,22 @@
   import { artifactIntegration, hasArtifactInMessage } from '$lib/utils/artifacts/integration';
   import { showArtifacts, showControls } from '$lib/stores';
 
-  export let messageContent: string = '';
-  export let messageId: string;
-  export let style: 'default' | 'minimal' | 'icon-only' = 'default';
-  export let size: 'sm' | 'md' | 'lg' = 'md';
+  interface Props {
+    messageContent?: string;
+    messageId: string;
+    style?: 'default' | 'minimal' | 'icon-only';
+    size?: 'sm' | 'md' | 'lg';
+  }
+
+  let {
+    messageContent = '',
+    messageId,
+    style = 'default',
+    size = 'md'
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
-  // Check if this message has artifacts
-  $: hasArtifacts = messageContent ? hasArtifactInMessage(messageContent) : false;
-  $: artifactCount = hasArtifacts ? getArtifactCount() : 0;
 
   function getArtifactCount(): number {
     try {
@@ -56,19 +62,22 @@
     return artifactCount > 1 ? `View ${artifactCount} artifacts` : 'View artifact';
   }
 
+
+  // Check if this message has artifacts
+  let hasArtifacts = $derived(messageContent ? hasArtifactInMessage(messageContent) : false);
+  let artifactCount = $derived(hasArtifacts ? getArtifactCount() : 0);
   // Size classes
-  $: sizeClasses = {
+  let sizeClasses = $derived({
     sm: 'text-xs px-2 py-1',
     md: 'text-sm px-3 py-2', 
     lg: 'text-base px-4 py-2'
-  }[size];
-
+  }[size]);
   // Icon size classes
-  $: iconSizeClasses = {
+  let iconSizeClasses = $derived({
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
     lg: 'w-5 h-5'
-  }[size];
+  }[size]);
 </script>
 
 {#if hasArtifacts}
@@ -78,7 +87,7 @@
            {style === 'minimal' 
              ? 'text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400' 
              : 'bg-blue-100 text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/30'}"
-    on:click={handleClick}
+    onclick={handleClick}
     title="View interactive artifacts"
     aria-label={`View ${artifactCount > 1 ? artifactCount + ' artifacts' : 'artifact'}`}
   >
@@ -90,12 +99,10 @@
       viewBox="0 0 24 24" 
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path 
-        stroke-linecap="round" 
+      <path stroke-linecap="round" 
         stroke-linejoin="round" 
         stroke-width="2" 
-        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-      />
+        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
     </svg>
 
     <!-- Button text (if not icon-only) -->

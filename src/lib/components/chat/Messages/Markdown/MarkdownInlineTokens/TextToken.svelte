@@ -1,11 +1,19 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { fade } from 'svelte/transition';
 
-	export let token;
-	export let done = true;
+	interface Props {
+		token: any;
+		done?: boolean;
+	}
 
-	let texts = [];
-	$: texts = (token?.raw ?? '').split(' ');
+	let { token, done = true }: Props = $props();
+
+	let texts = $state([]);
+	run(() => {
+		texts = (token?.raw ?? '').split(' ');
+	});
 </script>
 
 {#if done}

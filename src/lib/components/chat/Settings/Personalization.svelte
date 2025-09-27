@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import Switch from '$lib/components/common/Switch.svelte';
 	import { config, models, settings, user } from '$lib/stores';
 	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';
@@ -9,12 +11,16 @@
 
 	const i18n = getContext('i18n');
 
-	export let saveSettings: Function;
+	interface Props {
+		saveSettings: Function;
+	}
 
-	let showManageModal = false;
+	let { saveSettings }: Props = $props();
+
+	let showManageModal = $state(false);
 
 	// Addons
-	let enableMemory = false;
+	let enableMemory = $state(false);
 
 	onMount(async () => {
 		enableMemory = $settings?.memory ?? false;
@@ -26,9 +32,9 @@
 <form
 	id="tab-personalization"
 	class="flex flex-col h-full justify-between space-y-3 text-sm"
-	on:submit|preventDefault={() => {
+	onsubmit={preventDefault(() => {
 		dispatch('save');
-	}}
+	})}
 >
 	<div class="py-1 overflow-y-scroll max-h-[28rem] md:max-h-full">
 		<div>
@@ -48,7 +54,7 @@
 				<div class="">
 					<Switch
 						bind:state={enableMemory}
-						on:change={async () => {
+						onchange={async () => {
 							saveSettings({ memory: enableMemory });
 						}}
 					/>
@@ -77,7 +83,7 @@
 			<button
 				type="button"
 				class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-300 dark:outline-gray-800 rounded-3xl"
-				on:click={() => {
+				onclick={() => {
 					showManageModal = true;
 				}}
 			>

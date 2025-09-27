@@ -1,18 +1,31 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 
-	export let value = '';
-	export let placeholder = '';
-	export let rows = 1;
-	export let minSize = null;
-	export let maxSize = null;
-	export let required = false;
-	export let readonly = false;
-	export let className =
-		'w-full rounded-lg px-3.5 py-2 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden  h-full';
 
-	export let onBlur = () => {};
-	let textareaElement;
+	interface Props {
+		value?: string;
+		placeholder?: string;
+		rows?: number;
+		minSize?: any;
+		maxSize?: any;
+		required?: boolean;
+		readonly?: boolean;
+		className?: string;
+		onBlur?: any;
+	}
+
+	let {
+		value = $bindable(''),
+		placeholder = '',
+		rows = 1,
+		minSize = null,
+		maxSize = null,
+		required = false,
+		readonly = false,
+		className = 'w-full rounded-lg px-3.5 py-2 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden  h-full',
+		onBlur = () => {}
+	}: Props = $props();
+	let textareaElement = $state();
 
 	// Adjust height on mount and after setting the element.
 	onMount(async () => {
@@ -56,11 +69,11 @@
 	{rows}
 	{required}
 	{readonly}
-	on:input={(e) => {
+	oninput={(e) => {
 		resize();
 	}}
-	on:focus={() => {
+	onfocus={() => {
 		resize();
 	}}
-	on:blur={onBlur}
-/>
+	onblur={onBlur}
+></textarea>

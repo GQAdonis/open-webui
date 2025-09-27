@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import dayjs from 'dayjs';
     import { onMount, tick, getContext } from 'svelte';
+    import { get } from 'svelte/store';
     import { createEventDispatcher } from 'svelte';
 
 	import { mobile, models, settings } from '$lib/stores';
@@ -24,50 +27,78 @@
 
     import type { HistoryType, ModelSelection, I18nContext } from '$lib/types';
 
-    export let chatId: string;
-    export let history: HistoryType;
-    export let messageId: string;
-    export let selectedModels: ModelSelection = [];
 
-    export let isLastMessage: boolean;
-    export let readOnly: boolean = false;
-    export let editCodeBlock: boolean = true;
 
-    export let setInputText: Function = () => {};
-    export let updateChat: Function;
-    export let editMessage: Function;
-    export let saveMessage: Function;
-    export let rateMessage: Function;
-    export let actionMessage: Function;
 
-    export let submitMessage: Function;
-    export let deleteMessage: Function;
 
-    export let continueResponse: Function;
-    export let regenerateResponse: Function;
-    export let mergeResponses: Function;
 
-    export let addMessages: Function;
 
-    export let triggerScroll: Function;
 
-    export let topPadding: boolean = false;
+	interface Props {
+		chatId: string;
+		history: HistoryType;
+		messageId: string;
+		selectedModels?: ModelSelection;
+		isLastMessage: boolean;
+		readOnly?: boolean;
+		editCodeBlock?: boolean;
+		setInputText?: Function;
+		updateChat: Function;
+		editMessage: Function;
+		saveMessage: Function;
+		rateMessage: Function;
+		actionMessage: Function;
+		submitMessage: Function;
+		deleteMessage: Function;
+		continueResponse: Function;
+		regenerateResponse: Function;
+		mergeResponses: Function;
+		addMessages: Function;
+		triggerScroll: Function;
+		topPadding?: boolean;
+	}
+
+	let {
+		chatId,
+		history = $bindable(),
+		messageId,
+		selectedModels = [],
+		isLastMessage,
+		readOnly = false,
+		editCodeBlock = true,
+		setInputText = () => {},
+		updateChat,
+		editMessage,
+		saveMessage,
+		rateMessage,
+		actionMessage,
+		submitMessage,
+		deleteMessage,
+		continueResponse,
+		regenerateResponse,
+		mergeResponses,
+		addMessages,
+		triggerScroll,
+		topPadding = false
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher();
 
 	let currentMessageId;
-	let parentMessage;
-	let groupedMessageIds = {};
-	let groupedMessageIdsIdx = {};
+	let parentMessage = $state();
+	let groupedMessageIds = $state({});
+	let groupedMessageIdsIdx = $state({});
 
-	let selectedModelIdx = null;
+	let selectedModelIdx = $state(null);
 
-	let message = JSON.parse(JSON.stringify(history.messages[messageId]));
-	$: if (history.messages) {
-		if (JSON.stringify(message) !== JSON.stringify(history.messages[messageId])) {
-			message = JSON.parse(JSON.stringify(history.messages[messageId]));
+	let message = $state(JSON.parse(JSON.stringify(history.messages[messageId])));
+	run(() => {
+		if (history.messages) {
+			if (JSON.stringify(message) !== JSON.stringify(history.messages[messageId])) {
+				message = JSON.parse(JSON.stringify(history.messages[messageId]));
+			}
 		}
-	}
+	});
 
 	const gotoMessage = async (modelIdx, messageIdx) => {
 		// Clamp messageIdx to ensure it's within valid range
@@ -253,8 +284,8 @@
 						>
 							{#each Object.keys(groupedMessageIds) as modelIdx}
 								{#if groupedMessageIdsIdx[modelIdx] !== undefined && groupedMessageIds[modelIdx].messageIds.length > 0}
-									<!-- svelte-ignore a11y-no-static-element-interactions -->
-									<!-- svelte-ignore a11y-click-events-have-key-events -->
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
 
 									{@const _messageId =
 										groupedMessageIds[modelIdx].messageIds[groupedMessageIdsIdx[modelIdx]]}
@@ -265,7 +296,7 @@
 										class="min-w-fit {selectedModelIdx == modelIdx
 											? ' dark:border-gray-300 '
 											: ' opacity-35 border-transparent'} pb-1.5 px-2.5 transition border-b-2"
-										on:click={async () => {
+										onclick={async () => {
 											if (selectedModelIdx != modelIdx) {
 												selectedModelIdx = modelIdx;
 											}
@@ -335,8 +366,8 @@
 			{:else}
 				{#each Object.keys(groupedMessageIds) as modelIdx}
 					{#if groupedMessageIdsIdx[modelIdx] !== undefined && groupedMessageIds[modelIdx].messageIds.length > 0}
-						<!-- svelte-ignore a11y-no-static-element-interactions -->
-						<!-- svelte-ignore a11y-click-events-have-key-events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						{@const _messageId =
 							groupedMessageIds[modelIdx].messageIds[groupedMessageIdsIdx[modelIdx]]}
 
@@ -349,7 +380,7 @@
 								: `border-gray-100 dark:border-gray-850 border-dashed ${
 										$mobile ? 'min-w-full' : 'min-w-80'
 									}`} transition-all p-5 rounded-2xl"
-							on:click={async () => {
+							onclick={async () => {
 								onGroupClick(_messageId, modelIdx);
 							}}
 						>
@@ -430,14 +461,14 @@
 
 					{#if isLastMessage}
 						<div class=" shrink-0 text-gray-600 dark:text-gray-500 mt-1">
-							<Tooltip content={$i18n.t('Merge Responses')} placement="bottom">
+							<Tooltip content={get(i18n).t('Merge Responses')} placement="bottom">
 								<button
 									type="button"
 									id="merge-response-button"
 									class="{true
 										? 'visible'
 										: 'invisible group-hover:visible'} p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-									on:click={() => {
+									onclick={() => {
 										mergeResponsesHandler();
 									}}
 								>

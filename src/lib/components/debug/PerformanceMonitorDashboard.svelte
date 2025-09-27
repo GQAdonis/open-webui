@@ -9,24 +9,28 @@ Only visible in development mode or when explicitly enabled.
   import { performanceMonitor } from '$lib/services/performance-monitor';
   import type { PerformanceAlert } from '$lib/services/performance-monitor';
 
-  export let visible = false;
-  export let position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' = 'bottom-right';
+  interface Props {
+    visible?: boolean;
+    position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  }
 
-  let alerts: PerformanceAlert[] = [];
-  let globalStats = {
+  let { visible = $bindable(false), position = 'bottom-right' }: Props = $props();
+
+  let alerts: PerformanceAlert[] = $state([]);
+  let globalStats = $state({
     activeSessions: 0,
     activeOperations: 0,
     totalMetrics: 0,
     memoryUsage: { used: 0, total: 0, percentage: 0 }
-  };
-  let timeoutConfig = performanceMonitor.getTimeoutConfig();
+  });
+  let timeoutConfig = $state(performanceMonitor.getTimeoutConfig());
 
   let alertUnsubscribe: (() => void) | null = null;
   let statsInterval: NodeJS.Timeout | null = null;
 
   // Show only in development or when explicitly enabled
-  $: showDashboard = visible || (typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+  let showDashboard = $derived(visible || (typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')));
 
   onMount(() => {
     if (!showDashboard) return;
@@ -98,7 +102,7 @@ Only visible in development mode or when explicitly enabled.
       </div>
       <button
         class="toggle-btn"
-        on:click={() => visible = !visible}
+        onclick={() => visible = !visible}
         aria-label="Toggle performance dashboard"
       >
         {visible ? '−' : '+'}
@@ -138,7 +142,7 @@ Only visible in development mode or when explicitly enabled.
               <input
                 type="number"
                 bind:value={timeoutConfig[key]}
-                on:change={() => updateTimeout(key, timeoutConfig[key])}
+                onchange={() => updateTimeout(key, timeoutConfig[key])}
                 class="config-input"
                 min="1000"
                 step="1000"
@@ -153,7 +157,7 @@ Only visible in development mode or when explicitly enabled.
         <div class="alerts-header">
           <h4>Recent Alerts ({alerts.length})</h4>
           {#if alerts.length > 0}
-            <button class="clear-btn" on:click={clearAlerts}>Clear</button>
+            <button class="clear-btn" onclick={clearAlerts}>Clear</button>
           {/if}
         </div>
 

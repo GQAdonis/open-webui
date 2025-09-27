@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { createBubbler, preventDefault } from 'svelte/legacy';
+
+	const bubble = createBubbler();
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import { settings, playingNotificationSound, isLastActiveTab } from '$lib/stores';
 	import DOMPurify from 'dompurify';
@@ -8,13 +11,17 @@
 
 	const dispatch = createEventDispatcher();
 
-	export let onClick: Function = () => {};
-	export let title: string = 'HI';
-	export let content: string;
+	interface Props {
+		onClick?: Function;
+		title?: string;
+		content: string;
+	}
+
+	let { onClick = () => {}, title = 'HI', content }: Props = $props();
 
 	let startX = 0,
 		startY = 0;
-	let moved = false;
+	let moved = $state(false);
 	const DRAG_THRESHOLD_PX = 6;
 
 	const clickHandler = () => {
@@ -68,16 +75,16 @@
 	});
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
 	class="flex gap-2.5 text-left min-w-[var(--width)] w-full dark:bg-gray-850 dark:text-white bg-white text-black border border-gray-100 dark:border-gray-800 rounded-3xl px-4 py-3.5 cursor-pointer select-none"
-	on:dragstart|preventDefault
-	on:pointerdown={onPointerDown}
-	on:pointermove={onPointerMove}
-	on:pointerup={onPointerUp}
-	on:pointercancel={() => (moved = true)}
-	on:keydown={(e) => {
+	ondragstart={preventDefault(bubble('dragstart'))}
+	onpointerdown={onPointerDown}
+	onpointermove={onPointerMove}
+	onpointerup={onPointerUp}
+	onpointercancel={() => (moved = true)}
+	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			clickHandler();

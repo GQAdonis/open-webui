@@ -1,14 +1,17 @@
+<!-- @migration-task Error while migrating Svelte code: `$i18n` is an illegal variable name. To reference a global variable called `$i18n`, use `globalThis.$i18n`
+https://svelte.dev/e/global_reference_invalid -->
 <script lang="ts">
 	import { Select } from 'bits-ui';
 
-	import { flyAndScale } from '$lib/utils/transitions';
+import { flyAndScale } from '$lib/utils/transitions';
 
-	import { createEventDispatcher } from 'svelte';
-	import ChevronDown from '../icons/ChevronDown.svelte';
-	import Check from '../icons/Check.svelte';
-	import Search from '../icons/Search.svelte';
+import { createEventDispatcher, getContext } from 'svelte';
+import ChevronDown from '../icons/ChevronDown.svelte';
+import Check from '../icons/Check.svelte';
+import Search from '../icons/Search.svelte';
 
-	const dispatch = createEventDispatcher();
+const dispatch = createEventDispatcher();
+const i18n = getContext('i18n');
 
 	export let value = '';
 	export let placeholder = $i18n.t('Select a model');

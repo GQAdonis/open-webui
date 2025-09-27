@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { createEventDispatcher, onMount, getContext } from 'svelte';
 
@@ -12,29 +14,33 @@
 
 	const i18n = getContext('i18n');
 
-	export let saveSettings: Function;
+	interface Props {
+		saveSettings: Function;
+	}
+
+	let { saveSettings }: Props = $props();
 
 	// Audio
 	let conversationMode = false;
-	let speechAutoSend = false;
-	let responseAutoPlayback = false;
-	let nonLocalVoices = false;
+	let speechAutoSend = $state(false);
+	let responseAutoPlayback = $state(false);
+	let nonLocalVoices = $state(false);
 
-	let STTEngine = '';
-	let STTLanguage = '';
+	let STTEngine = $state('');
+	let STTLanguage = $state('');
 
-	let TTSEngine = '';
-	let TTSEngineConfig = {};
+	let TTSEngine = $state('');
+	let TTSEngineConfig = $state({});
 
-	let TTSModel = null;
-	let TTSModelProgress = null;
+	let TTSModel = $state(null);
+	let TTSModelProgress = $state(null);
 	let TTSModelLoading = false;
 
-	let voices = [];
-	let voice = '';
+	let voices = $state([]);
+	let voice = $state('');
 
 	// Audio speed control
-	let playbackRate = 1;
+	let playbackRate = $state(1);
 
 	const getVoices = async () => {
 		if (TTSEngine === 'browser-kokoro') {
@@ -105,9 +111,6 @@
 		await getVoices();
 	});
 
-	$: if (TTSEngine && TTSEngineConfig) {
-		onTTSEngineChange();
-	}
 
 	const onTTSEngineChange = async () => {
 		if (TTSEngine === 'browser-kokoro') {
@@ -150,12 +153,17 @@
 			}
 		}
 	};
+	run(() => {
+		if (TTSEngine && TTSEngineConfig) {
+			onTTSEngineChange();
+		}
+	});
 </script>
 
 <form
 	id="tab-audio"
 	class="flex flex-col h-full justify-between space-y-3 text-sm"
-	on:submit|preventDefault={async () => {
+	onsubmit={preventDefault(async () => {
 		saveSettings({
 			audio: {
 				stt: {
@@ -173,7 +181,7 @@
 			}
 		});
 		dispatch('save');
-	}}
+	})}
 >
 	<div class=" space-y-3 overflow-y-scroll max-h-[28rem] md:max-h-full">
 		<div>
@@ -222,7 +230,7 @@
 
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						toggleSpeechAutoSend();
 					}}
 					type="button"
@@ -277,7 +285,7 @@
 
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						toggleResponseAutoPlayback();
 					}}
 					type="button"

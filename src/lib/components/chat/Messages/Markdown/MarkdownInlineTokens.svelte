@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Event attribute must be a JavaScript expression, not a string
+https://svelte.dev/e/attribute_invalid_event_handler -->
 <script lang="ts">
 	import DOMPurify from 'dompurify';
 	import { toast } from 'svelte-sonner';
@@ -54,13 +56,15 @@
 			<KatexRenderer content={token.text} displayMode={false} />
 		{/if}
 	{:else if token.type === 'iframe'}
-		<iframe
-			src="{WEBUI_BASE_URL}/api/v1/files/{token.fileId}/content"
-			title={token.fileId}
-			width="100%"
-			frameborder="0"
-			onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
-		></iframe>
+	<iframe
+		src="{WEBUI_BASE_URL}/api/v1/files/{token.fileId}/content"
+		title={token.fileId}
+		width="100%"
+		frameborder="0"
+		onload={(e) => {
+			e.target.style.height = (e.target.contentWindow.document.body.scrollHeight + 20) + 'px';
+		}}
+	></iframe>
 	{:else if token.type === 'mention'}
 		<MentionToken {token} />
 	{:else if token.type === 'text'}

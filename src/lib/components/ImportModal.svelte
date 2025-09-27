@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -8,16 +10,26 @@
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import { extractFrontmatter } from '$lib/utils';
 
-	export let show = false;
 
-	export let onImport = (e) => {};
-	export let onClose = () => {};
 
-	export let loadUrlHandler: Function = () => {};
-	export let successMessage: string = '';
+	interface Props {
+		show?: boolean;
+		onImport?: any;
+		onClose?: any;
+		loadUrlHandler?: Function;
+		successMessage?: string;
+	}
 
-	let loading = false;
-	let url = '';
+	let {
+		show = $bindable(false),
+		onImport = (e) => {},
+		onClose = () => {},
+		loadUrlHandler = () => {},
+		successMessage = $bindable('')
+	}: Props = $props();
+
+	let loading = $state(false);
+	let url = $state('');
 
 	const submitHandler = async () => {
 		loading = true;
@@ -67,7 +79,7 @@
 			<div class=" text-lg font-medium self-center">{$i18n.t('Import')}</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -79,9 +91,9 @@
 			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
 				<form
 					class="flex flex-col w-full"
-					on:submit|preventDefault={() => {
+					onsubmit={preventDefault(() => {
 						submitHandler();
-					}}
+					})}
 				>
 					<div class="px-1">
 						<div class="flex flex-col w-full">

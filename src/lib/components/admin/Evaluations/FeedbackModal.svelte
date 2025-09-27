@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Modal from '$lib/components/common/Modal.svelte';
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
@@ -7,14 +9,18 @@
 	import { toast } from 'svelte-sonner';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 
-	export let show = false;
-	export let selectedFeedback = null;
 
-	export let onClose: () => void = () => {};
+	interface Props {
+		show?: boolean;
+		selectedFeedback?: any;
+		onClose?: () => void;
+	}
 
-	let loaded = false;
+	let { show = $bindable(false), selectedFeedback = null, onClose = () => {} }: Props = $props();
 
-	let feedbackData = null;
+	let loaded = $state(false);
+
+	let feedbackData = $state(null);
 
 	const close = () => {
 		show = false;
@@ -34,9 +40,11 @@
 		loaded = true;
 	};
 
-	$: if (show) {
-		init();
-	}
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
 </script>
 
 <Modal size="sm" bind:show>
@@ -46,7 +54,7 @@
 				<div class="text-lg font-medium self-center">
 					{$i18n.t('Feedback Details')}
 				</div>
-				<button class="self-center" on:click={close} aria-label="Close">
+				<button class="self-center" onclick={close} aria-label="Close">
 					<XMark className={'size-5'} />
 				</button>
 			</div>
@@ -133,7 +141,7 @@
 							<button
 								class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
 								type="button"
-								on:click={close}
+								onclick={close}
 							>
 								{$i18n.t('Close')}
 							</button>

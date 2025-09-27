@@ -16,35 +16,46 @@
 
 	const i18n = getContext('i18n');
 
-	export let eventTarget: EventTarget;
-	export let submitPrompt: Function;
-	export let stopResponse: Function;
-	export let files;
-	export let chatId;
-	export let modelId;
+	interface Props {
+		eventTarget: EventTarget;
+		submitPrompt: Function;
+		stopResponse: Function;
+		files: any;
+		chatId: any;
+		modelId: any;
+	}
+
+	let {
+		eventTarget,
+		submitPrompt,
+		stopResponse,
+		files = $bindable(),
+		chatId,
+		modelId
+	}: Props = $props();
 
 	let wakeLock = null;
 
-	let model = null;
+	let model = $state(null);
 
-	let loading = false;
+	let loading = $state(false);
 	let confirmed = false;
 	let interrupted = false;
-	let assistantSpeaking = false;
+	let assistantSpeaking = $state(false);
 
-	let emoji = null;
-	let camera = false;
-	let cameraStream = null;
+	let emoji = $state(null);
+	let camera = $state(false);
+	let cameraStream = $state(null);
 
 	let chatStreaming = false;
-	let rmsLevel = 0;
+	let rmsLevel = $state(0);
 	let hasStartedSpeaking = false;
 	let mediaRecorder;
-	let audioStream = null;
+	let audioStream = $state(null);
 	let audioChunks = [];
 
-	let videoInputDevices = [];
-	let selectedVideoInputDeviceId = null;
+	let videoInputDevices = $state([]);
+	let selectedVideoInputDeviceId = $state(null);
 
 	const getVideoInputDevices = async () => {
 		const devices = await navigator.mediaDevices.enumerateDevices();
@@ -695,7 +706,7 @@
 			<button
 				type="button"
 				class="flex justify-center items-center w-full h-20 min-h-20"
-				on:click={() => {
+				onclick={() => {
 					if (assistantSpeaking) {
 						stopAllAudio();
 					}
@@ -744,12 +755,10 @@
 									transform: translate(0);
 								}
 							}
-						</style><circle class="spinner_qM83" cx="4" cy="12" r="3" /><circle
-							class="spinner_qM83 spinner_oXPr"
+						</style><circle class="spinner_qM83" cx="4" cy="12" r="3"></circle><circle class="spinner_qM83 spinner_oXPr"
 							cx="12"
 							cy="12"
-							r="3"
-						/><circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3" /></svg
+							r="3"></circle><circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3"></circle></svg
 					>
 				{:else}
 					<div
@@ -767,7 +776,7 @@
 						'/static/favicon.png'
 							? `background-image: url('${model?.info?.meta?.profile_image_url}');`
 							: ''}
-					/>
+					></div>
 				{/if}
 				<!-- navbar -->
 			</button>
@@ -777,7 +786,7 @@
 			{#if !camera}
 				<button
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						if (assistantSpeaking) {
 							stopAllAudio();
 						}
@@ -826,12 +835,10 @@
 										transform: translate(0);
 									}
 								}
-							</style><circle class="spinner_qM83" cx="4" cy="12" r="3" /><circle
-								class="spinner_qM83 spinner_oXPr"
+							</style><circle class="spinner_qM83" cx="4" cy="12" r="3"></circle><circle class="spinner_qM83 spinner_oXPr"
 								cx="12"
 								cy="12"
-								r="3"
-							/><circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3" /></svg
+								r="3"></circle><circle class="spinner_qM83 spinner_ZTLf" cx="20" cy="12" r="3"></circle></svg
 						>
 					{:else}
 						<div
@@ -849,26 +856,26 @@
 							'/static/favicon.png'
 								? `background-image: url('${model?.info?.meta?.profile_image_url}');`
 								: ''}
-						/>
+						></div>
 					{/if}
 				</button>
 			{:else}
 				<div class="relative flex video-container w-full max-h-full pt-2 pb-4 md:py-6 px-2 h-full">
-					<!-- svelte-ignore a11y-media-has-caption -->
+					<!-- svelte-ignore a11y_media_has_caption -->
 					<video
 						id="camera-feed"
 						autoplay
 						class="rounded-2xl h-full min-w-full object-cover object-center"
 						playsinline
-					/>
+					></video>
 
-					<canvas id="camera-canvas" style="display:none;" />
+					<canvas id="camera-canvas" style="display:none;"></canvas>
 
 					<div class=" absolute top-4 md:top-8 left-4">
 						<button
 							type="button"
 							class="p-1.5 text-white cursor-pointer backdrop-blur-xl bg-black/10 rounded-full"
-							on:click={() => {
+							onclick={() => {
 								stopCamera();
 							}}
 						>
@@ -878,9 +885,7 @@
 								fill="currentColor"
 								class="size-6"
 							>
-								<path
-									d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
-								/>
+								<path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"></path>
 							</svg>
 						</button>
 					</div>
@@ -893,7 +898,7 @@
 				{#if camera}
 					<VideoInputMenu
 						devices={videoInputDevices}
-						on:change={async (e) => {
+						onchange={async (e) => {
 							console.log(e.detail);
 							selectedVideoInputDeviceId = e.detail;
 							await stopVideoStream();
@@ -907,11 +912,9 @@
 								fill="currentColor"
 								class="size-5"
 							>
-								<path
-									fill-rule="evenodd"
+								<path fill-rule="evenodd"
 									d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
-									clip-rule="evenodd"
-								/>
+									clip-rule="evenodd"></path>
 							</svg>
 						</button>
 					</VideoInputMenu>
@@ -920,7 +923,7 @@
 						<button
 							class=" p-3 rounded-full bg-gray-50 dark:bg-gray-900"
 							type="button"
-							on:click={async () => {
+							onclick={async () => {
 								await navigator.mediaDevices.getUserMedia({ video: true });
 								startCamera();
 							}}
@@ -933,16 +936,12 @@
 								stroke="currentColor"
 								class="size-5"
 							>
-								<path
-									stroke-linecap="round"
+								<path stroke-linecap="round"
 									stroke-linejoin="round"
-									d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
-								/>
-								<path
-									stroke-linecap="round"
+									d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"></path>
+								<path stroke-linecap="round"
 									stroke-linejoin="round"
-									d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"
-								/>
+									d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"></path>
 							</svg>
 						</button>
 					</Tooltip>
@@ -952,7 +951,7 @@
 			<div>
 				<button
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						if (assistantSpeaking) {
 							stopAllAudio();
 						}
@@ -973,7 +972,7 @@
 			<div>
 				<button
 					class=" p-3 rounded-full bg-gray-50 dark:bg-gray-900"
-					on:click={async () => {
+					onclick={async () => {
 						await stopAudioStream();
 						await stopVideoStream();
 
@@ -991,9 +990,7 @@
 						fill="currentColor"
 						class="size-5"
 					>
-						<path
-							d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
-						/>
+						<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"></path>
 					</svg>
 				</button>
 			</div>

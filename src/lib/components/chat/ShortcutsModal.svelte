@@ -6,7 +6,11 @@
 	const i18n = getContext('i18n');
 	import XMark from '$lib/components/icons/XMark.svelte';
 
-	export let show = false;
+	interface Props {
+		show?: boolean;
+	}
+
+	let { show = $bindable(false) }: Props = $props();
 </script>
 
 <Modal bind:show>
@@ -15,7 +19,7 @@
 			<div class=" text-lg font-medium self-center">{$i18n.t('Keyboard shortcuts')}</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>

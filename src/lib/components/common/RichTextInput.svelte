@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { marked } from 'marked';
 	marked.use({
 		breaks: true,
@@ -144,9 +146,6 @@
 
 	import type { SocketIOCollaborationProvider } from './RichTextInput/Collaboration';
 
-	export let oncompositionstart = (e) => {};
-	export let oncompositionend = (e) => {};
-	export let onChange = (e) => {};
 
 	// create a lowlight instance with all languages loaded
 	const lowlight = createLowlight(
@@ -159,21 +158,11 @@
 		)
 	);
 
-	export let editor: Editor | null = null;
 
-	export let socket = null;
-	export let user = null;
-	export let files = [];
 
-	export let documentId = '';
 
-	export let className = 'input-prose';
-	export let placeholder = $i18n.t('Type here...');
-	let _placeholder = placeholder;
+	let _placeholder = $state(placeholder);
 
-	$: if (placeholder !== _placeholder) {
-		setPlaceholder();
-	}
 
 	const setPlaceholder = () => {
 		_placeholder = placeholder;
@@ -182,81 +171,13 @@
 		}
 	};
 
-	export let richText = true;
-	export let dragHandle = false;
-	export let link = false;
-	export let image = false;
-	export let fileHandler = false;
-	export let suggestions = null;
 
-	export let onFileDrop = (currentEditor, files, pos) => {
-		files.forEach((file) => {
-			const fileReader = new FileReader();
 
-			fileReader.readAsDataURL(file);
-			fileReader.onload = () => {
-				currentEditor
-					.chain()
-					.insertContentAt(pos, {
-						type: 'image',
-						attrs: {
-							src: fileReader.result
-						}
-					})
-					.focus()
-					.run();
-			};
-		});
-	};
 
-	export let onFilePaste = (currentEditor, files, htmlContent) => {
-		files.forEach((file) => {
-			if (htmlContent) {
-				// if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
-				// you could extract the pasted file from this url string and upload it to a server for example
-				console.log(htmlContent); // eslint-disable-line no-console
-				return false;
-			}
 
-			const fileReader = new FileReader();
 
-			fileReader.readAsDataURL(file);
-			fileReader.onload = () => {
-				currentEditor
-					.chain()
-					.insertContentAt(currentEditor.state.selection.anchor, {
-						type: 'image',
-						attrs: {
-							src: fileReader.result
-						}
-					})
-					.focus()
-					.run();
-			};
-		});
-	};
 
-	export let onSelectionUpdate = (e) => {};
 
-	export let id = '';
-	export let value = '';
-	export let html = '';
-
-	export let json = false;
-	export let raw = false;
-	export let editable = true;
-	export let collaboration = false;
-
-	export let showFormattingToolbar = true;
-
-	export let preserveBreaks = false;
-	export let generateAutoCompletion: Function = async () => null;
-	export let autocomplete = false;
-	export let messageInput = false;
-	export let shiftEnter = false;
-	export let largeTextAsFile = false;
-	export let insertPromptAsRichText = false;
-	export let floatingMenuPlacement = 'bottom-start';
 
 	let content = null;
 	let htmlValue = '';
@@ -265,23 +186,15 @@
 
 	let provider: SocketIOCollaborationProvider | null = null;
 
-	let floatingMenuElement: Element | null = null;
-	let bubbleMenuElement: Element | null = null;
-	let element: Element | null = null;
+	let floatingMenuElement: Element | null = $state(null);
+	let bubbleMenuElement: Element | null = $state(null);
+	let element: Element | null = $state(null);
 
 	const options = {
 		throwOnError: false
 	};
 
-	$: if (editor) {
-		editor.setOptions({
-			editable: editable
-		});
-	}
 
-	$: if (value === null && html !== null && editor) {
-		editor.commands.setContent(html);
-	}
 
 	export const getWordAtDocPos = () => {
 		if (!editor) return '';
@@ -619,6 +532,124 @@
 	});
 
 	import { listDragHandlePlugin } from './RichTextInput/listDragHandlePlugin.js';
+	interface Props {
+		oncompositionstart?: any;
+		oncompositionend?: any;
+		onChange?: any;
+		editor?: Editor | null;
+		socket?: any;
+		user?: any;
+		files?: any;
+		documentId?: string;
+		className?: string;
+		placeholder?: any;
+		richText?: boolean;
+		dragHandle?: boolean;
+		link?: boolean;
+		image?: boolean;
+		fileHandler?: boolean;
+		suggestions?: any;
+		onFileDrop?: any;
+		onFilePaste?: any;
+		onSelectionUpdate?: any;
+		id?: string;
+		value?: string;
+		html?: string;
+		json?: boolean;
+		raw?: boolean;
+		editable?: boolean;
+		collaboration?: boolean;
+		showFormattingToolbar?: boolean;
+		preserveBreaks?: boolean;
+		generateAutoCompletion?: Function;
+		autocomplete?: boolean;
+		messageInput?: boolean;
+		shiftEnter?: boolean;
+		largeTextAsFile?: boolean;
+		insertPromptAsRichText?: boolean;
+		floatingMenuPlacement?: string;
+	}
+
+	let {
+		oncompositionstart = (e) => {},
+		oncompositionend = (e) => {},
+		onChange = (e) => {},
+		editor = $bindable(null),
+		socket = null,
+		user = null,
+		files = [],
+		documentId = '',
+		className = 'input-prose',
+		placeholder = $i18n.t('Type here...'),
+		richText = true,
+		dragHandle = false,
+		link = false,
+		image = false,
+		fileHandler = false,
+		suggestions = null,
+		onFileDrop = (currentEditor, files, pos) => {
+		files.forEach((file) => {
+			const fileReader = new FileReader();
+
+			fileReader.readAsDataURL(file);
+			fileReader.onload = () => {
+				currentEditor
+					.chain()
+					.insertContentAt(pos, {
+						type: 'image',
+						attrs: {
+							src: fileReader.result
+						}
+					})
+					.focus()
+					.run();
+			};
+		});
+	},
+		onFilePaste = (currentEditor, files, htmlContent) => {
+		files.forEach((file) => {
+			if (htmlContent) {
+				// if there is htmlContent, stop manual insertion & let other extensions handle insertion via inputRule
+				// you could extract the pasted file from this url string and upload it to a server for example
+				console.log(htmlContent); // eslint-disable-line no-console
+				return false;
+			}
+
+			const fileReader = new FileReader();
+
+			fileReader.readAsDataURL(file);
+			fileReader.onload = () => {
+				currentEditor
+					.chain()
+					.insertContentAt(currentEditor.state.selection.anchor, {
+						type: 'image',
+						attrs: {
+							src: fileReader.result
+						}
+					})
+					.focus()
+					.run();
+			};
+		});
+	},
+		onSelectionUpdate = (e) => {},
+		id = '',
+		value = $bindable(''),
+		html = '',
+		json = false,
+		raw = false,
+		editable = true,
+		collaboration = false,
+		showFormattingToolbar = true,
+		preserveBreaks = false,
+		generateAutoCompletion = async () => null,
+		autocomplete = false,
+		messageInput = false,
+		shiftEnter = false,
+		largeTextAsFile = false,
+		insertPromptAsRichText = false,
+		floatingMenuPlacement = 'bottom-start'
+	}: Props = $props();
 
 	const ListItemDragHandle = Extension.create({
 		name: 'customListItemDragHandle',
@@ -904,12 +935,12 @@
 					keydown: (view, event) => {
 						if (messageInput) {
 							// Check if the current selection is inside a structured block (like codeBlock or list)
-							const { state } = view;
-							const { $head } = state.selection;
+					const { state } = view;
+					const { $head: head } = state.selection;
 
-							// Recursive function to check ancestors for specific node types
-							function isInside(nodeTypes: string[]): boolean {
-								let currentNode = $head;
+					// Recursive function to check ancestors for specific node types
+					function isInside(nodeTypes: string[]): boolean {
+						let currentNode = head;
 								while (currentNode) {
 									if (nodeTypes.includes(currentNode.parent.type.name)) {
 										return true;
@@ -942,10 +973,10 @@
 							if (event.key === 'Enter') {
 								const isCtrlPressed = event.ctrlKey || event.metaKey; // metaKey is for Cmd key on Mac
 
-								const { state } = view;
-								const { $from } = state.selection;
-								const lineStart = $from.before($from.depth);
-								const lineEnd = $from.after($from.depth);
+					const { state } = view;
+					const { $from: from } = state.selection;
+					const lineStart = from.before(from.depth);
+					const lineEnd = from.after(from.depth);
 								const lineText = state.doc.textBetween(lineStart, lineEnd, '\n', '\0').trim();
 								if (event.shiftKey && !isCtrlPressed) {
 									if (lineText.startsWith('```')) {
@@ -1092,9 +1123,6 @@
 		}
 	});
 
-	$: if (value !== null && editor && !collaboration) {
-		onValueChange();
-	}
 
 	const onValueChange = () => {
 		if (!editor) return;
@@ -1143,6 +1171,28 @@
 			}
 		}
 	};
+	run(() => {
+		if (placeholder !== _placeholder) {
+			setPlaceholder();
+		}
+	});
+	run(() => {
+		if (editor) {
+			editor.setOptions({
+				editable: editable
+			});
+		}
+	});
+	run(() => {
+		if (value === null && html !== null && editor) {
+			editor.commands.setContent(html);
+		}
+	});
+	run(() => {
+		if (value !== null && editor && !collaboration) {
+			onValueChange();
+		}
+	});
 </script>
 
 {#if richText && showFormattingToolbar}
@@ -1160,4 +1210,4 @@
 	class="relative w-full min-w-full h-full min-h-fit {className} {!editable
 		? 'cursor-not-allowed'
 		: ''}"
-/>
+></div>

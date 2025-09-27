@@ -12,12 +12,26 @@
 
 	const i18n = getContext('i18n');
 
-	export let show = false;
-	export let className = 'max-w-[170px]';
 
-	export let onRecord = () => {};
-	export let onCaptureAudio = () => {};
-	export let onUpload = () => {};
+	interface Props {
+		show?: boolean;
+		className?: string;
+		onRecord?: any;
+		onCaptureAudio?: any;
+		onUpload?: any;
+		children?: import('svelte').Snippet;
+		content?: import('svelte').Snippet;
+	}
+
+	let {
+		show = $bindable(false),
+		className = 'max-w-[170px]',
+		onRecord = () => {},
+		onCaptureAudio = () => {},
+		onUpload = () => {},
+		children,
+		content
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher();
 </script>
@@ -29,10 +43,10 @@
 	}}
 >
 	<DropdownMenu.Trigger>
-		<slot />
+		{@render children?.()}
 	</DropdownMenu.Trigger>
 
-	<slot name="content">
+	{#if content}{@render content()}{:else}
 		<DropdownMenu.Content
 			class="w-full {className} text-sm rounded-xl p-1 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg font-primary"
 			sideOffset={8}
@@ -42,7 +56,7 @@
 		>
 			<button
 				class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-				on:click={async () => {
+				onclick={async () => {
 					onRecord();
 					show = false;
 				}}
@@ -55,7 +69,7 @@
 
 			<button
 				class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-				on:click={() => {
+				onclick={() => {
 					onCaptureAudio();
 					show = false;
 				}}
@@ -68,7 +82,7 @@
 
 			<button
 				class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-				on:click={() => {
+				onclick={() => {
 					onUpload();
 					show = false;
 				}}
@@ -79,5 +93,5 @@
 				<div class=" self-center truncate">{$i18n.t('Upload Audio')}</div>
 			</button>
 		</DropdownMenu.Content>
-	</slot>
+	{/if}
 </DropdownMenu.Root>

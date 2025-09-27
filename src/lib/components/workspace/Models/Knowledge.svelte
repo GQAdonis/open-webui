@@ -12,13 +12,13 @@
 	import { v4 as uuidv4 } from 'uuid';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
-	export let selectedItems = [];
+	let { selectedItems = $bindable([]), label } = $props();
 	const i18n = getContext('i18n');
 
-	let loaded = false;
+	let loaded = $state(false);
 
-	let filesInputElement = null;
-	let inputFiles = [];
+	let filesInputElement = $state(null);
+	let inputFiles = $state([]);
 
 	const uploadFileHandler = async (file, fullContext: boolean = false) => {
 		if ($user?.role !== 'admin' && !($user?.permissions?.chat?.file_upload ?? true)) {
@@ -141,7 +141,7 @@
 	type="file"
 	hidden
 	multiple
-	on:change={async () => {
+	onchange={async () => {
 		if (inputFiles && inputFiles.length > 0) {
 			const _inputFiles = Array.from(inputFiles);
 			inputFilesHandler(_inputFiles);
@@ -154,7 +154,7 @@
 />
 
 <div>
-	<slot name="label">
+	{#if label}{@render label()}{:else}
 		<div class="mb-2">
 			<div class="flex w-full justify-between mb-1">
 				<div class=" self-center text-sm font-semibold">
@@ -166,7 +166,7 @@
 				{$i18n.t('To attach knowledge base here, add them to the "Knowledge" workspace first.')}
 			</div>
 		</div>
-	</slot>
+	{/if}
 
 	<div class="flex flex-col">
 		{#if selectedItems?.length > 0}
@@ -219,7 +219,7 @@
 					<button
 						class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-850 rounded-3xl"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							filesInputElement.click();
 						}}>{$i18n.t('Upload Files')}</button
 					>

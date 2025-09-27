@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import DOMPurify from 'dompurify';
 
 	import { onMount, getContext, createEventDispatcher, onDestroy, tick } from 'svelte';
@@ -11,28 +13,41 @@
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { marked } from 'marked';
 
-	export let title = '';
-	export let message = '';
 
-	export let cancelLabel = $i18n.t('Cancel');
-	export let confirmLabel = $i18n.t('Confirm');
 
-	export let onConfirm = () => {};
 
-	export let input = false;
-	export let inputPlaceholder = '';
-	export let inputValue = '';
 
-	export let show = false;
-
-	$: if (show) {
-		init();
+	interface Props {
+		title?: string;
+		message?: string;
+		cancelLabel?: any;
+		confirmLabel?: any;
+		onConfirm?: any;
+		input?: boolean;
+		inputPlaceholder?: string;
+		inputValue?: string;
+		show?: boolean;
+		children?: import('svelte').Snippet;
 	}
 
-	let modalElement = null;
-	let mounted = false;
+	let {
+		title = '',
+		message = '',
+		cancelLabel = $i18n.t('Cancel'),
+		confirmLabel = $i18n.t('Confirm'),
+		onConfirm = () => {},
+		input = false,
+		inputPlaceholder = '',
+		inputValue = $bindable(''),
+		show = $bindable(false),
+		children
+	}: Props = $props();
 
-	let focusTrap: FocusTrap.FocusTrap | null = null;
+
+	let modalElement = $state(null);
+	let mounted = $state(false);
+
+	let focusTrap: FocusTrap.FocusTrap | null = $state(null);
 
 	const init = () => {
 		inputValue = '';
@@ -61,23 +76,6 @@
 		mounted = true;
 	});
 
-	$: if (mounted) {
-		if (show && modalElement) {
-			document.body.appendChild(modalElement);
-			focusTrap = FocusTrap.createFocusTrap(modalElement);
-			focusTrap.activate();
-
-			window.addEventListener('keydown', handleKeyDown);
-			document.body.style.overflow = 'hidden';
-		} else if (modalElement) {
-			focusTrap.deactivate();
-
-			window.removeEventListener('keydown', handleKeyDown);
-			document.body.removeChild(modalElement);
-
-			document.body.style.overflow = 'unset';
-		}
-	}
 
 	onDestroy(() => {
 		show = false;
@@ -88,23 +86,47 @@
 			document.body.removeChild(modalElement);
 		}
 	});
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
+	run(() => {
+		if (mounted) {
+			if (show && modalElement) {
+				document.body.appendChild(modalElement);
+				focusTrap = FocusTrap.createFocusTrap(modalElement);
+				focusTrap.activate();
+
+				window.addEventListener('keydown', handleKeyDown);
+				document.body.style.overflow = 'hidden';
+			} else if (modalElement) {
+				focusTrap.deactivate();
+
+				window.removeEventListener('keydown', handleKeyDown);
+				document.body.removeChild(modalElement);
+
+				document.body.style.overflow = 'unset';
+			}
+		}
+	});
 </script>
 
 {#if show}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={modalElement}
 		class=" fixed top-0 right-0 left-0 bottom-0 bg-black/60 w-full h-screen max-h-[100dvh] flex justify-center z-99999999 overflow-hidden overscroll-contain"
 		in:fade={{ duration: 10 }}
-		on:mousedown={() => {
+		onmousedown={() => {
 			show = false;
 		}}
 	>
 		<div
 			class=" m-auto rounded-2xl max-w-full w-[32rem] mx-2 bg-gray-50 dark:bg-gray-950 max-h-[100dvh] shadow-3xl"
 			in:flyAndScale
-			on:mousedown={(e) => {
+			onmousedown={(e) => {
 				e.stopPropagation();
 			}}
 		>
@@ -117,7 +139,7 @@
 					{/if}
 				</div>
 
-				<slot>
+				{#if children}{@render children()}{:else}
 					<div class=" text-sm text-gray-500 flex-1">
 						{#if message !== ''}
 							{@const html = DOMPurify.sanitize(marked.parse(message))}
@@ -133,15 +155,15 @@
 								class="w-full mt-2 rounded-lg px-4 py-2 text-sm dark:text-gray-300 dark:bg-gray-900 outline-hidden resize-none"
 								rows="3"
 								required
-							/>
+							></textarea>
 						{/if}
 					</div>
-				</slot>
+				{/if}
 
 				<div class="mt-6 flex justify-between gap-1.5">
 					<button
 						class="bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-white font-medium w-full py-2.5 rounded-lg transition"
-						on:click={() => {
+						onclick={() => {
 							show = false;
 							dispatch('cancel');
 						}}
@@ -151,7 +173,7 @@
 					</button>
 					<button
 						class="bg-gray-900 hover:bg-gray-850 text-gray-100 dark:bg-gray-100 dark:hover:bg-white dark:text-gray-800 font-medium w-full py-2.5 rounded-lg transition"
-						on:click={() => {
+						onclick={() => {
 							confirmHandler();
 						}}
 						type="button"

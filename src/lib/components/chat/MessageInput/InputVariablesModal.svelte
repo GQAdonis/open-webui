@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { getContext, onMount, tick } from 'svelte';
 	import { models, config } from '$lib/stores';
 
@@ -12,13 +14,17 @@
 
 	const i18n = getContext('i18n');
 
-	export let show = false;
-	export let variables = {};
 
-	export let onSave = (e) => {};
+	interface Props {
+		show?: boolean;
+		variables?: any;
+		onSave?: any;
+	}
 
-	let loading = false;
-	let variableValues = {};
+	let { show = $bindable(false), variables = {}, onSave = (e) => {} }: Props = $props();
+
+	let loading = $state(false);
+	let variableValues = $state({});
 
 	const submitHandler = async () => {
 		onSave(variableValues);
@@ -46,9 +52,11 @@
 		}
 	};
 
-	$: if (show) {
-		init();
-	}
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
 </script>
 
 <Modal bind:show size="md">
@@ -57,7 +65,7 @@
 			<div class=" text-lg font-medium self-center">{$i18n.t('Input Variables')}</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -69,9 +77,9 @@
 			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
 				<form
 					class="flex flex-col w-full"
-					on:submit|preventDefault={() => {
+					onsubmit={preventDefault(() => {
 						submitHandler();
-					}}
+					})}
 				>
 					<div class="px-1">
 						{#if !loading}
@@ -145,7 +153,7 @@
 																class="size-6 rounded cursor-pointer border border-gray-200 dark:border-gray-700"
 																value={variableValues[variable]}
 																id="input-variable-{idx}"
-																on:input={(e) => {
+																oninput={(e) => {
 																	// Convert the color value to uppercase immediately
 																	variableValues[variable] = e.target.value.toUpperCase();
 																}}
@@ -322,7 +330,7 @@
 														autocomplete="off"
 														id="input-variable-{idx}"
 														required={variables[variable]?.required ?? false}
-													/>
+													></textarea>
 												{/if}
 											</div>
 										</div>
@@ -344,7 +352,7 @@
 						<button
 							class="px-3.5 py-1.5 text-sm font-medium bg-white hover:bg-gray-100 text-black dark:bg-black dark:text-white dark:hover:bg-gray-900 transition rounded-full"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								show = false;
 							}}
 						>

@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Event attribute must be a JavaScript expression, not a string
+https://svelte.dev/e/attribute_invalid_event_handler -->
 <script lang="ts">
 	import DOMPurify from 'dompurify';
 	import type { Token } from 'marked';
@@ -79,7 +81,9 @@
 				title="Embedded content"
 				frameborder="0"
 				sandbox
-				onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
+				onload={(e) => {
+					e.target.style.height = (e.target.contentWindow.document.body.scrollHeight + 20) + 'px';
+				}}
 			></iframe>
 		{:else}
 			{token.text}
@@ -116,7 +120,9 @@
 				referrerpolicy="strict-origin-when-cross-origin"
 				allowfullscreen
 				width="100%"
-				onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
+				onload={(e) => {
+					e.target.style.height = (e.target.contentWindow.document.body.scrollHeight + 20) + 'px';
+				}}
 			></iframe>
 		{/if}
 	{:else if token.text.includes(`<source_id`)}

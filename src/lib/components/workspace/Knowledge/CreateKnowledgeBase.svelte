@@ -1,4 +1,6 @@
 <script>
+	import { preventDefault } from 'svelte/legacy';
+
 	import { goto } from '$app/navigation';
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
@@ -9,11 +11,11 @@
 	import AccessControl from '../common/AccessControl.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 
-	let loading = false;
+	let loading = $state(false);
 
-	let name = '';
-	let description = '';
-	let accessControl = {};
+	let name = $state('');
+	let description = $state('');
+	let accessControl = $state({});
 
 	const submitHandler = async () => {
 		loading = true;
@@ -48,7 +50,7 @@
 <div class="w-full max-h-full">
 	<button
 		class="flex space-x-1"
-		on:click={() => {
+		onclick={() => {
 			goto('/workspace/knowledge');
 		}}
 	>
@@ -59,11 +61,9 @@
 				fill="currentColor"
 				class="w-4 h-4"
 			>
-				<path
-					fill-rule="evenodd"
+				<path fill-rule="evenodd"
 					d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
-					clip-rule="evenodd"
-				/>
+					clip-rule="evenodd"></path>
 			</svg>
 		</div>
 		<div class=" self-center font-medium text-sm">{$i18n.t('Back')}</div>
@@ -71,9 +71,9 @@
 
 	<form
 		class="flex flex-col max-w-lg mx-auto mt-10 mb-10"
-		on:submit|preventDefault={() => {
+		onsubmit={preventDefault(() => {
 			submitHandler();
-		}}
+		})}
 	>
 		<div class=" w-full flex flex-col justify-center">
 			<div class=" text-2xl font-medium font-primary mb-2.5">
@@ -105,7 +105,7 @@
 							bind:value={description}
 							placeholder={$i18n.t('Describe your knowledge base and objectives')}
 							required
-						/>
+						></textarea>
 					</div>
 				</div>
 			</div>

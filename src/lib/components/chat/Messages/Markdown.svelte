@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { marked } from 'marked';
 	import { replaceTokens, processResponseContent } from '$lib/utils';
 	import { user } from '$lib/stores';
@@ -10,27 +12,46 @@
 
 	import MarkdownTokens from './Markdown/MarkdownTokens.svelte';
 
-	export let id = '';
-	export let content;
-	export let done = true;
-	export let model = null;
-	export let save = false;
-	export let preview = false;
 
-	export let editCodeBlock = true;
-	export let topPadding = false;
 
-	export let sourceIds = [];
 
-	export let onSave = () => {};
-	export let onUpdate = () => {};
 
-	export let onPreview = () => {};
 
-	export let onSourceClick = () => {};
-	export let onTaskClick = () => {};
+	interface Props {
+		id?: string;
+		content: any;
+		done?: boolean;
+		model?: any;
+		save?: boolean;
+		preview?: boolean;
+		editCodeBlock?: boolean;
+		topPadding?: boolean;
+		sourceIds?: any;
+		onSave?: any;
+		onUpdate?: any;
+		onPreview?: any;
+		onSourceClick?: any;
+		onTaskClick?: any;
+	}
 
-	let tokens = [];
+	let {
+		id = '',
+		content,
+		done = true,
+		model = null,
+		save = false,
+		preview = false,
+		editCodeBlock = true,
+		topPadding = false,
+		sourceIds = [],
+		onSave = () => {},
+		onUpdate = () => {},
+		onPreview = () => {},
+		onSourceClick = () => {},
+		onTaskClick = () => {}
+	}: Props = $props();
+
+	let tokens = $state([]);
 
 	const options = {
 		throwOnError: false,
@@ -44,13 +65,15 @@
 		extensions: [mentionExtension({ triggerChar: '@' }), mentionExtension({ triggerChar: '#' })]
 	});
 
-	$: (async () => {
-		if (content) {
-			tokens = marked.lexer(
-				replaceTokens(processResponseContent(content), sourceIds, model?.name, $user?.name)
-			);
-		}
-	})();
+	run(() => {
+		(async () => {
+			if (content) {
+				tokens = marked.lexer(
+					replaceTokens(processResponseContent(content), sourceIds, model?.name, $user?.name)
+				);
+			}
+		})();
+	});
 </script>
 
 {#key id}

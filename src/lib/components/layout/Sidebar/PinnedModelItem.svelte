@@ -8,30 +8,39 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import PinSlash from '$lib/components/icons/PinSlash.svelte';
 
-	export let model = null;
-	export let shiftKey = false;
-	export let onClick = () => {};
-	export let onUnpin = () => {};
+	interface Props {
+		model?: any;
+		shiftKey?: boolean;
+		onClick?: any;
+		onUnpin?: any;
+	}
 
-	let mouseOver = false;
+	let {
+		model = null,
+		shiftKey = false,
+		onClick = () => {},
+		onUnpin = () => {}
+	}: Props = $props();
+
+	let mouseOver = $state(false);
 </script>
 
 {#if model}
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="px-[7px] flex justify-center text-gray-800 dark:text-gray-200 cursor-grab relative group"
 		data-id={model?.id}
-		on:mouseenter={(e) => {
+		onmouseenter={(e) => {
 			mouseOver = true;
 		}}
-		on:mouseleave={(e) => {
+		onmouseleave={(e) => {
 			mouseOver = false;
 		}}
 	>
 		<a
 			class="grow flex items-center space-x-2.5 rounded-lg px-2 py-[7px] group-hover:bg-gray-100 dark:group-hover:bg-gray-900 transition"
 			href="/?model={model?.id}"
-			on:click={onClick}
+			onclick={onClick}
 			draggable="false"
 		>
 			<div class="self-center shrink-0">
@@ -56,7 +65,7 @@
 					<Tooltip content={$i18n.t('Unpin')} className="flex items-center">
 						<button
 							class=" self-center dark:hover:text-white transition"
-							on:click={() => {
+							onclick={() => {
 								onUnpin();
 							}}
 							type="button"

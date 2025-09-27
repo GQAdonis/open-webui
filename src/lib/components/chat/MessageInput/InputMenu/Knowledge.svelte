@@ -13,11 +13,11 @@
 
 	const i18n = getContext('i18n');
 
-	export let onSelect = (e) => {};
+	let { onSelect = (e) => {} } = $props();
 
-	let loaded = false;
-	let items = [];
-	let selectedIdx = 0;
+	let loaded = $state(false);
+	let items = $state([]);
+	let selectedIdx = $state(0);
 
 	onMount(async () => {
 		if ($knowledge === null) {
@@ -115,14 +115,14 @@
 					? ' bg-gray-50 dark:bg-gray-800 dark:text-gray-100 selected-command-option-button'
 					: ''}"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					console.log(item);
 					onSelect(item);
 				}}
-				on:mousemove={() => {
+				onmousemove={() => {
 					selectedIdx = idx;
 				}}
-				on:mouseleave={() => {
+				onmouseleave={() => {
 					if (idx === 0) {
 						selectedIdx = -1;
 					}

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 
 	import { onMount, getContext, createEventDispatcher } from 'svelte';
@@ -31,27 +33,27 @@
 
 	const i18n = getContext('i18n');
 
-	let updateEmbeddingModelLoading = false;
+	let updateEmbeddingModelLoading = $state(false);
 	let updateRerankingModelLoading = false;
 
-	let showResetConfirm = false;
-	let showResetUploadDirConfirm = false;
-	let showReindexConfirm = false;
+	let showResetConfirm = $state(false);
+	let showResetUploadDirConfirm = $state(false);
+	let showReindexConfirm = $state(false);
 
-	let embeddingEngine = '';
-	let embeddingModel = '';
-	let embeddingBatchSize = 1;
+	let embeddingEngine = $state('');
+	let embeddingModel = $state('');
+	let embeddingBatchSize = $state(1);
 	let rerankingModel = '';
 
-	let OpenAIUrl = '';
-	let OpenAIKey = '';
+	let OpenAIUrl = $state('');
+	let OpenAIKey = $state('');
 
-	let AzureOpenAIUrl = '';
-	let AzureOpenAIKey = '';
-	let AzureOpenAIVersion = '';
+	let AzureOpenAIUrl = $state('');
+	let AzureOpenAIKey = $state('');
+	let AzureOpenAIVersion = $state('');
 
-	let OllamaUrl = '';
-	let OllamaKey = '';
+	let OllamaUrl = $state('');
+	let OllamaKey = $state('');
 
 	let querySettings = {
 		template: '',
@@ -61,7 +63,7 @@
 		hybrid: false
 	};
 
-	let RAGConfig = null;
+	let RAGConfig = $state(null);
 
 	const embeddingModelUpdateHandler = async () => {
 		if (embeddingEngine === '' && embeddingModel.split('/').length - 1 > 1) {
@@ -308,9 +310,9 @@
 
 <form
 	class="flex flex-col h-full justify-between space-y-3 text-sm"
-	on:submit|preventDefault={() => {
+	onsubmit={preventDefault(() => {
 		submitHandler();
-	}}
+	})}
 >
 	{#if RAGConfig}
 		<div class=" space-y-2.5 overflow-y-scroll scrollbar-hidden h-full pr-1.5">
@@ -828,7 +830,7 @@
 										class="dark:bg-gray-900 w-fit pr-8 rounded-sm px-2 p-1 text-xs bg-transparent outline-hidden text-right"
 										bind:value={embeddingEngine}
 										placeholder={$i18n.t('Select an embedding model engine')}
-										on:change={(e) => {
+										onchange={(e) => {
 											if (e.target.value === 'ollama') {
 												embeddingModel = '';
 											} else if (e.target.value === 'openai') {
@@ -931,7 +933,7 @@
 										{#if embeddingEngine === ''}
 											<button
 												class="px-2.5 bg-transparent text-gray-800 dark:bg-transparent dark:text-gray-100 rounded-lg transition"
-												on:click={() => {
+												onclick={() => {
 													embeddingModelUpdateHandler();
 												}}
 												disabled={updateEmbeddingModelLoading}
@@ -947,12 +949,8 @@
 														fill="currentColor"
 														class="w-4 h-4"
 													>
-														<path
-															d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"
-														/>
-														<path
-															d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"
-														/>
+														<path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"></path>
+														<path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"></path>
 													</svg>
 												{/if}
 											</button>
@@ -1029,7 +1027,7 @@
 												class="dark:bg-gray-900 w-fit pr-8 rounded-sm px-2 p-1 text-xs bg-transparent outline-hidden text-right"
 												bind:value={RAGConfig.RAG_RERANKING_ENGINE}
 												placeholder={$i18n.t('Select a reranking model engine')}
-												on:change={(e) => {
+												onchange={(e) => {
 													if (e.target.value === 'external') {
 														RAGConfig.RAG_RERANKING_MODEL = '';
 													} else if (e.target.value === '') {
@@ -1155,7 +1153,7 @@
 											<button
 												class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 												type="button"
-												on:click={() => {
+												onclick={() => {
 													RAGConfig.HYBRID_BM25_WEIGHT =
 														(RAGConfig?.HYBRID_BM25_WEIGHT ?? null) === null ? 0.5 : null;
 												}}
@@ -1373,7 +1371,7 @@
 						<div class="flex items-center relative">
 							<button
 								class="text-xs"
-								on:click={() => {
+								onclick={() => {
 									showResetUploadDirConfirm = true;
 								}}
 							>
@@ -1389,7 +1387,7 @@
 						<div class="flex items-center relative">
 							<button
 								class="text-xs"
-								on:click={() => {
+								onclick={() => {
 									showResetConfirm = true;
 								}}
 							>
@@ -1404,7 +1402,7 @@
 						<div class="flex items-center relative">
 							<button
 								class="text-xs"
-								on:click={() => {
+								onclick={() => {
 									showReindexConfirm = true;
 								}}
 							>

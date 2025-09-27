@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { SvelteFlowProvider } from '@xyflow/svelte';
 	import { slide } from 'svelte/transition';
 	import { Pane, PaneResizer } from 'paneforge';
@@ -14,28 +16,45 @@
 	import EllipsisVertical from '../icons/EllipsisVertical.svelte';
 	import Artifacts from './Artifacts.svelte';
 
-	export let history;
-	export let models = [];
 
-	export let chatId = null;
 
-	export let chatFiles = [];
-	export let params = {};
 
-	export let eventTarget: EventTarget;
-	export let submitPrompt: Function;
-	export let stopResponse: Function;
-	export let showMessage: Function;
-	export let files;
-	export let modelId;
 
-	export let pane;
+	interface Props {
+		history: any;
+		models?: any;
+		chatId?: any;
+		chatFiles?: any;
+		params?: any;
+		eventTarget: EventTarget;
+		submitPrompt: Function;
+		stopResponse: Function;
+		showMessage: Function;
+		files: any;
+		modelId: any;
+		pane: any;
+	}
+
+	let {
+		history = $bindable(),
+		models = [],
+		chatId = null,
+		chatFiles = $bindable([]),
+		params = $bindable({}),
+		eventTarget,
+		submitPrompt,
+		stopResponse,
+		showMessage,
+		files = $bindable(),
+		modelId,
+		pane = $bindable()
+	}: Props = $props();
 
 	let mediaQuery;
-	let largeScreen = false;
-	let dragged = false;
+	let largeScreen = $state(false);
+	let dragged = $state(false);
 
-	let minSize = 0;
+	let minSize = $state(0);
 
 	export const openPane = () => {
 		if (parseInt(localStorage?.chatControlsSize)) {
@@ -140,9 +159,11 @@
 		}
 	};
 
-	$: if (!chatId) {
-		closeHandler();
-	}
+	run(() => {
+		if (!chatId) {
+			closeHandler();
+		}
+	});
 </script>
 
 <SvelteFlowProvider>
@@ -210,7 +231,7 @@
 			>
 				<div
 					class=" absolute -left-1.5 -right-1.5 -top-0 -bottom-0 z-20 cursor-col-resize bg-transparent"
-				/>
+				></div>
 			</PaneResizer>
 		{/if}
 

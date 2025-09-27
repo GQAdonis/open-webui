@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import DOMPurify from 'dompurify';
 	import { marked } from 'marked';
 
@@ -85,54 +87,20 @@
 
 	const i18n = getContext('i18n');
 
-	export let onChange: Function = () => {};
-	export let createMessagePair: Function;
-	export let stopResponse: Function;
 
-	export let autoScroll = false;
-	export let generating = false;
 
-	export let atSelectedModel: Model | undefined = undefined;
-	export let selectedModels: [''];
 
-	let selectedModelIds = [];
-	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
+	let selectedModelIds = $state([]);
 
-	export let history;
-	export let taskIds = null;
 
-	export let prompt = '';
-	export let files = [];
 
-	export let selectedToolIds = [];
-	export let selectedFilterIds = [];
 
-	export let imageGenerationEnabled = false;
-	export let webSearchEnabled = false;
-	export let codeInterpreterEnabled = false;
 
-	let showInputVariablesModal = false;
-	let inputVariablesModalCallback = (variableValues) => {};
-	let inputVariables = {};
+	let showInputVariablesModal = $state(false);
+	let inputVariablesModalCallback = $state((variableValues) => {});
+	let inputVariables = $state({});
 	let inputVariableValues = {};
 
-	$: onChange({
-		prompt,
-		files: files
-			.filter((file) => file.type !== 'image')
-			.map((file) => {
-				return {
-					...file,
-					user: undefined,
-					access_control: undefined
-				};
-			}),
-		selectedToolIds,
-		selectedFilterIds,
-		imageGenerationEnabled,
-		webSearchEnabled,
-		codeInterpreterEnabled
-	});
 
 	const inputVariableHandler = async (text: string): Promise<string> => {
 		inputVariables = extractInputVariables(text);
@@ -417,20 +385,18 @@
 		});
 	};
 
-	let command = '';
-	export let showCommands = false;
-	$: showCommands = ['/', '#', '@'].includes(command?.charAt(0)) || '\\#' === command?.slice(0, 2);
-	let suggestions = null;
+	let command = $state('');
+	let suggestions = $state(null);
 
-	let showTools = false;
+	let showTools = $state(false);
 
-	let loaded = false;
-	let recording = false;
+	let loaded = $state(false);
+	let recording = $state(false);
 
-	let isComposing = false;
+	let isComposing = $state(false);
 	// Safari has a bug where compositionend is not triggered correctly #16615
 	// when using the virtual keyboard on iOS.
-	let compositionEndedAt = -2e8;
+	let compositionEndedAt = $state(-2e8);
 
 	// Phase 3.4: Intent Classification State
 	let isClassifyingIntent = false;
@@ -458,78 +424,78 @@
 	}
 
 	let chatInputContainerElement;
-	let chatInputElement;
+	let chatInputElement = $state();
 
-	let filesInputElement;
+	let filesInputElement = $state();
 	let commandsElement;
 
-	let inputFiles;
+	let inputFiles = $state();
 
-	let dragged = false;
-	let shiftKey = false;
+	let dragged = $state(false);
+	let shiftKey = $state(false);
 
 	let user = null;
-	export let placeholder = '';
+	interface Props {
+		onChange?: Function;
+		createMessagePair: Function;
+		stopResponse: Function;
+		autoScroll?: boolean;
+		generating?: boolean;
+		atSelectedModel?: Model | undefined;
+		selectedModels: [''];
+		history: any;
+		taskIds?: any;
+		prompt?: string;
+		files?: any;
+		selectedToolIds?: any;
+		selectedFilterIds?: any;
+		imageGenerationEnabled?: boolean;
+		webSearchEnabled?: boolean;
+		codeInterpreterEnabled?: boolean;
+		showCommands?: boolean;
+		placeholder?: string;
+	}
 
-	let visionCapableModels = [];
-	$: visionCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
-		(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.vision ?? true
-	);
+	let {
+		onChange = () => {},
+		createMessagePair,
+		stopResponse,
+		autoScroll = $bindable(false),
+		generating = false,
+		atSelectedModel = $bindable(undefined),
+		selectedModels,
+		history,
+		taskIds = null,
+		prompt = $bindable(''),
+		files = $bindable([]),
+		selectedToolIds = $bindable([]),
+		selectedFilterIds = $bindable([]),
+		imageGenerationEnabled = $bindable(false),
+		webSearchEnabled = $bindable(false),
+		codeInterpreterEnabled = $bindable(false),
+		showCommands = $bindable(false),
+		placeholder = ''
+	}: Props = $props();
 
-	let fileUploadCapableModels = [];
-	$: fileUploadCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
-		(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.file_upload ?? true
-	);
+	let visionCapableModels = $state([]);
 
-	let webSearchCapableModels = [];
-	$: webSearchCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
-		(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.web_search ?? true
-	);
+	let fileUploadCapableModels = $state([]);
 
-	let imageGenerationCapableModels = [];
-	$: imageGenerationCapableModels = (
-		atSelectedModel?.id ? [atSelectedModel.id] : selectedModels
-	).filter(
-		(model) =>
-			$models.find((m) => m.id === model)?.info?.meta?.capabilities?.image_generation ?? true
-	);
+	let webSearchCapableModels = $state([]);
 
-	let codeInterpreterCapableModels = [];
-	$: codeInterpreterCapableModels = (
-		atSelectedModel?.id ? [atSelectedModel.id] : selectedModels
-	).filter(
-		(model) =>
-			$models.find((m) => m.id === model)?.info?.meta?.capabilities?.code_interpreter ?? true
-	);
+	let imageGenerationCapableModels = $state([]);
 
-	let toggleFilters = [];
-	$: toggleFilters = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels)
-		.map((id) => ($models.find((model) => model.id === id) || {})?.filters ?? [])
-		.reduce((acc, filters) => acc.filter((f1) => filters.some((f2) => f2.id === f1.id)));
+	let codeInterpreterCapableModels = $state([]);
 
-	let showToolsButton = false;
-	$: showToolsButton = ($tools ?? []).length > 0 || ($toolServers ?? []).length > 0;
+	let toggleFilters = $state([]);
 
-	let showWebSearchButton = false;
-	$: showWebSearchButton =
-		(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
-			webSearchCapableModels.length &&
-		$config?.features?.enable_web_search &&
-		($_user.role === 'admin' || $_user?.permissions?.features?.web_search);
+	let showToolsButton = $state(false);
 
-	let showImageGenerationButton = false;
-	$: showImageGenerationButton =
-		(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
-			imageGenerationCapableModels.length &&
-		$config?.features?.enable_image_generation &&
-		($_user.role === 'admin' || $_user?.permissions?.features?.image_generation);
+	let showWebSearchButton = $state(false);
 
-	let showCodeInterpreterButton = false;
-	$: showCodeInterpreterButton =
-		(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
-			codeInterpreterCapableModels.length &&
-		$config?.features?.enable_code_interpreter &&
-		($_user.role === 'admin' || $_user?.permissions?.features?.code_interpreter);
+	let showImageGenerationButton = $state(false);
+
+	let showCodeInterpreterButton = $state(false);
 
 	const scrollToBottom = () => {
 		const element = document.getElementById('messages-container');
@@ -988,6 +954,91 @@
 			dropzoneElement?.removeEventListener('dragleave', onDragLeave);
 		}
 	});
+	run(() => {
+		selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
+	});
+	run(() => {
+		onChange({
+			prompt,
+			files: files
+				.filter((file) => file.type !== 'image')
+				.map((file) => {
+					return {
+						...file,
+						user: undefined,
+						access_control: undefined
+					};
+				}),
+			selectedToolIds,
+			selectedFilterIds,
+			imageGenerationEnabled,
+			webSearchEnabled,
+			codeInterpreterEnabled
+		});
+	});
+	run(() => {
+		showCommands = ['/', '#', '@'].includes(command?.charAt(0)) || '\\#' === command?.slice(0, 2);
+	});
+	run(() => {
+		visionCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
+			(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.vision ?? true
+		);
+	});
+	run(() => {
+		fileUploadCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
+			(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.file_upload ?? true
+		);
+	});
+	run(() => {
+		webSearchCapableModels = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).filter(
+			(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.web_search ?? true
+		);
+	});
+	run(() => {
+		imageGenerationCapableModels = (
+			atSelectedModel?.id ? [atSelectedModel.id] : selectedModels
+		).filter(
+			(model) =>
+				$models.find((m) => m.id === model)?.info?.meta?.capabilities?.image_generation ?? true
+		);
+	});
+	run(() => {
+		codeInterpreterCapableModels = (
+			atSelectedModel?.id ? [atSelectedModel.id] : selectedModels
+		).filter(
+			(model) =>
+				$models.find((m) => m.id === model)?.info?.meta?.capabilities?.code_interpreter ?? true
+		);
+	});
+	run(() => {
+		toggleFilters = (atSelectedModel?.id ? [atSelectedModel.id] : selectedModels)
+			.map((id) => ($models.find((model) => model.id === id) || {})?.filters ?? [])
+			.reduce((acc, filters) => acc.filter((f1) => filters.some((f2) => f2.id === f1.id)));
+	});
+	run(() => {
+		showToolsButton = ($tools ?? []).length > 0 || ($toolServers ?? []).length > 0;
+	});
+	run(() => {
+		showWebSearchButton =
+			(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
+				webSearchCapableModels.length &&
+			$config?.features?.enable_web_search &&
+			($_user.role === 'admin' || $_user?.permissions?.features?.web_search);
+	});
+	run(() => {
+		showImageGenerationButton =
+			(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
+				imageGenerationCapableModels.length &&
+			$config?.features?.enable_image_generation &&
+			($_user.role === 'admin' || $_user?.permissions?.features?.image_generation);
+	});
+	run(() => {
+		showCodeInterpreterButton =
+			(atSelectedModel?.id ? [atSelectedModel.id] : selectedModels).length ===
+				codeInterpreterCapableModels.length &&
+			$config?.features?.enable_code_interpreter &&
+			($_user.role === 'admin' || $_user?.permissions?.features?.code_interpreter);
+	});
 </script>
 
 <FilesOverlay show={dragged} />
@@ -1014,7 +1065,7 @@
 						>
 							<button
 								class=" bg-white border border-gray-100 dark:border-none dark:bg-white/20 p-1.5 rounded-full pointer-events-auto"
-								on:click={() => {
+								onclick={() => {
 									autoScroll = true;
 									scrollToBottom();
 								}}
@@ -1025,11 +1076,9 @@
 									fill="currentColor"
 									class="w-5 h-5"
 								>
-									<path
-										fill-rule="evenodd"
+									<path fill-rule="evenodd"
 										d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z"
-										clip-rule="evenodd"
-									/>
+										clip-rule="evenodd"></path>
 								</svg>
 							</button>
 						</div>
@@ -1051,7 +1100,7 @@
 						type="file"
 						hidden
 						multiple
-						on:change={async () => {
+						onchange={async () => {
 							if (inputFiles && inputFiles.length > 0) {
 								const _inputFiles = Array.from(inputFiles);
 								inputFilesHandler(_inputFiles);
@@ -1091,10 +1140,10 @@
 					{:else}
 						<form
 							class="w-full flex flex-col gap-1.5"
-							on:submit|preventDefault={async () => {
+							onsubmit={preventDefault(async () => {
 								// check if selectedModels support image input
 								await handleSubmit(prompt);
-							}}
+							})}
 						>
 							<div
 								id="message-input-container"
@@ -1124,7 +1173,7 @@
 											<div>
 												<button
 													class="flex items-center dark:text-gray-500"
-													on:click={() => {
+													onclick={() => {
 														atSelectedModel = undefined;
 													}}
 												>
@@ -1164,11 +1213,9 @@
 																	aria-hidden="true"
 																	class="size-4 fill-yellow-300"
 																>
-																	<path
-																		fill-rule="evenodd"
+																	<path fill-rule="evenodd"
 																		d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-																		clip-rule="evenodd"
-																	/>
+																		clip-rule="evenodd"></path>
 																</svg>
 															</Tooltip>
 														{/if}
@@ -1181,7 +1228,7 @@
 																: 'outline-hidden focus:outline-hidden group-hover:visible invisible transition'}"
 															type="button"
 															aria-label={$i18n.t('Remove file')}
-															on:click={() => {
+															onclick={() => {
 																files.splice(fileIdx, 1);
 																files = files;
 															}}
@@ -1193,9 +1240,7 @@
 																aria-hidden="true"
 																class="size-4"
 															>
-																<path
-																	d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-																/>
+																<path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"></path>
 															</svg>
 														</button>
 													</div>
@@ -1216,7 +1261,7 @@
 														files.splice(fileIdx, 1);
 														files = files;
 													}}
-													on:click={() => {
+													onclick={() => {
 														console.log(file);
 													}}
 												/>
@@ -1289,7 +1334,7 @@
 															compositionEndedAt = e.timeStamp;
 															isComposing = false;
 														}}
-														on:keydown={async (e) => {
+														onkeydown={async (e) => {
 															e = e.detail.event;
 
 															const isCtrlPressed = e.ctrlKey || e.metaKey; // metaKey is for Cmd key on Mac
@@ -1502,7 +1547,7 @@
 
 										<div
 											class="flex self-center w-[1px] h-4 mx-1 bg-gray-200/50 dark:bg-gray-800/50"
-										/>
+										></div>
 
 										{#if showWebSearchButton || showImageGenerationButton || showCodeInterpreterButton || showToolsButton || (toggleFilters && toggleFilters.length > 0)}
 											<IntegrationsMenu
@@ -1543,7 +1588,7 @@
 														class="translate-y-[0.5px] px-1 flex gap-1 items-center text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg self-center transition"
 														aria-label="Available Tools"
 														type="button"
-														on:click={() => {
+														onclick={() => {
 															showTools = !showTools;
 														}}
 													>
@@ -1561,11 +1606,11 @@
 												{#if filter}
 													<Tooltip content={filter?.name} placement="top">
 														<button
-															on:click|preventDefault={() => {
+															onclick={preventDefault(() => {
 																selectedFilterIds = selectedFilterIds.filter(
 																	(id) => id !== filterId
 																);
-															}}
+															})}
 															type="button"
 															class="group p-[7px] flex gap-1.5 items-center text-sm rounded-full transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 {selectedFilterIds.includes(
 																filterId
@@ -1598,7 +1643,7 @@
 											{#if webSearchEnabled}
 												<Tooltip content={$i18n.t('Web Search')} placement="top">
 													<button
-														on:click|preventDefault={() => (webSearchEnabled = !webSearchEnabled)}
+														onclick={preventDefault(() => (webSearchEnabled = !webSearchEnabled))}
 														type="button"
 														class="group p-[7px] flex gap-1.5 items-center text-sm rounded-full transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 {webSearchEnabled ||
 														($settings?.webSearch ?? false) === 'always'
@@ -1616,8 +1661,8 @@
 											{#if imageGenerationEnabled}
 												<Tooltip content={$i18n.t('Image')} placement="top">
 													<button
-														on:click|preventDefault={() =>
-															(imageGenerationEnabled = !imageGenerationEnabled)}
+														onclick={preventDefault(() =>
+															(imageGenerationEnabled = !imageGenerationEnabled))}
 														type="button"
 														class="group p-[7px] flex gap-1.5 items-center text-sm rounded-full transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 {imageGenerationEnabled
 															? ' text-sky-500 dark:text-sky-300 bg-sky-50 dark:bg-sky-400/10 border border-sky-200/40 dark:border-sky-500/20'
@@ -1638,8 +1683,8 @@
 															? $i18n.t('Disable Code Interpreter')
 															: $i18n.t('Enable Code Interpreter')}
 														aria-pressed={codeInterpreterEnabled}
-														on:click|preventDefault={() =>
-															(codeInterpreterEnabled = !codeInterpreterEnabled)}
+														onclick={preventDefault(() =>
+															(codeInterpreterEnabled = !codeInterpreterEnabled))}
 														type="button"
 														class=" group p-[7px] flex gap-1.5 items-center text-sm transition-colors duration-300 max-w-full overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 {codeInterpreterEnabled
 															? ' text-sky-500 dark:text-sky-300 bg-sky-50 dark:bg-sky-400/10 border border-sky-200/40 dark:border-sky-500/20'
@@ -1667,7 +1712,7 @@
 													id="voice-input-button"
 													class=" text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 transition rounded-full p-1.5 mr-0.5 self-center"
 													type="button"
-													on:click={async () => {
+													onclick={async () => {
 														try {
 															let stream = await navigator.mediaDevices
 																.getUserMedia({ audio: true })
@@ -1701,10 +1746,8 @@
 														fill="currentColor"
 														class="w-5 h-5 translate-y-[0.5px]"
 													>
-														<path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
-														<path
-															d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"
-														/>
+														<path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path>
+														<path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"></path>
 													</svg>
 												</button>
 											</Tooltip>
@@ -1715,7 +1758,7 @@
 												<Tooltip content={$i18n.t('Stop')}>
 													<button
 														class="bg-white hover:bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-1.5"
-														on:click={() => {
+														onclick={() => {
 															stopResponse();
 														}}
 													>
@@ -1725,11 +1768,9 @@
 															fill="currentColor"
 															class="size-5"
 														>
-															<path
-																fill-rule="evenodd"
+															<path fill-rule="evenodd"
 																d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm6-2.438c0-.724.588-1.312 1.313-1.312h4.874c.725 0 1.313.588 1.313 1.313v4.874c0 .725-.588 1.313-1.313 1.313H9.564a1.312 1.312 0 01-1.313-1.313V9.564z"
-																clip-rule="evenodd"
-															/>
+																clip-rule="evenodd"></path>
 														</svg>
 													</button>
 												</Tooltip>
@@ -1741,7 +1782,7 @@
 													<button
 														class=" bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full p-1.5 self-center"
 														type="button"
-														on:click={async () => {
+														onclick={async () => {
 															if (selectedModels.length > 1) {
 																toast.error($i18n.t('Select only one model to call'));
 
@@ -1814,11 +1855,9 @@
 															fill="currentColor"
 															class="size-5"
 														>
-															<path
-																fill-rule="evenodd"
+															<path fill-rule="evenodd"
 																d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z"
-																clip-rule="evenodd"
-															/>
+																clip-rule="evenodd"></path>
 														</svg>
 													</button>
 												</Tooltip>
@@ -1833,7 +1872,7 @@
 									{@html DOMPurify.sanitize(marked($config?.license_metadata?.input_footer))}
 								</div>
 							{:else}
-								<div class="mb-1" />
+								<div class="mb-1"></div>
 							{/if}
 						</form>
 					{/if}

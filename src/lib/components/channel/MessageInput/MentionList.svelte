@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { getContext, onDestroy, onMount } from 'svelte';
 	const i18n = getContext('i18n');
 
@@ -9,27 +11,40 @@
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 	import { searchUsers } from '$lib/apis/users';
 
-	export let query = '';
 
-	export let command: (payload: { id: string; label: string }) => void;
-	export let selectedIndex = 0;
 
-	export let label = '';
-	export let triggerChar = '@';
 
-	export let modelSuggestions = false;
-	export let userSuggestions = false;
-	export let channelSuggestions = false;
+	interface Props {
+		query?: string;
+		command: (payload: { id: string; label: string }) => void;
+		selectedIndex?: number;
+		label?: string;
+		triggerChar?: string;
+		modelSuggestions?: boolean;
+		userSuggestions?: boolean;
+		channelSuggestions?: boolean;
+	}
 
-	let _models = [];
-	let _users = [];
-	let _channels = [];
+	let {
+		query = '',
+		command,
+		selectedIndex = $bindable(0),
+		label = '',
+		triggerChar = '@',
+		modelSuggestions = false,
+		userSuggestions = false,
+		channelSuggestions = false
+	}: Props = $props();
 
-	$: filteredItems = [..._users, ..._models, ..._channels].filter(
+	let _models = $state([]);
+	let _users = $state([]);
+	let _channels = $state([]);
+
+	let filteredItems = $derived([..._users, ..._models, ..._channels].filter(
 		(u) =>
 			u.label.toLowerCase().includes(query.toLowerCase()) ||
 			u.id.toLowerCase().includes(query.toLowerCase())
-	);
+	));
 
 	const getUserList = async () => {
 		const res = await searchUsers(localStorage.token, query).catch((error) => {
@@ -44,9 +59,11 @@
 		}
 	};
 
-	$: if (query !== null && userSuggestions) {
-		getUserList();
-	}
+	run(() => {
+		if (query !== null && userSuggestions) {
+			getUserList();
+		}
+	});
 
 	const select = (index: number) => {
 		const item = filteredItems[index];
@@ -151,8 +168,8 @@
 				<Tooltip content={item?.id} placement="top-start">
 					<button
 						type="button"
-						on:click={() => select(i)}
-						on:mousemove={() => {
+						onclick={() => select(i)}
+						onmousemove={() => {
 							selectedIndex = i;
 						}}
 						class="flex items-center justify-between px-2.5 py-1.5 rounded-xl w-full text-left {i ===

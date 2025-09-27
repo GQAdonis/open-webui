@@ -7,13 +7,22 @@
 
 	import UserStatus from './UserStatus.svelte';
 
-	export let id = null;
 
-	export let side = 'top';
-	export let align = 'start';
-	export let sideOffset = 6;
+	interface Props {
+		id?: any;
+		side?: string;
+		align?: string;
+		sideOffset?: number;
+	}
 
-	let user = null;
+	let {
+		id = null,
+		side = 'top',
+		align = 'start',
+		sideOffset = 6
+	}: Props = $props();
+
+	let user = $state(null);
 
 	onMount(async () => {
 		if (id) {

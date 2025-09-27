@@ -1,21 +1,22 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onMount, createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 import { getPrimaryFile } from '$lib/utils/artifacts/artifact-parser';
 
-export let artifact: ParsedArtifact;
-export let height: string = '400px';
+	interface Props {
+		artifact: ParsedArtifact;
+		height?: string;
+	}
+
+	let { artifact, height = '400px' }: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let containerElement: HTMLDivElement;
-let error: string | null = null;
+let containerElement: HTMLDivElement = $state();
+let error: string | null = $state(null);
 
-$: {
-if (containerElement && artifact) {
-renderMermaid();
-}
-}
 
 async function renderMermaid() {
 if (!containerElement) return;
@@ -64,6 +65,11 @@ dispatch('error', { message: error, error: e });
 
 onMount(() => {
 renderMermaid();
+});
+run(() => {
+if (containerElement && artifact) {
+renderMermaid();
+}
 });
 </script>
 

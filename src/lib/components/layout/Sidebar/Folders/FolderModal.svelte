@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { getContext, createEventDispatcher, onMount, tick } from 'svelte';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
@@ -14,23 +16,32 @@
 	import Knowledge from '$lib/components/workspace/Models/Knowledge.svelte';
 	const i18n = getContext('i18n');
 
-	export let show = false;
-	export let onSubmit: Function = (e) => {};
 
-	export let edit = false;
 
-	export let folder = null;
+	interface Props {
+		show?: boolean;
+		onSubmit?: Function;
+		edit?: boolean;
+		folder?: any;
+	}
 
-	let name = '';
-	let meta = {
+	let {
+		show = $bindable(false),
+		onSubmit = (e) => {},
+		edit = false,
+		folder = null
+	}: Props = $props();
+
+	let name = $state('');
+	let meta = $state({
 		background_image_url: null
-	};
-	let data = {
+	});
+	let data = $state({
 		system_prompt: '',
 		files: []
-	};
+	});
 
-	let loading = false;
+	let loading = $state(false);
 
 	const submitHandler = async () => {
 		loading = true;
@@ -72,24 +83,30 @@
 		}
 	};
 
-	$: if (show) {
-		focusInput();
-	}
+	run(() => {
+		if (show) {
+			focusInput();
+		}
+	});
 
-	$: if (folder) {
-		init();
-	}
+	run(() => {
+		if (folder) {
+			init();
+		}
+	});
 
-	$: if (!show && !edit) {
-		name = '';
-		meta = {
-			background_image_url: null
-		};
-		data = {
-			system_prompt: '',
-			files: []
-		};
-	}
+	run(() => {
+		if (!show && !edit) {
+			name = '';
+			meta = {
+				background_image_url: null
+			};
+			data = {
+				system_prompt: '',
+				files: []
+			};
+		}
+	});
 </script>
 
 <Modal size="md" bind:show>
@@ -104,7 +121,7 @@
 			</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -116,9 +133,9 @@
 			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
 				<form
 					class="flex flex-col w-full"
-					on:submit|preventDefault={() => {
+					onsubmit={preventDefault(() => {
 						submitHandler();
-					}}
+					})}
 				>
 					<div class="flex flex-col w-full mt-1">
 						<div class=" mb-1 text-xs text-gray-500">{$i18n.t('Folder Name')}</div>
@@ -140,7 +157,7 @@
 						type="file"
 						hidden
 						accept="image/*"
-						on:change={(e) => {
+						onchange={(e) => {
 							const inputFiles = e.target.files;
 
 							let reader = new FileReader();
@@ -173,7 +190,7 @@
 							<button
 								aria-labelledby="chat-background-label background-image-url-state"
 								class="p-1 px-3 text-xs flex rounded-sm transition"
-								on:click={() => {
+								onclick={() => {
 									if (meta?.background_image_url !== null) {
 										meta.background_image_url = null;
 									} else {
@@ -214,13 +231,15 @@
 
 					<div class="my-2">
 						<Knowledge bind:selectedItems={data.files}>
-							<div slot="label">
-								<div class="flex w-full justify-between">
-									<div class=" mb-2 text-xs text-gray-500">
-										{$i18n.t('Knowledge')}
+							{#snippet label()}
+														<div >
+									<div class="flex w-full justify-between">
+										<div class=" mb-2 text-xs text-gray-500">
+											{$i18n.t('Knowledge')}
+										</div>
 									</div>
 								</div>
-							</div>
+													{/snippet}
 						</Knowledge>
 					</div>
 

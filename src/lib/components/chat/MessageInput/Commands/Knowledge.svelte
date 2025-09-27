@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import Fuse from 'fuse.js';
 
@@ -16,42 +18,55 @@
 
 	const i18n = getContext('i18n');
 
-	export let query = '';
-	export let onSelect = (e) => {};
 
-	export let knowledge = [];
 
-	let selectedIdx = 0;
+	let selectedIdx = $state(0);
 
-	let items = [];
-	let fuse = null;
+	let items = $state([]);
+	let fuse = $state(null);
 
-	export let filteredItems = [];
-	$: if (fuse) {
-		filteredItems = [
-			...(query
-				? fuse.search(query).map((e) => {
-						return e.item;
-					})
-				: items),
-
-			...(query.startsWith('http')
-				? isYoutubeUrl(query)
-					? [{ type: 'youtube', name: query, description: query }]
-					: [
-							{
-								type: 'web',
-								name: query,
-								description: query
-							}
-						]
-				: [])
-		];
+	interface Props {
+		query?: string;
+		onSelect?: any;
+		knowledge?: any;
+		filteredItems?: any;
 	}
 
-	$: if (query) {
-		selectedIdx = 0;
-	}
+	let {
+		query = '',
+		onSelect = (e) => {},
+		knowledge = [],
+		filteredItems = $bindable([])
+	}: Props = $props();
+	run(() => {
+		if (fuse) {
+			filteredItems = [
+				...(query
+					? fuse.search(query).map((e) => {
+							return e.item;
+						})
+					: items),
+
+				...(query.startsWith('http')
+					? isYoutubeUrl(query)
+						? [{ type: 'youtube', name: query, description: query }]
+						: [
+								{
+									type: 'web',
+									name: query,
+									description: query
+								}
+							]
+					: [])
+			];
+		}
+	});
+
+	run(() => {
+		if (query) {
+			selectedIdx = 0;
+		}
+	});
 
 	export const selectUp = () => {
 		selectedIdx = Math.max(0, selectedIdx - 1);
@@ -188,14 +203,14 @@
 					? ' bg-gray-50 dark:bg-gray-800 dark:text-gray-100 selected-command-option-button'
 					: ''}"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					console.log(item);
 					onSelect({
 						type: 'knowledge',
 						data: item
 					});
 				}}
-				on:mousemove={() => {
+				onmousemove={() => {
 					selectedIdx = idx;
 				}}
 				data-selected={idx === selectedIdx}
@@ -233,7 +248,7 @@
 			class="px-2 py-1 rounded-xl w-full text-left bg-gray-50 dark:bg-gray-800 dark:text-gray-100 selected-command-option-button"
 			type="button"
 			data-selected={true}
-			on:click={() => {
+			onclick={() => {
 				if (isValidHttpUrl(query)) {
 					onSelect({
 						type: 'youtube',
@@ -261,7 +276,7 @@
 			class="px-2 py-1 rounded-xl w-full text-left bg-gray-50 dark:bg-gray-800 dark:text-gray-100 selected-command-option-button"
 			type="button"
 			data-selected={true}
-			on:click={() => {
+			onclick={() => {
 				if (isValidHttpUrl(query)) {
 					onSelect({
 						type: 'web',

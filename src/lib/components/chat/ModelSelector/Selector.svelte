@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { DropdownMenu } from 'bits-ui';
 	import { marked } from 'marked';
 	import Fuse from 'fuse.js';
@@ -39,40 +41,55 @@
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
 
-	export let id = '';
-	export let value = '';
-	export let placeholder = $i18n.t('Select a model');
-	export let searchEnabled = true;
-	export let searchPlaceholder = $i18n.t('Search a model');
 
-	export let items: {
+
+
+	interface Props {
+		id?: string;
+		value?: string;
+		placeholder?: any;
+		searchEnabled?: boolean;
+		searchPlaceholder?: any;
+		items?: {
 		label: string;
 		value: string;
 		model: Model;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
-	}[] = [];
+	}[];
+		className?: string;
+		triggerClassName?: string;
+		pinModelHandler?: (modelId: string) => void;
+		children?: import('svelte').Snippet;
+	}
 
-	export let className = 'w-[32rem]';
-	export let triggerClassName = 'text-lg';
+	let {
+		id = '',
+		value = $bindable(''),
+		placeholder = $i18n.t('Select a model'),
+		searchEnabled = true,
+		searchPlaceholder = $i18n.t('Search a model'),
+		items = [],
+		className = 'w-[32rem]',
+		triggerClassName = 'text-lg',
+		pinModelHandler = () => {},
+		children
+	}: Props = $props();
 
-	export let pinModelHandler: (modelId: string) => void = () => {};
+	let tagsContainerElement = $state();
 
-	let tagsContainerElement;
+	let show = $state(false);
+	let tags = $state([]);
 
-	let show = false;
-	let tags = [];
+	let selectedModel = $state('');
 
-	let selectedModel = '';
-	$: selectedModel = items.find((item) => item.value === value) ?? '';
+	let searchValue = $state('');
 
-	let searchValue = '';
+	let selectedTag = $state('');
+	let selectedConnectionType = $state('');
 
-	let selectedTag = '';
-	let selectedConnectionType = '';
-
-	let ollamaVersion = null;
-	let selectedModelIdx = 0;
+	let ollamaVersion = $state(null);
+	let selectedModelIdx = $state(0);
 
 	const fuse = new Fuse(
 		items.map((item) => {
@@ -90,55 +107,7 @@
 		}
 	);
 
-	$: filteredItems = (
-		searchValue
-			? fuse
-					.search(searchValue)
-					.map((e) => {
-						return e.item;
-					})
-					.filter((item) => {
-						if (selectedTag === '') {
-							return true;
-						}
-						return (item.model?.tags ?? []).map((tag) => tag.name).includes(selectedTag);
-					})
-					.filter((item) => {
-						if (selectedConnectionType === '') {
-							return true;
-						} else if (selectedConnectionType === 'local') {
-							return item.model?.connection_type === 'local';
-						} else if (selectedConnectionType === 'external') {
-							return item.model?.connection_type === 'external';
-						} else if (selectedConnectionType === 'direct') {
-							return item.model?.direct;
-						}
-					})
-			: items
-					.filter((item) => {
-						if (selectedTag === '') {
-							return true;
-						}
-						return (item.model?.tags ?? []).map((tag) => tag.name).includes(selectedTag);
-					})
-					.filter((item) => {
-						if (selectedConnectionType === '') {
-							return true;
-						} else if (selectedConnectionType === 'local') {
-							return item.model?.connection_type === 'local';
-						} else if (selectedConnectionType === 'external') {
-							return item.model?.connection_type === 'external';
-						} else if (selectedConnectionType === 'direct') {
-							return item.model?.direct;
-						}
-					})
-	).filter((item) => !(item.model?.info?.meta?.hidden ?? false));
 
-	$: if (selectedTag || selectedConnectionType) {
-		resetView();
-	} else {
-		resetView();
-	}
 
 	const resetView = async () => {
 		await tick();
@@ -302,9 +271,6 @@
 		}
 	});
 
-	$: if (show) {
-		setOllamaVersion();
-	}
 
 	const cancelModelPullHandler = async (model: string) => {
 		const { reader, abortController } = $MODEL_DOWNLOAD_POOL[model];
@@ -337,6 +303,64 @@
 			);
 		}
 	};
+	run(() => {
+		selectedModel = items.find((item) => item.value === value) ?? '';
+	});
+	let filteredItems = $derived((
+		searchValue
+			? fuse
+					.search(searchValue)
+					.map((e) => {
+						return e.item;
+					})
+					.filter((item) => {
+						if (selectedTag === '') {
+							return true;
+						}
+						return (item.model?.tags ?? []).map((tag) => tag.name).includes(selectedTag);
+					})
+					.filter((item) => {
+						if (selectedConnectionType === '') {
+							return true;
+						} else if (selectedConnectionType === 'local') {
+							return item.model?.connection_type === 'local';
+						} else if (selectedConnectionType === 'external') {
+							return item.model?.connection_type === 'external';
+						} else if (selectedConnectionType === 'direct') {
+							return item.model?.direct;
+						}
+					})
+			: items
+					.filter((item) => {
+						if (selectedTag === '') {
+							return true;
+						}
+						return (item.model?.tags ?? []).map((tag) => tag.name).includes(selectedTag);
+					})
+					.filter((item) => {
+						if (selectedConnectionType === '') {
+							return true;
+						} else if (selectedConnectionType === 'local') {
+							return item.model?.connection_type === 'local';
+						} else if (selectedConnectionType === 'external') {
+							return item.model?.connection_type === 'external';
+						} else if (selectedConnectionType === 'direct') {
+							return item.model?.direct;
+						}
+					})
+	).filter((item) => !(item.model?.info?.meta?.hidden ?? false)));
+	run(() => {
+		if (selectedTag || selectedConnectionType) {
+			resetView();
+		} else {
+			resetView();
+		}
+	});
+	run(() => {
+		if (show) {
+			setOllamaVersion();
+		}
+	});
 </script>
 
 <DropdownMenu.Root
@@ -361,7 +385,7 @@
 			false)
 				? 'dark:placeholder-gray-100 placeholder-gray-800'
 				: 'placeholder-gray-400'}"
-			on:mouseenter={async () => {
+			onmouseenter={async () => {
 				models.set(
 					await getModels(
 						localStorage.token,
@@ -388,7 +412,7 @@
 		sideOffset={2}
 		alignOffset={-1}
 	>
-		<slot>
+		{#if children}{@render children()}{:else}
 			{#if searchEnabled}
 				<div class="flex items-center gap-2.5 px-4.5 mt-3.5 mb-1.5">
 					<Search className="size-4" strokeWidth="2.5" />
@@ -400,7 +424,7 @@
 						placeholder={searchPlaceholder}
 						autocomplete="off"
 						aria-label={$i18n.t('Search In Models')}
-						on:keydown={(e) => {
+						onkeydown={(e) => {
 							if (e.code === 'Enter' && filteredItems.length > 0) {
 								value = filteredItems[selectedModelIdx].value;
 								show = false;
@@ -427,7 +451,7 @@
 				{#if tags && items.filter((item) => !(item.model?.info?.meta?.hidden ?? false)).length > 0}
 					<div
 						class=" flex w-full bg-white dark:bg-gray-850 overflow-x-auto scrollbar-none font-[450] mb-0.5"
-						on:wheel={(e) => {
+						onwheel={(e) => {
 							if (e.deltaY !== 0) {
 								e.preventDefault();
 								e.currentTarget.scrollLeft += e.deltaY;
@@ -445,7 +469,7 @@
 										? ''
 										: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
 									aria-pressed={selectedTag === '' && selectedConnectionType === ''}
-									on:click={() => {
+									onclick={() => {
 										selectedConnectionType = '';
 										selectedTag = '';
 									}}
@@ -460,7 +484,7 @@
 										? ''
 										: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
 									aria-pressed={selectedConnectionType === 'local'}
-									on:click={() => {
+									onclick={() => {
 										selectedTag = '';
 										selectedConnectionType = 'local';
 									}}
@@ -475,7 +499,7 @@
 										? ''
 										: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
 									aria-pressed={selectedConnectionType === 'external'}
-									on:click={() => {
+									onclick={() => {
 										selectedTag = '';
 										selectedConnectionType = 'external';
 									}}
@@ -490,7 +514,7 @@
 										? ''
 										: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
 									aria-pressed={selectedConnectionType === 'direct'}
-									on:click={() => {
+									onclick={() => {
 										selectedTag = '';
 										selectedConnectionType = 'direct';
 									}}
@@ -505,7 +529,7 @@
 										? ''
 										: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
 									aria-pressed={selectedTag === tag}
-									on:click={() => {
+									onclick={() => {
 										selectedConnectionType = '';
 										selectedTag = tag;
 									}}
@@ -551,7 +575,7 @@
 					>
 						<button
 							class="flex w-full font-medium line-clamp-1 select-none items-center rounded-button py-2 pl-3 pr-1.5 text-sm text-gray-700 dark:text-gray-100 outline-hidden transition-all duration-75 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl cursor-pointer data-highlighted:bg-muted"
-							on:click={() => {
+							onclick={() => {
 								pullModelHandler();
 							}}
 						>
@@ -596,7 +620,7 @@
 							<Tooltip content={$i18n.t('Cancel')}>
 								<button
 									class="text-gray-800 dark:text-gray-100"
-									on:click={() => {
+									onclick={() => {
 										cancelModelPullHandler(model);
 									}}
 								>
@@ -609,13 +633,11 @@
 										fill="currentColor"
 										viewBox="0 0 24 24"
 									>
-										<path
-											stroke="currentColor"
+										<path stroke="currentColor"
 											stroke-linecap="round"
 											stroke-linejoin="round"
 											stroke-width="2"
-											d="M6 18 17.94 6M18 18 6.06 6"
-										/>
+											d="M6 18 17.94 6M18 18 6.06 6"></path>
 									</svg>
 								</button>
 							</Tooltip>
@@ -626,8 +648,8 @@
 
 			<div class="mb-2.5"></div>
 
-			<div class="hidden w-[42rem]" />
-			<div class="hidden w-[32rem]" />
-		</slot>
+			<div class="hidden w-[42rem]"></div>
+			<div class="hidden w-[32rem]"></div>
+		{/if}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>

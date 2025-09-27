@@ -5,13 +5,25 @@
   import RecoveryButton from './RecoveryButton.svelte';
   import RecoveryResults from './RecoveryResults.svelte';
 
-  export let artifactId: string;
-  export let artifactCode: string;
-  export let errorMessage: string;
-  export let messageContent: string = '';
-  export let language: string = 'javascript';
-  export let autoStart: boolean = false;
-  export let showAdvancedOptions: boolean = false;
+  interface Props {
+    artifactId: string;
+    artifactCode: string;
+    errorMessage: string;
+    messageContent?: string;
+    language?: string;
+    autoStart?: boolean;
+    showAdvancedOptions?: boolean;
+  }
+
+  let {
+    artifactId,
+    artifactCode,
+    errorMessage,
+    messageContent = '',
+    language = 'javascript',
+    autoStart = false,
+    showAdvancedOptions = false
+  }: Props = $props();
   
   const dispatch = createEventDispatcher<{
     recovery_started: { artifactId: string; request: RecoveryRequest };
@@ -22,15 +34,15 @@
   }>();
 
   // Recovery state
-  let recoveryState: 'idle' | 'running' | 'completed' | 'failed' = 'idle';
-  let currentRecoveryResult: RecoveryResult | null = null;
-  let recoveryError: string | null = null;
-  let isAutoResolutionPhase = true;
+  let recoveryState: 'idle' | 'running' | 'completed' | 'failed' = $state('idle');
+  let currentRecoveryResult: RecoveryResult | null = $state(null);
+  let recoveryError: string | null = $state(null);
+  let isAutoResolutionPhase = $state(true);
   let recoveryStartTime: number = 0;
 
   // UI state
-  let showDetails = false;
-  let userConfirmationRequired = false;
+  let showDetails = $state(false);
+  let userConfirmationRequired = $state(false);
   
   /**
    * Start the recovery process
@@ -182,7 +194,7 @@
       <RecoveryButton
         variant="primary"
         size="medium"
-        on:click={startRecovery}
+        onclick={startRecovery}
         disabled={!artifactCode || !errorMessage}
       >
         Start Recovery
@@ -202,7 +214,7 @@
         variant="success"
         size="medium"
         success={true}
-        on:click={retryRecovery}
+        onclick={retryRecovery}
       >
         Success
       </RecoveryButton>
@@ -210,7 +222,7 @@
       <RecoveryButton
         variant="danger"
         size="medium"
-        on:click={retryRecovery}
+        onclick={retryRecovery}
       >
         Retry Recovery
       </RecoveryButton>
@@ -246,14 +258,14 @@
         <div class="success-actions">
           <button
             class="apply-button primary"
-            on:click={applyRecoveredCode}
+            onclick={applyRecoveredCode}
           >
             Apply Fix ({getStrategyDisplayName(currentRecoveryResult.strategy)})
           </button>
 
           <button
             class="details-button secondary"
-            on:click={() => showDetails = !showDetails}
+            onclick={() => showDetails = !showDetails}
           >
             {showDetails ? 'Hide' : 'Show'} Details
           </button>
@@ -262,7 +274,7 @@
         <div class="failure-actions">
           <button
             class="retry-button secondary"
-            on:click={retryRecovery}
+            onclick={retryRecovery}
           >
             Try Again
           </button>
@@ -270,7 +282,7 @@
           {#if currentRecoveryResult.circuitState === 'OPEN'}
             <button
               class="reset-button warning"
-              on:click={resetCircuitBreaker}
+              onclick={resetCircuitBreaker}
             >
               Reset & Retry
             </button>
@@ -278,7 +290,7 @@
 
           <button
             class="details-button secondary"
-            on:click={() => showDetails = !showDetails}
+            onclick={() => showDetails = !showDetails}
           >
             {showDetails ? 'Hide' : 'Show'} Error Details
           </button>
@@ -294,7 +306,7 @@
         <h4>Recovery Failed</h4>
         <p>{recoveryError}</p>
         <div class="error-actions">
-          <button class="retry-button secondary" on:click={retryRecovery}>
+          <button class="retry-button secondary" onclick={retryRecovery}>
             Try Again
           </button>
         </div>

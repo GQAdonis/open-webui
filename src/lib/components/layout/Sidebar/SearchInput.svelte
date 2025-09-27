@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, stopPropagation } from 'svelte/legacy';
+
 	import { getAllTags } from '$lib/apis/chats';
 	import { folders, tags } from '$lib/stores';
 	import { getContext, createEventDispatcher, onMount, onDestroy, tick } from 'svelte';
@@ -9,18 +11,27 @@
 	const dispatch = createEventDispatcher();
 	const i18n = getContext('i18n');
 
-	export let placeholder = '';
-	export let value = '';
-	export let showClearButton = false;
 
-	export let onFocus = () => {};
-	export let onKeydown = (e) => {};
+	interface Props {
+		placeholder?: string;
+		value?: string;
+		showClearButton?: boolean;
+		onFocus?: any;
+		onKeydown?: any;
+	}
 
-	let selectedIdx = 0;
-	let selectedOption = null;
+	let {
+		placeholder = '',
+		value = $bindable(''),
+		showClearButton = false,
+		onFocus = () => {},
+		onKeydown = (e) => {}
+	}: Props = $props();
 
-	let lastWord = '';
-	$: lastWord = value ? value.split(' ').at(-1) : value;
+	let selectedIdx = $state(0);
+	let selectedOption = $state(null);
+
+	let lastWord = $state('');
 
 	let options = [
 		{
@@ -44,21 +55,15 @@
 			description: $i18n.t('search for archived chats')
 		}
 	];
-	let focused = false;
+	let focused = $state(false);
 	let loading = false;
 
-	let hovering = false;
+	let hovering = $state(false);
 
-	let filteredOptions = options;
-	$: filteredOptions = options.filter((option) => {
-		return option.name.startsWith(lastWord);
-	});
+	let filteredOptions = $state(options);
 
-	let filteredItems = [];
+	let filteredItems = $state([]);
 
-	$: if (lastWord && lastWord !== null) {
-		initItems();
-	}
 
 	const initItems = async () => {
 		console.log('initItems', lastWord);
@@ -196,6 +201,19 @@
 		value = '';
 		dispatch('input');
 	};
+	run(() => {
+		lastWord = value ? value.split(' ').at(-1) : value;
+	});
+	run(() => {
+		filteredOptions = options.filter((option) => {
+			return option.name.startsWith(lastWord);
+		});
+	});
+	run(() => {
+		if (lastWord && lastWord !== null) {
+			initItems();
+		}
+	});
 </script>
 
 <div class="px-1 mb-1 flex justify-center space-x-2 relative z-10" id="search-container">
@@ -210,10 +228,10 @@
 			placeholder={placeholder ? placeholder : $i18n.t('Search')}
 			autocomplete="off"
 			bind:value
-			on:input={() => {
+			oninput={() => {
 				dispatch('input');
 			}}
-			on:click={() => {
+			onclick={() => {
 				if (!focused) {
 					onFocus();
 					hovering = false;
@@ -222,12 +240,12 @@
 					initTags();
 				}
 			}}
-			on:blur={() => {
+			onblur={() => {
 				if (!hovering) {
 					focused = false;
 				}
 			}}
-			on:keydown={(e) => {
+			onkeydown={(e) => {
 				if (e.key === 'Enter') {
 					if (filteredItems.length > 0) {
 						const itemElement = document.getElementById(`search-item-${selectedIdx}`);
@@ -287,7 +305,7 @@
 			<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 				<button
 					class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-					on:click={clearSearchInput}
+					onclick={clearSearchInput}
 				>
 					<XMark className="size-3" strokeWidth="2" />
 				</button>
@@ -296,16 +314,16 @@
 	</div>
 
 	{#if focused && (filteredOptions.length > 0 || filteredItems.length > 0)}
-		<!-- svelte-ignore a11y-no-static-element-interactions -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="absolute top-0 mt-8 left-0 right-1 border border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-gray-950 rounded-2xl z-10 shadow-lg"
 			id="search-options-container"
 			in:fade={{ duration: 50 }}
-			on:mouseenter={() => {
+			onmouseenter={() => {
 				hovering = true;
 				selectedIdx = null;
 			}}
-			on:mouseleave={() => {
+			onmouseleave={() => {
 				hovering = false;
 				selectedIdx = 0;
 			}}
@@ -325,7 +343,7 @@
 									: ''}"
 								data-selected={selectedIdx === itemIdx}
 								id="search-item-{itemIdx}"
-								on:click|stopPropagation={async () => {
+								onclick={stopPropagation(async () => {
 									const words = value.split(' ');
 
 									words.pop();
@@ -335,7 +353,7 @@
 
 									filteredItems = [];
 									dispatch('input');
-								}}
+								})}
 							>
 								<div class="dark:text-gray-300 text-gray-700 font-medium line-clamp-1 shrink-0">
 									{item.name}
@@ -360,7 +378,7 @@
 									? 'bg-gray-100 dark:bg-gray-900'
 									: ''}"
 								id="search-option-{optionIdx}"
-								on:click|stopPropagation={async () => {
+								onclick={stopPropagation(async () => {
 									const words = value.split(' ');
 
 									words.pop();
@@ -371,7 +389,7 @@
 									value = words.join(' ');
 
 									dispatch('input');
-								}}
+								})}
 							>
 								<div class="dark:text-gray-300 text-gray-700 font-medium">{option.name}</div>
 

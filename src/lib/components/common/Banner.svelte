@@ -9,7 +9,14 @@
 	const dispatch = createEventDispatcher();
 	const i18n = getContext('i18n');
 
-	export let banner: Banner = {
+
+	interface Props {
+		banner?: Banner;
+		className?: string;
+		dismissed?: boolean;
+	}
+
+	let { banner = {
 		id: '',
 		type: 'info',
 		title: '',
@@ -17,12 +24,9 @@
 		url: '',
 		dismissible: true,
 		timestamp: Math.floor(Date.now() / 1000)
-	};
-	export let className = 'mx-2 px-2 rounded-lg';
+	}, className = 'mx-2 px-2 rounded-lg', dismissed = $bindable(false) }: Props = $props();
 
-	export let dismissed = false;
-
-	let mounted = false;
+	let mounted = $state(false);
 
 	const classNames: Record<string, string> = {
 		info: 'bg-blue-500/20 text-blue-700 dark:text-blue-200 ',
@@ -89,11 +93,9 @@
 									fill="currentColor"
 									class="w-4 h-4"
 								>
-									<path
-										fill-rule="evenodd"
+									<path fill-rule="evenodd"
 										d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z"
-										clip-rule="evenodd"
-									/>
+										clip-rule="evenodd"></path>
 								</svg>
 							</div>
 						</div>
@@ -123,11 +125,9 @@
 							fill="currentColor"
 							class="size-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</div>
@@ -135,7 +135,7 @@
 			<div class="flex self-start">
 				<button
 					aria-label={$i18n.t('Close Banner')}
-					on:click={() => {
+					onclick={() => {
 						dismiss(banner.id);
 					}}
 					class="  -mt-1 -mb-2 -translate-y-[1px] ml-1.5 mr-1 text-gray-400 dark:hover:text-white"

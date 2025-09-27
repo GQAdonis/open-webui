@@ -17,16 +17,32 @@
 
 	const i18n = getContext('i18n');
 
-	export let show = false;
-	export let className = 'max-w-[180px]';
 
-	export let onDownload = (type) => {};
-	export let onDelete = () => {};
 
-	export let onCopyLink = null;
-	export let onCopyToClipboard = null;
 
-	export let onChange = () => {};
+	interface Props {
+		show?: boolean;
+		className?: string;
+		onDownload?: any;
+		onDelete?: any;
+		onCopyLink?: any;
+		onCopyToClipboard?: any;
+		onChange?: any;
+		children?: import('svelte').Snippet;
+		content?: import('svelte').Snippet;
+	}
+
+	let {
+		show = $bindable(false),
+		className = 'max-w-[180px]',
+		onDownload = (type) => {},
+		onDelete = () => {},
+		onCopyLink = null,
+		onCopyToClipboard = null,
+		onChange = () => {},
+		children,
+		content
+	}: Props = $props();
 </script>
 
 <DropdownMenu.Root
@@ -36,10 +52,10 @@
 	}}
 >
 	<DropdownMenu.Trigger>
-		<slot />
+		{@render children?.()}
 	</DropdownMenu.Trigger>
 
-	<slot name="content">
+	{#if content}{@render content()}{:else}
 		<DropdownMenu.Content
 			class="w-full {className} text-sm rounded-2xl px-1 py-1 border border-gray-100  dark:border-gray-800  z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg"
 			sideOffset={6}
@@ -63,7 +79,7 @@
 				>
 					<DropdownMenu.Item
 						class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-						on:click={() => {
+						onclick={() => {
 							onDownload('txt');
 						}}
 					>
@@ -72,7 +88,7 @@
 
 					<DropdownMenu.Item
 						class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-						on:click={() => {
+						onclick={() => {
 							onDownload('md');
 						}}
 					>
@@ -81,7 +97,7 @@
 
 					<DropdownMenu.Item
 						class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-						on:click={() => {
+						onclick={() => {
 							onDownload('pdf');
 						}}
 					>
@@ -108,7 +124,7 @@
 						{#if onCopyLink}
 							<DropdownMenu.Item
 								class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-								on:click={() => {
+								onclick={() => {
 									onCopyLink();
 								}}
 							>
@@ -120,7 +136,7 @@
 						{#if onCopyToClipboard}
 							<DropdownMenu.Item
 								class="flex gap-2 items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-								on:click={() => {
+								onclick={() => {
 									onCopyToClipboard();
 								}}
 							>
@@ -134,7 +150,7 @@
 
 			<DropdownMenu.Item
 				class="flex  gap-2  items-center px-3 py-1.5 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-				on:click={() => {
+				onclick={() => {
 					onDelete();
 				}}
 			>
@@ -142,5 +158,5 @@
 				<div class="flex items-center">{$i18n.t('Delete')}</div>
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
-	</slot>
+	{/if}
 </DropdownMenu.Root>

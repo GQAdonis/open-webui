@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { onMount, getContext, createEventDispatcher, onDestroy } from 'svelte';
   import { artifactCode, chatId, settings, showArtifacts, showControls } from '$lib/stores';
   import { artifactStore, artifactUIState, artifactActions } from '$lib/stores/artifacts/artifact-store';
@@ -10,24 +12,18 @@
   const i18n = getContext('i18n');
   const dispatch = createEventDispatcher();
 
-  export let overlay = false;
-  export let history;
+  interface Props {
+    overlay?: boolean;
+    history: any;
+  }
 
-  let messages = [];
+  let { overlay = false, history }: Props = $props();
+
+  let messages = $state([]);
   let unsubscribe: (() => void) | null = null;
   let artifactCodeUnsubscribe: (() => void) | null = null;
-  let legacyArtifactCode = null;
+  let legacyArtifactCode = $state(null);
 
-  // Process messages and detect artifacts when history changes
-  $: if (history) {
-    messages = createMessagesList(history, history.currentId);
-    processMessages();
-  } else {
-    messages = [];
-    if ($chatId) {
-      artifactActions.clearChatArtifacts($chatId);
-    }
-  }
 
   // Process messages for PAS 3.0 artifacts
   const processMessages = async () => {
@@ -148,6 +144,18 @@
     const { artifactId } = event.detail;
     artifactActions.selectArtifact(artifactId);
   };
+  // Process messages and detect artifacts when history changes
+  run(() => {
+    if (history) {
+      messages = createMessagesList(history, history.currentId);
+      processMessages();
+    } else {
+      messages = [];
+      if ($chatId) {
+        artifactActions.clearChatArtifacts($chatId);
+      }
+    }
+  });
 </script>
 
 <div 
@@ -170,11 +178,11 @@
           </h3>
           <button 
             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            on:click={handleClose}
+            onclick={handleClose}
             title="Close preview"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
@@ -194,7 +202,7 @@
                 class="w-full h-full"
                 title="HTML Preview"
                 sandbox="allow-scripts allow-same-origin"
-              />
+></iframe>
             </div>
           {:else if legacyArtifactCode.type === 'image/svg+xml'}
             <div class="w-full h-96 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center bg-white">

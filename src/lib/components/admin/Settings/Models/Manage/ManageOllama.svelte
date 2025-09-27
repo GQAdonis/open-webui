@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -24,46 +26,51 @@
 	import ModelDeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import Spinner from '$lib/components/common/Spinner.svelte';
 
-	let modelUploadInputElement: HTMLInputElement;
-	let showModelDeleteConfirm = false;
+	let modelUploadInputElement: HTMLInputElement = $state();
+	let showModelDeleteConfirm = $state(false);
 
-	let loading = true;
+	let loading = $state(true);
 
-	// Models
-	export let urlIdx: number | null = null;
+	
+	interface Props {
+		// Models
+		urlIdx?: number | null;
+	}
 
-	let ollamaModels = [];
+	let { urlIdx = null }: Props = $props();
 
-	let updateModelId = null;
-	let updateProgress = null;
-	let showExperimentalOllama = false;
+	let ollamaModels = $state([]);
+
+	let updateModelId = $state(null);
+	let updateProgress = $state(null);
+	let showExperimentalOllama = $state(false);
 
 	const MAX_PARALLEL_DOWNLOADS = 3;
 
-	let modelTransferring = false;
-	let modelTag = '';
+	let modelTransferring = $state(false);
+	let modelTag = $state('');
 
-	let createModelLoading = false;
-	let createModelName = '';
-	let createModelObject = '';
+	let createModelLoading = $state(false);
+	let createModelName = $state('');
+	let createModelObject = $state('');
 
-	let createModelDigest = '';
+	let createModelDigest = $state('');
 	let createModelTag = '';
-	let createModelPullProgress = null;
+	let createModelPullProgress = $state(null);
 
 	let digest = '';
 	let pullProgress = null;
 
-	let modelUploadMode = 'file';
-	let modelInputFile: File[] | null = null;
-	let modelFileUrl = '';
-	let modelFileContent = `TEMPLATE """{{ .System }}\nUSER: {{ .Prompt }}\nASSISTANT: """\nPARAMETER num_ctx 4096\nPARAMETER stop "</s>"\nPARAMETER stop "USER:"\nPARAMETER stop "ASSISTANT:"`;
-	let modelFileDigest = '';
+	let modelUploadMode = $state('file');
+	let modelInputFile: File[] | null = $state(null);
+	let modelFileUrl = $state('');
+	let modelFileContent = $state(`TEMPLATE """{{ .System }}\nUSER: {{ .Prompt }}\nASSISTANT: """\nPARAMETER num_ctx 4096\nPARAMETER stop "</s>"\nPARAMETER stop "USER:"\nPARAMETER stop "ASSISTANT:"`);
+	let modelFileDigest = $state('');
 
-	let uploadProgress = null;
-	let uploadMessage = '';
+	let uploadProgress = $state(null);
+	let uploadMessage = $state('');
 
-	let deleteModelTag = '';
+	let deleteModelTag = $state('');
 
 	const updateModelsHandler = async () => {
 		for (const model of ollamaModels) {
@@ -549,9 +556,11 @@
 		}
 	};
 
-	$: if (urlIdx !== null) {
-		init();
-	}
+	run(() => {
+		if (urlIdx !== null) {
+			init();
+		}
+	});
 </script>
 
 <ModelDeleteConfirmDialog
@@ -575,7 +584,7 @@
 							<Tooltip content="Update All Models" placement="top">
 								<button
 									class="flex gap-2 items-center bg-transparent rounded-lg transition"
-									on:click={() => {
+									onclick={() => {
 										updateModelsHandler();
 									}}
 								>
@@ -585,12 +594,8 @@
 										fill="currentColor"
 										class="w-4 h-4"
 									>
-										<path
-											d="M7 1a.75.75 0 0 1 .75.75V6h-1.5V1.75A.75.75 0 0 1 7 1ZM6.25 6v2.94L5.03 7.72a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l2.5-2.5a.75.75 0 1 0-1.06-1.06L7.75 8.94V6H10a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.25Z"
-										/>
-										<path
-											d="M4.268 14A2 2 0 0 0 6 15h6a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-1.732V11a3 3 0 0 1-3 3H4.268Z"
-										/>
+										<path d="M7 1a.75.75 0 0 1 .75.75V6h-1.5V1.75A.75.75 0 0 1 7 1ZM6.25 6v2.94L5.03 7.72a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l2.5-2.5a.75.75 0 1 0-1.06-1.06L7.75 8.94V6H10a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2.25Z"></path>
+										<path d="M4.268 14A2 2 0 0 0 6 15h6a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-1.732V11a3 3 0 0 1-3 3H4.268Z"></path>
 									</svg>
 								</button>
 							</Tooltip>
@@ -608,7 +613,7 @@
 						</div>
 						<button
 							class="px-2.5 bg-gray-50 hover:bg-gray-200 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-100 rounded-lg transition"
-							on:click={() => {
+							onclick={() => {
 								pullModelHandler();
 							}}
 							disabled={modelTransferring}
@@ -633,14 +638,10 @@
 												}
 											}
 										</style>
-										<path
-											d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
-											opacity=".25"
-										/>
-										<path
-											d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z"
-											class="spinner_ajPY"
-										/>
+										<path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+											opacity=".25"></path>
+										<path d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z"
+											class="spinner_ajPY"></path>
 									</svg>
 								</div>
 							{:else}
@@ -650,12 +651,8 @@
 									fill="currentColor"
 									class="w-4 h-4"
 								>
-									<path
-										d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"
-									/>
-									<path
-										d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"
-									/>
+									<path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z"></path>
+									<path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"></path>
 								</svg>
 							{/if}
 						</button>
@@ -698,7 +695,7 @@
 											<Tooltip content={$i18n.t('Cancel')}>
 												<button
 													class="text-gray-800 dark:text-gray-100"
-													on:click={() => {
+													onclick={() => {
 														cancelModelPullHandler(model);
 													}}
 												>
@@ -711,13 +708,11 @@
 														fill="currentColor"
 														viewBox="0 0 24 24"
 													>
-														<path
-															stroke="currentColor"
+														<path stroke="currentColor"
 															stroke-linecap="round"
 															stroke-linejoin="round"
 															stroke-width="2"
-															d="M6 18 17.94 6M18 18 6.06 6"
-														/>
+															d="M6 18 17.94 6M18 18 6.06 6"></path>
 													</svg>
 												</button>
 											</Tooltip>
@@ -757,7 +752,7 @@
 						</div>
 						<button
 							class="px-2.5 bg-gray-50 hover:bg-gray-200 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-100 rounded-lg transition"
-							on:click={() => {
+							onclick={() => {
 								showModelDeleteConfirm = true;
 							}}
 						>
@@ -767,11 +762,9 @@
 								fill="currentColor"
 								class="w-4 h-4"
 							>
-								<path
-									fill-rule="evenodd"
+								<path fill-rule="evenodd"
 									d="M5 3.25V4H2.75a.75.75 0 0 0 0 1.5h.3l.815 8.15A1.5 1.5 0 0 0 5.357 15h5.285a1.5 1.5 0 0 0 1.493-1.35l.815-8.15h.3a.75.75 0 0 0 0-1.5H11v-.75A2.25 2.25 0 0 0 8.75 1h-1.5A2.25 2.25 0 0 0 5 3.25Zm2.25-.75a.75.75 0 0 0-.75.75V4h3v-.75a.75.75 0 0 0-.75-.75h-1.5ZM6.05 6a.75.75 0 0 1 .787.713l.275 5.5a.75.75 0 0 1-1.498.075l-.275-5.5A.75.75 0 0 1 6.05 6Zm3.9 0a.75.75 0 0 1 .712.787l-.275 5.5a.75.75 0 0 1-1.498-.075l.275-5.5a.75.75 0 0 1 .786-.711Z"
-									clip-rule="evenodd"
-								/>
+									clip-rule="evenodd"></path>
 							</svg>
 						</button>
 					</div>
@@ -796,13 +789,13 @@
 								rows="6"
 								placeholder={`e.g. {"model": "my-modelfile", "from": "ollama:7b"})`}
 								disabled={createModelLoading}
-							/>
+							></textarea>
 						</div>
 
 						<div class="flex self-start">
 							<button
 								class="px-2.5 py-2.5 bg-gray-50 hover:bg-gray-200 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-100 rounded-lg transition disabled:cursor-not-allowed"
-								on:click={() => {
+								onclick={() => {
 									createModelHandler();
 								}}
 								disabled={createModelLoading}
@@ -813,12 +806,8 @@
 									fill="currentColor"
 									class="size-4"
 								>
-									<path
-										d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"
-									/>
-									<path
-										d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"
-									/>
+									<path d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"></path>
+									<path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"></path>
 								</svg>
 							</button>
 						</div>
@@ -854,7 +843,7 @@
 						<button
 							class=" text-xs font-medium text-gray-500"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								showExperimentalOllama = !showExperimentalOllama;
 							}}>{showExperimentalOllama ? $i18n.t('Hide') : $i18n.t('Show')}</button
 						>
@@ -863,16 +852,16 @@
 
 				{#if showExperimentalOllama}
 					<form
-						on:submit|preventDefault={() => {
+						onsubmit={preventDefault(() => {
 							uploadModelHandler();
-						}}
+						})}
 					>
 						<div class=" mb-2 flex w-full justify-between">
 							<div class="  text-sm font-medium">{$i18n.t('Upload a GGUF model')}</div>
 
 							<button
 								class="p-1 px-3 text-xs flex rounded-sm transition"
-								on:click={() => {
+								onclick={() => {
 									if (modelUploadMode === 'file') {
 										modelUploadMode = 'url';
 									} else {
@@ -898,7 +887,7 @@
 											bind:this={modelUploadInputElement}
 											type="file"
 											bind:files={modelInputFile}
-											on:change={() => {
+											onchange={() => {
 												console.log(modelInputFile);
 											}}
 											accept=".gguf,.safetensors"
@@ -909,7 +898,7 @@
 										<button
 											type="button"
 											class="w-full rounded-lg text-left py-2 px-4 bg-gray-50 dark:text-gray-300 dark:bg-gray-850"
-											on:click={() => {
+											onclick={() => {
 												modelUploadInputElement.click();
 											}}
 										>
@@ -962,14 +951,10 @@
 														}
 													}
 												</style>
-												<path
-													d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
-													opacity=".25"
-												/>
-												<path
-													d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z"
-													class="spinner_ajPY"
-												/>
+												<path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+													opacity=".25"></path>
+												<path d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z"
+													class="spinner_ajPY"></path>
 											</svg>
 										</div>
 									{:else}
@@ -979,12 +964,8 @@
 											fill="currentColor"
 											class="w-4 h-4"
 										>
-											<path
-												d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"
-											/>
-											<path
-												d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"
-											/>
+											<path d="M7.25 10.25a.75.75 0 0 0 1.5 0V4.56l2.22 2.22a.75.75 0 1 0 1.06-1.06l-3.5-3.5a.75.75 0 0 0-1.06 0l-3.5 3.5a.75.75 0 0 0 1.06 1.06l2.22-2.22v5.69Z"></path>
+											<path d="M3.5 9.75a.75.75 0 0 0-1.5 0v1.5A2.75 2.75 0 0 0 4.75 14h6.5A2.75 2.75 0 0 0 14 11.25v-1.5a.75.75 0 0 0-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5Z"></path>
 										</svg>
 									{/if}
 								</button>
@@ -1001,7 +982,7 @@
 										bind:value={modelFileContent}
 										class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-100 dark:bg-gray-850 outline-hidden resize-none"
 										rows="6"
-									/>
+									></textarea>
 								</div>
 							</div>
 						{/if}

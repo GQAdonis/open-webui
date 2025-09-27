@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onDestroy, onMount, tick, getContext } from 'svelte';
 const i18n = getContext('i18n');
 
@@ -26,37 +28,59 @@ import { detectArtifactsUnified } from '$lib/artifacts/detectArtifacts';
 // Phase 3.4: Performance Monitoring - Import timeout handling
 import { performanceMonitor } from '$lib/services/performance-monitor';
 
-export let id;
-export let content;
 
-export let history;
-export let messageId;
 
-export let selectedModels = [];
 
-export let done = true;
-export let model = null;
-export let sources = null;
 
-export let save = false;
-export let preview = false;
-export let floatingButtons = true;
 
-export let editCodeBlock = true;
-export let topPadding = false;
 
-export let onSave = (e) => {};
-export let onSourceClick = (e) => {};
-export let onTaskClick = (e) => {};
-export let onAddMessages = (e) => {};
+	interface Props {
+		id: any;
+		content: any;
+		history: any;
+		messageId: any;
+		selectedModels?: any;
+		done?: boolean;
+		model?: any;
+		sources?: any;
+		save?: boolean;
+		preview?: boolean;
+		floatingButtons?: boolean;
+		editCodeBlock?: boolean;
+		topPadding?: boolean;
+		onSave?: any;
+		onSourceClick?: any;
+		onTaskClick?: any;
+		onAddMessages?: any;
+	}
 
-let contentContainerElement;
-let floatingButtonsElement;
+	let {
+		id,
+		content,
+		history,
+		messageId,
+		selectedModels = [],
+		done = true,
+		model = null,
+		sources = null,
+		save = false,
+		preview = false,
+		floatingButtons = true,
+		editCodeBlock = true,
+		topPadding = false,
+		onSave = (e) => {},
+		onSourceClick = (e) => {},
+		onTaskClick = (e) => {},
+		onAddMessages = (e) => {}
+	}: Props = $props();
+
+let contentContainerElement = $state();
+let floatingButtonsElement = $state();
 
 // Phase 2: Streaming Detection - Parser state management
 let streamParser = new ArtifactStreamParser(true); // Enable debug mode
-let lastProcessedContent = '';
-let hasDetectedArtifacts = false;
+let lastProcessedContent = $state('');
+let hasDetectedArtifacts = $state(false);
 
 const updateButtonPosition = (event) => {
 	const buttonsContainerElement = document.getElementById(`floating-buttons-${id}`);
@@ -131,16 +155,7 @@ const keydownHandler = (e) => {
 	}
 };
 
-// Phase 2: Streaming Detection - Process content updates
-$: if (messageId && content !== lastProcessedContent) {
-	console.log('🔄 [ContentRenderer] Processing content update for message:', messageId.substring(0, 8));
-	processContentUpdate(content);
-}
 
-// Phase 2: Streaming Detection - Reset parser for new messages
-$: if (messageId) {
-	resetParserForMessage(messageId);
-}
 
 function resetParserForMessage(newMessageId: string) {
 	console.log('🔄 [ContentRenderer] Resetting parser for message:', newMessageId.substring(0, 8));
@@ -351,10 +366,6 @@ async function processContentWithUnifiedDetection(content: string) {
 	}
 }
 
-// Run unified detection when content and message are complete
-$: if (done && content && messageId) {
-	processContentWithUnifiedDetection(content);
-}
 
 // Phase 3: Preview Panel Integration Functions
 async function openPreviewPanelForArtifact() {
@@ -436,6 +447,25 @@ onDestroy(() => {
 	}
 });
 
+// Phase 2: Streaming Detection - Process content updates
+run(() => {
+		if (messageId && content !== lastProcessedContent) {
+		console.log('🔄 [ContentRenderer] Processing content update for message:', messageId.substring(0, 8));
+		processContentUpdate(content);
+	}
+	});
+// Phase 2: Streaming Detection - Reset parser for new messages
+run(() => {
+		if (messageId) {
+		resetParserForMessage(messageId);
+	}
+	});
+// Run unified detection when content and message are complete
+run(() => {
+		if (done && content && messageId) {
+		processContentWithUnifiedDetection(content);
+	}
+	});
 </script>
 
 <div bind:this={contentContainerElement}>

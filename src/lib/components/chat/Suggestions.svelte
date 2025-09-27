@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Fuse from 'fuse.js';
 	import Bolt from '$lib/components/icons/Bolt.svelte';
 	import { onMount, getContext } from 'svelte';
@@ -7,27 +9,31 @@
 
 	const i18n = getContext('i18n');
 
-	export let suggestionPrompts = [];
-	export let className = '';
-	export let inputValue = '';
-	export let onSelect = (e) => {};
+	interface Props {
+		suggestionPrompts?: any;
+		className?: string;
+		inputValue?: string;
+		onSelect?: any;
+	}
 
-	let sortedPrompts = [];
+	let {
+		suggestionPrompts = [],
+		className = '',
+		inputValue = '',
+		onSelect = (e) => {}
+	}: Props = $props();
+
+	let sortedPrompts = $state([]);
 
 	const fuseOptions = {
 		keys: ['content', 'title'],
 		threshold: 0.5
 	};
 
-	let fuse;
-	let filteredPrompts = [];
+	let fuse = $derived(new Fuse(sortedPrompts, fuseOptions));
+	let filteredPrompts = $state([]);
 
-	// Initialize Fuse
-	$: fuse = new Fuse(sortedPrompts, fuseOptions);
 
-	// Update the filteredPrompts if inputValue changes
-	// Only increase version if something wirklich geändert hat
-	$: getFilteredPrompts(inputValue);
 
 	// Helper function to check if arrays are the same
 	// (based on unique IDs oder content)
@@ -58,10 +64,19 @@
 		}
 	};
 
-	$: if (suggestionPrompts) {
-		sortedPrompts = [...(suggestionPrompts ?? [])].sort(() => Math.random() - 0.5);
+	run(() => {
+		if (suggestionPrompts) {
+			sortedPrompts = [...(suggestionPrompts ?? [])].sort(() => Math.random() - 0.5);
+			getFilteredPrompts(inputValue);
+		}
+	});
+	// Initialize Fuse
+	
+	// Update the filteredPrompts if inputValue changes
+	// Only increase version if something wirklich geändert hat
+	run(() => {
 		getFilteredPrompts(inputValue);
-	}
+	});
 </script>
 
 <div class="mb-1 flex gap-1 text-xs font-medium items-center text-gray-600 dark:text-gray-400">
@@ -85,14 +100,14 @@
 	{#if filteredPrompts.length > 0}
 		<div role="list" class="max-h-40 overflow-auto scrollbar-none items-start {className}">
 			{#each filteredPrompts as prompt, idx (prompt.id || prompt.content)}
-				<!-- svelte-ignore a11y-no-interactive-element-to-noninteractive-role -->
+				<!-- svelte-ignore a11y_no_interactive_element_to_noninteractive_role -->
 				<button
 					role="listitem"
 					class="waterfall flex flex-col flex-1 shrink-0 w-full justify-between
 				       px-3 py-2 rounded-xl bg-transparent hover:bg-black/5
 				       dark:hover:bg-white/5 transition group"
 					style="animation-delay: {idx * 60}ms"
-					on:click={() => onSelect({ type: 'prompt', data: prompt.content })}
+					onclick={() => onSelect({ type: 'prompt', data: prompt.content })}
 				>
 					<div class="flex flex-col text-left">
 						{#if prompt.title && prompt.title[0] !== ''}

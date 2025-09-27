@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `let _state = 'unchecked';` to `$state` because there's a variable named state.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
@@ -18,7 +20,7 @@
 		: 'hover:outline-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'} text-white transition-all rounded-sm inline-block w-3.5 h-3.5 relative {disabled
 		? 'opacity-50 cursor-not-allowed'
 		: ''}"
-	on:click={() => {
+	onclick={() => {
 		if (disabled) return;
 
 		if (_state === 'unchecked') {
@@ -46,13 +48,11 @@
 				fill="none"
 				viewBox="0 0 24 24"
 			>
-				<path
-					stroke="currentColor"
+				<path stroke="currentColor"
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					stroke-width="3"
-					d="m5 12 4.7 4.5 9.3-9"
-				/>
+					d="m5 12 4.7 4.5 9.3-9"></path>
 			</svg>
 		{:else if indeterminate}
 			<svg
@@ -62,13 +62,11 @@
 				fill="none"
 				viewBox="0 0 24 24"
 			>
-				<path
-					stroke="currentColor"
+				<path stroke="currentColor"
 					stroke-linecap="round"
 					stroke-linejoin="round"
 					stroke-width="3"
-					d="M5 12h14"
-				/>
+					d="M5 12h14"></path>
 			</svg>
 		{/if}
 	</div>

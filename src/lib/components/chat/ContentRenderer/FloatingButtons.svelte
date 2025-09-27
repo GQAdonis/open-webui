@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 
 	import DOMPurify from 'dompurify';
@@ -14,28 +16,36 @@
 	import Markdown from '../Messages/Markdown.svelte';
 	import Skeleton from '../Messages/Skeleton.svelte';
 
-	export let id = '';
-	export let messageId = '';
 
-	export let model = null;
-	export let messages = [];
-	export let actions = [];
-	export let onAdd = (e) => {};
+	interface Props {
+		id?: string;
+		messageId?: string;
+		model?: any;
+		messages?: any;
+		actions?: any;
+		onAdd?: any;
+	}
 
-	let floatingInput = false;
-	let selectedAction = null;
+	let {
+		id = '',
+		messageId = '',
+		model = null,
+		messages = [],
+		actions = $bindable([]),
+		onAdd = (e) => {}
+	}: Props = $props();
 
-	let selectedText = '';
-	let floatingInputValue = '';
+	let floatingInput = $state(false);
+	let selectedAction = $state(null);
 
-	let content = '';
-	let responseContent = null;
-	let responseDone = false;
+	let selectedText = $state('');
+	let floatingInputValue = $state('');
+
+	let content = $state('');
+	let responseContent = $state(null);
+	let responseDone = $state(false);
 	let controller = null;
 
-	$: if (actions.length === 0) {
-		actions = DEFAULT_ACTIONS;
-	}
 
 	const DEFAULT_ACTIONS = [
 		{
@@ -236,6 +246,11 @@
 			controller.abort();
 		}
 	});
+	run(() => {
+		if (actions.length === 0) {
+			actions = DEFAULT_ACTIONS;
+		}
+	});
 </script>
 
 <div
@@ -251,7 +266,7 @@
 				{#each actions as action}
 					<button
 						class="px-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-sm flex items-center gap-1 min-w-fit"
-						on:click={async () => {
+						onclick={async () => {
 							selectedText = window.getSelection().toString();
 							selectedAction = action;
 
@@ -272,7 +287,7 @@
 						}}
 					>
 						{#if action.icon}
-							<svelte:component this={action.icon} className="size-3 shrink-0" />
+							<action.icon className="size-3 shrink-0" />
 						{/if}
 						<div class="shrink-0">{action.label}</div>
 					</button>
@@ -288,7 +303,7 @@
 					class="ml-5 bg-transparent outline-hidden w-full flex-1 text-sm"
 					placeholder={$i18n.t('Ask a question')}
 					bind:value={floatingInputValue}
-					on:keydown={(e) => {
+					onkeydown={(e) => {
 						if (e.key === 'Enter') {
 							actionHandler(selectedAction?.id);
 						}
@@ -300,7 +315,7 @@
 						class="{floatingInputValue !== ''
 							? 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 '
 							: 'text-white bg-gray-200 dark:text-gray-900 dark:bg-gray-700 disabled'} transition rounded-full p-1.5 m-0.5 self-center"
-						on:click={() => {
+						onclick={() => {
 							actionHandler(selectedAction?.id);
 						}}
 					>
@@ -310,11 +325,9 @@
 							fill="currentColor"
 							class="size-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</button>
 				</div>
@@ -344,7 +357,7 @@
 						<div class="flex justify-end pt-3 text-sm font-medium">
 							<button
 								class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
-								on:click={addHandler}
+								onclick={addHandler}
 							>
 								{$i18n.t('Add')}
 							</button>

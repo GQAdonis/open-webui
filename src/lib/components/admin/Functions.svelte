@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
@@ -39,34 +41,36 @@
 
 	const i18n = getContext('i18n');
 
-	let shiftKey = false;
+	let shiftKey = $state(false);
 
-	let functionsImportInputElement: HTMLInputElement;
-	let importFiles;
+	let functionsImportInputElement: HTMLInputElement = $state();
+	let importFiles = $state();
 
-	let showImportModal = false;
+	let showImportModal = $state(false);
 
-	let showConfirm = false;
-	let query = '';
+	let showConfirm = $state(false);
+	let query = $state('');
 
-	let selectedType = 'all';
+	let selectedType = $state('all');
 
-	let showManifestModal = false;
-	let showValvesModal = false;
-	let selectedFunction = null;
+	let showManifestModal = $state(false);
+	let showValvesModal = $state(false);
+	let selectedFunction = $state(null);
 
-	let showDeleteConfirm = false;
+	let showDeleteConfirm = $state(false);
 
-	let filteredItems = [];
-	$: filteredItems = $functions
-		.filter(
-			(f) =>
-				(selectedType !== 'all' ? f.type === selectedType : true) &&
-				(query === '' ||
-					f.name.toLowerCase().includes(query.toLowerCase()) ||
-					f.id.toLowerCase().includes(query.toLowerCase()))
-		)
-		.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+	let filteredItems = $state([]);
+	run(() => {
+		filteredItems = $functions
+			.filter(
+				(f) =>
+					(selectedType !== 'all' ? f.type === selectedType : true) &&
+					(query === '' ||
+						f.name.toLowerCase().includes(query.toLowerCase()) ||
+						f.id.toLowerCase().includes(query.toLowerCase()))
+			)
+			.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+	});
 
 	const shareHandler = async (func) => {
 		const item = await getFunctionById(localStorage.token, func.id).catch((error) => {
@@ -226,7 +230,7 @@
 	<div class="flex justify-between items-center mb-1">
 		<div class="flex md:self-center text-xl items-center font-medium px-0.5">
 			{$i18n.t('Functions')}
-			<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850" />
+			<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850"></div>
 			<span class="text-base font-lg text-gray-500 dark:text-gray-300">{filteredItems.length}</span>
 		</div>
 	</div>
@@ -246,7 +250,7 @@
 				<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 					<button
 						class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-						on:click={() => {
+						onclick={() => {
 							query = '';
 						}}
 					>
@@ -282,7 +286,7 @@
 				class="min-w-fit p-1.5 {selectedType === 'all'
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
-				on:click={() => {
+				onclick={() => {
 					selectedType = 'all';
 				}}>{$i18n.t('All')}</button
 			>
@@ -291,7 +295,7 @@
 				class="min-w-fit p-1.5 {selectedType === 'pipe'
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
-				on:click={() => {
+				onclick={() => {
 					selectedType = 'pipe';
 				}}>{$i18n.t('Pipe')}</button
 			>
@@ -300,7 +304,7 @@
 				class="min-w-fit p-1.5 {selectedType === 'filter'
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
-				on:click={() => {
+				onclick={() => {
 					selectedType = 'filter';
 				}}>{$i18n.t('Filter')}</button
 			>
@@ -309,7 +313,7 @@
 				class="min-w-fit p-1.5 {selectedType === 'action'
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
-				on:click={() => {
+				onclick={() => {
 					selectedType = 'action';
 				}}>{$i18n.t('Action')}</button
 			>
@@ -364,7 +368,7 @@
 						<button
 							class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								deleteHandler(func);
 							}}
 						>
@@ -377,7 +381,7 @@
 							<button
 								class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									selectedFunction = func;
 									showManifestModal = true;
 								}}
@@ -391,7 +395,7 @@
 						<button
 							class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								selectedFunction = func;
 								showValvesModal = true;
 							}}
@@ -404,16 +408,12 @@
 								stroke="currentColor"
 								class="size-4"
 							>
-								<path
-									stroke-linecap="round"
+								<path stroke-linecap="round"
 									stroke-linejoin="round"
-									d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-								/>
-								<path
-									stroke-linecap="round"
+									d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"></path>
+								<path stroke-linecap="round"
 									stroke-linejoin="round"
-									d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-								/>
+									d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path>
 							</svg>
 						</button>
 					</Tooltip>
@@ -456,7 +456,7 @@
 					<Tooltip content={func.is_active ? $i18n.t('Enabled') : $i18n.t('Disabled')}>
 						<Switch
 							bind:state={func.is_active}
-							on:change={async (e) => {
+							onchange={async (e) => {
 								toggleFunctionById(localStorage.token, func.id);
 								models.set(
 									await getModels(
@@ -491,7 +491,7 @@
 			type="file"
 			accept=".json"
 			hidden
-			on:change={() => {
+			onchange={() => {
 				console.log(importFiles);
 				showConfirm = true;
 			}}
@@ -499,7 +499,7 @@
 
 		<button
 			class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-			on:click={() => {
+			onclick={() => {
 				functionsImportInputElement.click();
 			}}
 		>
@@ -512,11 +512,9 @@
 					fill="currentColor"
 					class="w-4 h-4"
 				>
-					<path
-						fill-rule="evenodd"
+					<path fill-rule="evenodd"
 						d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 9.5a.75.75 0 0 1-.75-.75V8.06l-.72.72a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0l2 2a.75.75 0 1 1-1.06 1.06l-.72-.72v2.69a.75.75 0 0 1-.75.75Z"
-						clip-rule="evenodd"
-					/>
+						clip-rule="evenodd"></path>
 				</svg>
 			</div>
 		</button>
@@ -524,7 +522,7 @@
 		{#if $functions.length}
 			<button
 				class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-				on:click={async () => {
+				onclick={async () => {
 					const _functions = await exportFunctions(localStorage.token).catch((error) => {
 						toast.error(`${error}`);
 						return null;
@@ -549,11 +547,9 @@
 						fill="currentColor"
 						class="w-4 h-4"
 					>
-						<path
-							fill-rule="evenodd"
+						<path fill-rule="evenodd"
 							d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 3.5a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 0 1 1.06-1.06l.72.72V6.25A.75.75 0 0 1 8 5.5Z"
-							clip-rule="evenodd"
-						/>
+							clip-rule="evenodd"></path>
 					</svg>
 				</div>
 			</button>

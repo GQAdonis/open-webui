@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 	const i18n = getContext('i18n');
@@ -19,10 +21,14 @@
 	import PageEdit from '../icons/PageEdit.svelte';
 	dayjs.extend(calendar);
 
-	export let show = false;
-	export let onClose = () => {};
+	interface Props {
+		show?: boolean;
+		onClose?: any;
+	}
 
-	let actions = [
+	let { show = $bindable(false), onClose = () => {} }: Props = $props();
+
+	let actions = $state([
 		{
 			label: 'Start a new conversation',
 			onClick: async () => {
@@ -32,28 +38,25 @@
 			},
 			icon: PencilSquare
 		}
-	];
+	]);
 
-	let query = '';
+	let query = $state('');
 	let page = 1;
 
-	let chatList = null;
+	let chatList = $state(null);
 
-	let chatListLoading = false;
-	let allChatsLoaded = false;
+	let chatListLoading = $state(false);
+	let allChatsLoaded = $state(false);
 
 	let searchDebounceTimeout;
 
-	let selectedIdx = null;
-	let selectedChat = null;
+	let selectedIdx = $state(null);
+	let selectedChat = $state(null);
 
-	let selectedModels = [''];
-	let history = null;
-	let messages = null;
+	let selectedModels = $state(['']);
+	let history = $state(null);
+	let messages = $state(null);
 
-	$: if (!chatListLoading && chatList) {
-		loadChatPreview(selectedIdx);
-	}
 
 	const loadChatPreview = async (selectedIdx) => {
 		if (
@@ -169,9 +172,6 @@
 		chatListLoading = false;
 	};
 
-	$: if (show) {
-		searchHandler();
-	}
 
 	const onKeyDown = (e) => {
 		const searchOptions = document.getElementById('search-options-container');
@@ -252,6 +252,16 @@
 		}
 		document.removeEventListener('keydown', onKeyDown);
 	});
+	run(() => {
+		if (!chatListLoading && chatList) {
+			loadChatPreview(selectedIdx);
+		}
+	});
+	run(() => {
+		if (show) {
+			searchHandler();
+		}
+	});
 </script>
 
 <Modal size="xl" bind:show>
@@ -259,7 +269,7 @@
 		<div class="px-4 pb-1.5">
 			<SearchInput
 				bind:value={query}
-				on:input={searchHandler}
+				oninput={searchHandler}
 				placeholder={$i18n.t('Search')}
 				showClearButton={true}
 				onFocus={() => {
@@ -309,15 +319,15 @@
 							: ''}"
 						data-arrow-selected={selectedIdx === idx ? 'true' : undefined}
 						dragabble="false"
-						on:mouseenter={() => {
+						onmouseenter={() => {
 							selectedIdx = idx;
 						}}
-						on:click={async () => {
+						onclick={async () => {
 							await action.onClick();
 						}}
 					>
 						<div class="pr-2">
-							<svelte:component this={action.icon} />
+							<action.icon />
 						</div>
 						<div class=" flex-1 text-left">
 							<div class="text-ellipsis line-clamp-1 w-full">
@@ -373,10 +383,10 @@
 							href="/c/{chat.id}"
 							draggable="false"
 							data-arrow-selected={selectedIdx === idx + actions.length ? 'true' : undefined}
-							on:mouseenter={() => {
+							onmouseenter={() => {
 								selectedIdx = idx + actions.length;
 							}}
-							on:click={async () => {
+							onclick={async () => {
 								await goto(`/c/${chat.id}`);
 								show = false;
 								onClose();

@@ -18,27 +18,31 @@
 
 	const i18n = getContext('i18n');
 
-	export let saveHandler: Function;
-	export let saveSettings: Function;
+	interface Props {
+		saveHandler: Function;
+		saveSettings: Function;
+	}
+
+	let { saveHandler, saveSettings }: Props = $props();
 
 	let loaded = false;
 
-	let profileImageUrl = '';
-	let name = '';
-	let bio = '';
+	let profileImageUrl = $state('');
+	let name = $state('');
+	let bio = $state('');
 
-	let _gender = '';
-	let gender = '';
-	let dateOfBirth = '';
+	let _gender = $state('');
+	let gender = $state('');
+	let dateOfBirth = $state('');
 
-	let webhookUrl = '';
-	let showAPIKeys = false;
+	let webhookUrl = $state('');
+	let showAPIKeys = $state(false);
 
-	let JWTTokenCopied = false;
+	let JWTTokenCopied = $state(false);
 
-	let APIKey = '';
-	let APIKeyCopied = false;
-	let profileImageInputElement: HTMLInputElement;
+	let APIKey = $state('');
+	let APIKeyCopied = $state(false);
+	let profileImageInputElement: HTMLInputElement = $state();
 
 	const submitHandler = async () => {
 		if (name !== $user?.name) {
@@ -124,7 +128,7 @@
 			type="file"
 			hidden
 			accept="image/*"
-			on:change={(e) => {
+			onchange={(e) => {
 				const files = profileImageInputElement.files ?? [];
 				let reader = new FileReader();
 				reader.onload = (event) => {
@@ -197,7 +201,7 @@
 						<button
 							class="relative rounded-full dark:bg-gray-700"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								profileImageInputElement.click();
 							}}
 						>
@@ -215,9 +219,7 @@
 										fill="currentColor"
 										class="size-3"
 									>
-										<path
-											d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.419a4 4 0 0 0-.885 1.343Z"
-										/>
+										<path d="m2.695 14.762-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.886L17.5 5.501a2.121 2.121 0 0 0-3-3L3.58 13.419a4 4 0 0 0-.885 1.343Z"></path>
 									</svg>
 								</div>
 							</div>
@@ -226,14 +228,14 @@
 					<div class="flex flex-col w-full justify-center mt-2">
 						<button
 							class=" text-xs text-center text-gray-500 rounded-lg py-0.5 opacity-0 group-hover:opacity-100 transition-all"
-							on:click={async () => {
+							onclick={async () => {
 								profileImageUrl = `${WEBUI_BASE_URL}/user.png`;
 							}}>{$i18n.t('Remove')}</button
 						>
 
 						<button
 							class=" text-xs text-center text-gray-800 dark:text-gray-400 rounded-lg py-0.5 opacity-0 group-hover:opacity-100 transition-all"
-							on:click={async () => {
+							onclick={async () => {
 								if (canvasPixelTest()) {
 									profileImageUrl = generateInitialsImage(name);
 								} else {
@@ -251,7 +253,7 @@
 
 						<button
 							class=" text-xs text-center text-gray-800 dark:text-gray-400 rounded-lg py-0.5 opacity-0 group-hover:opacity-100 transition-all"
-							on:click={async () => {
+							onclick={async () => {
 								const url = await getGravatarUrl(localStorage.token, $user?.email);
 
 								profileImageUrl = url;
@@ -295,7 +297,7 @@
 								<select
 									class="w-full text-sm dark:text-gray-300 bg-transparent outline-hidden"
 									bind:value={_gender}
-									on:change={(e) => {
+									onchange={(e) => {
 										console.log(_gender);
 
 										if (_gender === 'custom') {
@@ -373,7 +375,7 @@
 				<button
 					class=" text-xs font-medium text-gray-500"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						showAPIKeys = !showAPIKeys;
 					}}>{showAPIKeys ? $i18n.t('Hide') : $i18n.t('Show')}</button
 				>
@@ -392,7 +394,7 @@
 
 								<button
 									class="ml-1.5 px-1.5 py-1 dark:hover:bg-gray-850 transition rounded-lg"
-									on:click={() => {
+									onclick={() => {
 										copyToClipboard(localStorage.token);
 										JWTTokenCopied = true;
 										setTimeout(() => {
@@ -407,11 +409,9 @@
 											fill="currentColor"
 											class="w-4 h-4"
 										>
-											<path
-												fill-rule="evenodd"
+											<path fill-rule="evenodd"
 												d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-												clip-rule="evenodd"
-											/>
+												clip-rule="evenodd"></path>
 										</svg>
 									{:else}
 										<svg
@@ -420,16 +420,12 @@
 											fill="currentColor"
 											class="w-4 h-4"
 										>
-											<path
-												fill-rule="evenodd"
+											<path fill-rule="evenodd"
 												d="M11.986 3H12a2 2 0 0 1 2 2v6a2 2 0 0 1-1.5 1.937V7A2.5 2.5 0 0 0 10 4.5H4.063A2 2 0 0 1 6 3h.014A2.25 2.25 0 0 1 8.25 1h1.5a2.25 2.25 0 0 1 2.236 2ZM10.5 4v-.75a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75V4h3Z"
-												clip-rule="evenodd"
-											/>
-											<path
-												fill-rule="evenodd"
+												clip-rule="evenodd"></path>
+											<path fill-rule="evenodd"
 												d="M3 6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H3Zm1.75 2.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5ZM4 11.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Z"
-												clip-rule="evenodd"
-											/>
+												clip-rule="evenodd"></path>
 										</svg>
 									{/if}
 								</button>
@@ -450,7 +446,7 @@
 
 									<button
 										class="ml-1.5 px-1.5 py-1 dark:hover:bg-gray-850 transition rounded-lg"
-										on:click={() => {
+										onclick={() => {
 											copyToClipboard(APIKey);
 											APIKeyCopied = true;
 											setTimeout(() => {
@@ -465,11 +461,9 @@
 												fill="currentColor"
 												class="w-4 h-4"
 											>
-												<path
-													fill-rule="evenodd"
+												<path fill-rule="evenodd"
 													d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
-													clip-rule="evenodd"
-												/>
+													clip-rule="evenodd"></path>
 											</svg>
 										{:else}
 											<svg
@@ -478,16 +472,12 @@
 												fill="currentColor"
 												class="w-4 h-4"
 											>
-												<path
-													fill-rule="evenodd"
+												<path fill-rule="evenodd"
 													d="M11.986 3H12a2 2 0 0 1 2 2v6a2 2 0 0 1-1.5 1.937V7A2.5 2.5 0 0 0 10 4.5H4.063A2 2 0 0 1 6 3h.014A2.25 2.25 0 0 1 8.25 1h1.5a2.25 2.25 0 0 1 2.236 2ZM10.5 4v-.75a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75V4h3Z"
-													clip-rule="evenodd"
-												/>
-												<path
-													fill-rule="evenodd"
+													clip-rule="evenodd"></path>
+												<path fill-rule="evenodd"
 													d="M3 6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H3Zm1.75 2.5a.75.75 0 0 0 0 1.5h3.5a.75.75 0 0 0 0-1.5h-3.5ZM4 11.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Z"
-													clip-rule="evenodd"
-												/>
+													clip-rule="evenodd"></path>
 											</svg>
 										{/if}
 									</button>
@@ -495,7 +485,7 @@
 									<Tooltip content={$i18n.t('Create new key')}>
 										<button
 											class=" px-1.5 py-1 dark:hover:bg-gray-850transition rounded-lg"
-											on:click={() => {
+											onclick={() => {
 												createAPIKeyHandler();
 											}}
 										>
@@ -507,18 +497,16 @@
 												stroke="currentColor"
 												class="size-4"
 											>
-												<path
-													stroke-linecap="round"
+												<path stroke-linecap="round"
 													stroke-linejoin="round"
-													d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-												/>
+													d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
 											</svg>
 										</button>
 									</Tooltip>
 								{:else}
 									<button
 										class="flex gap-1.5 items-center font-medium px-3.5 py-1.5 rounded-lg bg-gray-100/70 hover:bg-gray-100 dark:bg-gray-850 dark:hover:bg-gray-850 transition"
-										on:click={() => {
+										onclick={() => {
 											createAPIKeyHandler();
 										}}
 									>
@@ -538,7 +526,7 @@
 	<div class="flex justify-end pt-3 text-sm font-medium">
 		<button
 			class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
-			on:click={async () => {
+			onclick={async () => {
 				const res = await submitHandler();
 
 				if (res) {

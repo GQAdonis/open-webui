@@ -1,6 +1,10 @@
 <script lang="ts">
-	export let className = 'size-4';
-	export let strokeWidth = '1.8';
+	interface Props {
+		className?: string;
+		strokeWidth?: string;
+	}
+
+	let { className = 'size-4', strokeWidth = '1.8' }: Props = $props();
 </script>
 
 <svg
@@ -12,8 +16,8 @@
 	class={className}
 >
 	<!-- Tag body with pointed end -->
-	<path d="M4 12 L8 7 H21 V17 H8 L4 12 Z" stroke="currentColor" fill="none" />
+	<path d="M4 12 L8 7 H21 V17 H8 L4 12 Z" stroke="currentColor" fill="none"></path>
 
 	<!-- Tag hole -->
-	<circle cx="10" cy="12" r="0.75" fill="currentColor" stroke="currentColor" />
+	<circle cx="10" cy="12" r="0.75" fill="currentColor" stroke="currentColor"></circle>
 </svg>

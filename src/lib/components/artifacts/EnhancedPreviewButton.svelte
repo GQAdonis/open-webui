@@ -3,6 +3,8 @@ Enhanced Preview Button with Intent Classification and Retry Prevention
 Extends the existing ArtifactButton.svelte with enhanced functionality
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { createEventDispatcher, onMount } from 'svelte';
   import { artifactStore, artifactUIState, artifactActions } from '$lib/stores/artifacts/artifact-store';
   import { artifactIntegration, hasArtifactInMessage } from '$lib/utils/artifacts/integration';
@@ -12,23 +14,34 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
   import { detectArtifactsWithContext } from '$lib/artifacts/detectArtifacts';
   import type { IntentClassificationRequest } from '$lib/types/intent-classifier';
 
-  export let messageContent: string = '';
-  export let messageId: string;
-  export let style: 'default' | 'minimal' | 'icon-only' | 'enhanced' = 'enhanced';
-  export let size: 'sm' | 'md' | 'lg' = 'md';
-  export let enableIntentClassification = true;
-  export let showRetryInfo = true;
+  interface Props {
+    messageContent?: string;
+    messageId: string;
+    style?: 'default' | 'minimal' | 'icon-only' | 'enhanced';
+    size?: 'sm' | 'md' | 'lg';
+    enableIntentClassification?: boolean;
+    showRetryInfo?: boolean;
+  }
+
+  let {
+    messageContent = '',
+    messageId,
+    style = 'enhanced',
+    size = 'md',
+    enableIntentClassification = true,
+    showRetryInfo = true
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
   // Enhanced state management
-  let isLoading = false;
-  let isAnalyzing = false;
-  let intentConfidence = 0;
-  let shouldEnhance = false;
-  let hasArtifacts = false;
-  let artifactCount = 0;
-  let retryState: any = null;
+  let isLoading = $state(false);
+  let isAnalyzing = $state(false);
+  let intentConfidence = $state(0);
+  let shouldEnhance = $state(false);
+  let hasArtifacts = $state(false);
+  let artifactCount = $state(0);
+  let retryState: any = $state(null);
   let componentId: string;
 
   // Initialize on mount
@@ -37,10 +50,6 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
     await analyzeMessage();
   });
 
-  // Reactive checks
-  $: if (messageContent) {
-    analyzeMessage();
-  }
 
   async function analyzeMessage() {
     if (!messageContent || isAnalyzing) return;
@@ -215,22 +224,28 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
     return hasArtifacts || shouldEnhance || style === 'enhanced';
   }
 
+
+
+  // Reactive checks
+  run(() => {
+    if (messageContent) {
+      analyzeMessage();
+    }
+  });
   // Size classes
-  $: sizeClasses = {
+  let sizeClasses = $derived({
     sm: 'text-xs px-2 py-1',
     md: 'text-sm px-3 py-2',
     lg: 'text-base px-4 py-2'
-  }[size];
-
+  }[size]);
   // Icon size classes
-  $: iconSizeClasses = {
+  let iconSizeClasses = $derived({
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
     lg: 'w-5 h-5'
-  }[size];
-
+  }[size]);
   // Button style classes
-  $: buttonStyleClasses = (() => {
+  let buttonStyleClasses = $derived((() => {
     if (style === 'minimal') {
       return 'text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400';
     }
@@ -244,7 +259,7 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
     }
 
     return 'bg-gray-100 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700';
-  })();
+  })());
 </script>
 
 {#if canShowButton()}
@@ -255,7 +270,7 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
     class:analyzing={isAnalyzing}
     class:has-artifacts={hasArtifacts}
     class:should-enhance={shouldEnhance}
-    on:click={handleClick}
+    onclick={handleClick}
     disabled={isLoading || isAnalyzing}
     title={getButtonTitle()}
     aria-label={getButtonText()}
@@ -274,28 +289,22 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
       >
         {#if hasArtifacts}
           <!-- Existing artifact icon -->
-          <path
-            stroke-linecap="round"
+          <path stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-          />
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
         {:else if shouldEnhance}
           <!-- Intent detected icon -->
-          <path
-            stroke-linecap="round"
+          <path stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M13 10V3L4 14h7v7l9-11h-7z"
-          />
+            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
         {:else}
           <!-- Create artifact icon -->
-          <path
-            stroke-linecap="round"
+          <path stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-          />
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
         {/if}
       </svg>
     {/if}
@@ -323,7 +332,7 @@ Extends the existing ArtifactButton.svelte with enhanced functionality
     {#if retryState && retryState.consecutiveFailures > 0 && showRetryInfo}
       <div class="retry-indicator" title="Previous rendering attempts: {retryState.consecutiveFailures}">
         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
         </svg>
       </div>
     {/if}

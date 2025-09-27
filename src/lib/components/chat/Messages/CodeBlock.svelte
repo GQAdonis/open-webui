@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run as run_1 } from 'svelte/legacy';
+
 	import hljs from 'highlight.js';
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount, tick, onDestroy } from 'svelte';
@@ -20,52 +22,70 @@
 
 	const i18n = getContext('i18n');
 
-	export let id = '';
-	export let edit = true;
 
-	export let onSave = (e) => {};
-	export let onUpdate = (e) => {};
-	export let onPreview = (e) => {};
 
-	export let save = false;
-	export let run = true;
-	export let preview = false;
-	export let collapsed = false;
 
-	export let token;
-	export let lang = '';
-	export let code = '';
-	export let attributes = {};
 
-	export let className = 'mb-2';
-	export let editorClassName = '';
-	export let stickyButtonsClassName = 'top-0';
+	interface Props {
+		id?: string;
+		edit?: boolean;
+		onSave?: any;
+		onUpdate?: any;
+		onPreview?: any;
+		save?: boolean;
+		run?: boolean;
+		preview?: boolean;
+		collapsed?: boolean;
+		token: any;
+		lang?: string;
+		code?: string;
+		attributes?: any;
+		className?: string;
+		editorClassName?: string;
+		stickyButtonsClassName?: string;
+	}
+
+	let {
+		id = '',
+		edit = true,
+		onSave = (e) => {},
+		onUpdate = (e) => {},
+		onPreview = (e) => {},
+		save = false,
+		run = true,
+		preview = false,
+		collapsed = $bindable(false),
+		token,
+		lang = '',
+		code = $bindable(''),
+		attributes = {},
+		className = 'mb-2',
+		editorClassName = '',
+		stickyButtonsClassName = 'top-0'
+	}: Props = $props();
 
 	let pyodideWorker = null;
 
-	let _code = '';
-	$: if (code) {
-		updateCode();
-	}
+	let _code = $state('');
 
 	const updateCode = () => {
 		_code = code;
 	};
 
-	let _token = null;
+	let _token = $state(null);
 
-	let mermaidHtml = null;
+	let mermaidHtml = $state(null);
 
 	let highlightedCode = null;
-	let executing = false;
+	let executing = $state(false);
 
-	let stdout = null;
-	let stderr = null;
-	let result = null;
-	let files = null;
+	let stdout = $state(null);
+	let stderr = $state(null);
+	let result = $state(null);
+	let files = $state(null);
 
-	let copied = false;
-	let saved = false;
+	let copied = $state(false);
+	let saved = $state(false);
 
 	const collapseCodeBlock = () => {
 		collapsed = !collapsed;
@@ -329,19 +349,8 @@
 		}
 	};
 
-	$: if (token) {
-		if (JSON.stringify(token) !== JSON.stringify(_token)) {
-			_token = token;
-		}
-	}
 
-	$: if (_token) {
-		render();
-	}
 
-	$: if (attributes) {
-		onAttributesUpdate();
-	}
 
 	const onAttributesUpdate = () => {
 		if (attributes?.output) {
@@ -380,6 +389,28 @@
 			pyodideWorker.terminate();
 		}
 	});
+	run_1(() => {
+		if (code) {
+			updateCode();
+		}
+	});
+	run_1(() => {
+		if (token) {
+			if (JSON.stringify(token) !== JSON.stringify(_token)) {
+				_token = token;
+			}
+		}
+	});
+	run_1(() => {
+		if (_token) {
+			render();
+		}
+	});
+	run_1(() => {
+		if (attributes) {
+			onAttributesUpdate();
+		}
+	});
 </script>
 
 <div>
@@ -410,7 +441,7 @@
 				<div class="flex items-center gap-0.5">
 					<button
 						class="flex gap-1 items-center bg-none border-none transition rounded-md px-1.5 py-0.5 bg-white dark:bg-black"
-						on:click={collapseCodeBlock}
+						onclick={collapseCodeBlock}
 					>
 						<div class=" -translate-y-[0.5px]">
 							<ChevronUpDown className="size-3" />
@@ -431,7 +462,7 @@
 						{:else if run}
 							<button
 								class="flex gap-1 items-center run-code-button bg-none border-none transition rounded-md px-1.5 py-0.5 bg-white dark:bg-black"
-								on:click={async () => {
+								onclick={async () => {
 									code = _code;
 									await tick();
 									executePython(code);
@@ -447,7 +478,7 @@
 					{#if save}
 						<button
 							class="save-code-button bg-none border-none transition rounded-md px-1.5 py-0.5 bg-white dark:bg-black"
-							on:click={saveCode}
+							onclick={saveCode}
 						>
 							{saved ? $i18n.t('Saved') : $i18n.t('Save')}
 						</button>
@@ -455,13 +486,13 @@
 
 					<button
 						class="copy-code-button bg-none border-none transition rounded-md px-1.5 py-0.5 bg-white dark:bg-black"
-						on:click={copyCode}>{copied ? $i18n.t('Copied') : $i18n.t('Copy')}</button
+						onclick={copyCode}>{copied ? $i18n.t('Copied') : $i18n.t('Copy')}</button
 					>
 
 					{#if preview && (['html', 'svg', 'tsx', 'jsx', 'svelte'].includes(lang))}
 						<button
 							class="flex gap-1 items-center run-code-button bg-none border-none transition rounded-md px-1.5 py-0.5 bg-white dark:bg-black"
-							on:click={previewCode}
+							onclick={previewCode}
 						>
 							<div>
 								{$i18n.t('Preview')}
@@ -523,7 +554,7 @@
 				<div
 					id="plt-canvas-{id}"
 					class="bg-gray-50 dark:bg-black dark:text-white max-w-full overflow-x-auto scrollbar-hidden"
-				/>
+				></div>
 
 				{#if executing || stdout || stderr || result || files}
 					<div

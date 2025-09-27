@@ -5,10 +5,9 @@
 
 	const i18n = getContext('i18n');
 
-	export let filters = [];
-	export let selectedFilterIds = [];
+	let { filters = [], selectedFilterIds = $bindable([]) } = $props();
 
-	let _filters = {};
+	let _filters = $state({});
 
 	onMount(() => {
 		_filters = filters.reduce((acc, filter) => {
@@ -41,7 +40,7 @@
 										? 'checked'
 										: 'unchecked'}
 								disabled={_filters[filter].is_global}
-								on:change={(e) => {
+								onchange={(e) => {
 									if (!_filters[filter].is_global) {
 										_filters[filter].selected = e.detail === 'checked';
 										selectedFilterIds = Object.keys(_filters).filter((t) => _filters[t].selected);

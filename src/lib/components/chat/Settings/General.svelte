@@ -10,19 +10,23 @@
 
 	import AdvancedParams from './Advanced/AdvancedParams.svelte';
 	import Textarea from '$lib/components/common/Textarea.svelte';
-	export let saveSettings: Function;
-	export let getModels: Function;
+	interface Props {
+		saveSettings: Function;
+		getModels: Function;
+	}
+
+	let { saveSettings, getModels }: Props = $props();
 
 	// General
 	let themes = ['dark', 'light', 'oled-dark'];
-	let selectedTheme = 'system';
+	let selectedTheme = $state('system');
 
-	let languages: Awaited<ReturnType<typeof getLanguages>> = [];
-	let lang = $i18n.language;
-	let notificationEnabled = false;
-	let system = '';
+	let languages: Awaited<ReturnType<typeof getLanguages>> = $state([]);
+	let lang = $state($i18n.language);
+	let notificationEnabled = $state(false);
+	let system = $state('');
 
-	let showAdvanced = false;
+	let showAdvanced = $state(false);
 
 	const toggleNotification = async () => {
 		const permission = await Notification.requestPermission();
@@ -39,7 +43,7 @@
 		}
 	};
 
-	let params = {
+	let params = $state({
 		// Advanced
 		stream_response: null,
 		stream_delta_chunk_size: null,
@@ -65,7 +69,7 @@
 		num_keep: null,
 		max_tokens: null,
 		num_gpu: null
-	};
+	});
 
 	const saveHandler = async () => {
 		saveSettings({
@@ -204,7 +208,7 @@
 							: 'outline-hidden'}"
 						bind:value={selectedTheme}
 						placeholder={$i18n.t('Select a theme')}
-						on:change={() => themeChangeHandler(selectedTheme)}
+						onchange={() => themeChangeHandler(selectedTheme)}
 					>
 						<option value="system">⚙️ {$i18n.t('System')}</option>
 						<option value="dark">🌑 {$i18n.t('Dark')}</option>
@@ -226,7 +230,7 @@
 							: 'outline-hidden'}"
 						bind:value={lang}
 						placeholder={$i18n.t('Select a language')}
-						on:change={(e) => {
+						onchange={(e) => {
 							changeLanguage(lang);
 						}}
 					>
@@ -261,7 +265,7 @@
 
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition"
-						on:click={() => {
+						onclick={() => {
 							toggleNotification();
 						}}
 						type="button"
@@ -302,7 +306,7 @@
 							? 'text-gray-800 dark:text-gray-100'
 							: 'text-gray-400 dark:text-gray-500'}"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							showAdvanced = !showAdvanced;
 						}}>{showAdvanced ? $i18n.t('Hide') : $i18n.t('Show')}</button
 					>
@@ -318,7 +322,7 @@
 	<div class="flex justify-end pt-3 text-sm font-medium">
 		<button
 			class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
-			on:click={() => {
+			onclick={() => {
 				saveHandler();
 			}}
 		>

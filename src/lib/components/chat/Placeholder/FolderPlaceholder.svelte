@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
@@ -7,7 +7,11 @@
 	import ChatList from './ChatList.svelte';
 	import FolderKnowledge from './FolderKnowledge.svelte';
 
-	export let folder = null;
+	interface Props {
+		folder?: any;
+	}
+
+	let { folder = null }: Props = $props();
 
 	let selectedTab = 'chats';
 </script>
@@ -22,7 +26,7 @@
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					selectedTab = 'knowledge';
 				}}>{$i18n.t('Knowledge')}</button
 			>
@@ -32,7 +36,7 @@
 					? ''
 					: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					selectedTab = 'chats';
 				}}
 			>

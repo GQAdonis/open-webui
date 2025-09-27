@@ -9,10 +9,14 @@
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import { isValidHttpUrl, isYoutubeUrl } from '$lib/utils';
 
-	export let show = false;
-	export let onSubmit: (e) => void;
+	interface Props {
+		show?: boolean;
+		onSubmit: (e) => void;
+	}
 
-	let url = '';
+	let { show = $bindable(false), onSubmit }: Props = $props();
+
+	let url = $state('');
 
 	const submitHandler = () => {
 		if (isValidHttpUrl(url)) {
@@ -38,7 +42,7 @@
 			<button
 				class="self-center"
 				aria-label={$i18n.t('Close modal')}
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -48,7 +52,7 @@
 
 		<div class="px-5 pb-4">
 			<form
-				on:submit={(e) => {
+				onsubmit={(e) => {
 					e.preventDefault();
 					submitHandler();
 				}}

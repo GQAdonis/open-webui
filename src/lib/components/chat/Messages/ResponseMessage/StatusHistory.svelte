@@ -1,29 +1,41 @@
-<script>
+<script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
 	import StatusItem from './StatusHistory/StatusItem.svelte';
-	export let statusHistory = [];
-	export let expand = false;
-
-	let showHistory = true;
-
-	$: if (expand) {
-		showHistory = true;
-	} else {
-		showHistory = false;
+	interface Props {
+		statusHistory?: any;
+		expand?: boolean;
 	}
 
-	let history = [];
-	let status = null;
+	let { statusHistory = [], expand = false }: Props = $props();
 
-	$: if (history && history.length > 0) {
-		status = history.at(-1);
-	}
+	let showHistory = $state(true);
 
-	$: if (JSON.stringify(statusHistory) !== JSON.stringify(history)) {
-		history = statusHistory;
-	}
+	run(() => {
+		if (expand) {
+			showHistory = true;
+		} else {
+			showHistory = false;
+		}
+	});
+
+	let history = $state([]);
+	let status = $state(null);
+
+	run(() => {
+		if (history && history.length > 0) {
+			status = history.at(-1);
+		}
+	});
+
+	run(() => {
+		if (JSON.stringify(statusHistory) !== JSON.stringify(history)) {
+			history = statusHistory;
+		}
+	});
 </script>
 
 {#if history && history.length > 0}
@@ -49,7 +61,7 @@
 
 											<div
 												class="w-[0.5px] ml-[6.5px] h-[calc(100%-14px)] bg-gray-300 dark:bg-gray-700"
-											/>
+											></div>
 										</div>
 
 										<StatusItem {status} done={true} />
@@ -63,7 +75,7 @@
 
 			<button
 				class="w-full"
-				on:click={() => {
+				onclick={() => {
 					showHistory = !showHistory;
 				}}
 			>

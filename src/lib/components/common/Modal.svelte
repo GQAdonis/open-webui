@@ -1,20 +1,33 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { onDestroy, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 
 	import { flyAndScale } from '$lib/utils/transitions';
 	import * as FocusTrap from 'focus-trap';
-	export let show = true;
-	export let size = 'md';
-	export let containerClassName = 'p-3';
-	export let className = 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-4xl';
+	interface Props {
+		show?: boolean;
+		size?: string;
+		containerClassName?: string;
+		className?: string;
+		children?: import('svelte').Snippet;
+	}
 
-	let modalElement = null;
+	let {
+		show = $bindable(true),
+		size = 'md',
+		containerClassName = 'p-3',
+		className = 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-4xl',
+		children
+	}: Props = $props();
+
+	let modalElement = $state(null);
 	let mounted = false;
 	// Create focus trap to trap user tabs inside modal
 	// https://www.w3.org/WAI/WCAG21/Understanding/focus-order.html
 	// https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html
-	let focusTrap: FocusTrap.FocusTrap | null = null;
+	let focusTrap: FocusTrap.FocusTrap | null = $state(null);
 
 	const sizeToWidth = (size) => {
 		if (size === 'full') {
@@ -55,18 +68,20 @@
 		mounted = true;
 	});
 
-	$: if (show && modalElement) {
-		document.body.appendChild(modalElement);
-		focusTrap = FocusTrap.createFocusTrap(modalElement);
-		focusTrap.activate();
-		window.addEventListener('keydown', handleKeyDown);
-		document.body.style.overflow = 'hidden';
-	} else if (modalElement) {
-		focusTrap.deactivate();
-		window.removeEventListener('keydown', handleKeyDown);
-		document.body.removeChild(modalElement);
-		document.body.style.overflow = 'unset';
-	}
+	run(() => {
+		if (show && modalElement) {
+			document.body.appendChild(modalElement);
+			focusTrap = FocusTrap.createFocusTrap(modalElement);
+			focusTrap.activate();
+			window.addEventListener('keydown', handleKeyDown);
+			document.body.style.overflow = 'hidden';
+		} else if (modalElement) {
+			focusTrap.deactivate();
+			window.removeEventListener('keydown', handleKeyDown);
+			document.body.removeChild(modalElement);
+			document.body.style.overflow = 'unset';
+		}
+	});
 
 	onDestroy(() => {
 		show = false;
@@ -80,16 +95,16 @@
 </script>
 
 {#if show}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		bind:this={modalElement}
 		aria-modal="true"
 		role="dialog"
 		class="modal fixed top-0 right-0 left-0 bottom-0 bg-black/30 dark:bg-black/60 w-full h-screen max-h-[100dvh] {containerClassName}  flex justify-center z-9999 overflow-y-auto overscroll-contain"
 		in:fade={{ duration: 10 }}
-		on:mousedown={() => {
+		onmousedown={() => {
 			show = false;
 		}}
 	>
@@ -98,11 +113,11 @@
 				? 'mx-2'
 				: ''} shadow-3xl min-h-fit scrollbar-hidden {className} border border-white dark:border-gray-850"
 			in:flyAndScale
-			on:mousedown={(e) => {
+			onmousedown={(e) => {
 				e.stopPropagation();
 			}}
 		>
-			<slot />
+			{@render children?.()}
 		</div>
 	</div>
 {/if}

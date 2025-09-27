@@ -1,6 +1,10 @@
 <script lang="ts">
-	export let className = 'size-4';
-	export let strokeWidth = '1.5';
+	interface Props {
+		className?: string;
+		strokeWidth?: string;
+	}
+
+	let { className = 'size-4', strokeWidth = '1.5' }: Props = $props();
 </script>
 
 <svg
@@ -11,9 +15,7 @@
 	stroke="currentColor"
 	class={className}
 >
-	<path
-		stroke-linecap="round"
+	<path stroke-linecap="round"
 		stroke-linejoin="round"
-		d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
-	/>
+		d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"></path>
 </svg>

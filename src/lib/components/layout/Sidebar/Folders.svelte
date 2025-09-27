@@ -1,23 +1,31 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher();
 	import RecursiveFolder from './RecursiveFolder.svelte';
-	export let folders = {};
-	export let shiftKey = false;
 
-	export let onDelete = (folderId) => {};
+	interface Props {
+		folders?: any;
+		shiftKey?: boolean;
+		onDelete?: any;
+	}
 
-	let folderList = [];
+	let { folders = {}, shiftKey = false, onDelete = (folderId) => {} }: Props = $props();
+
+	let folderList = $state([]);
 	// Get the list of folders that have no parent, sorted by name alphabetically
-	$: folderList = Object.keys(folders)
-		.filter((key) => folders[key].parent_id === null)
-		.sort((a, b) =>
-			folders[a].name.localeCompare(folders[b].name, undefined, {
-				numeric: true,
-				sensitivity: 'base'
-			})
-		);
+	run(() => {
+		folderList = Object.keys(folders)
+			.filter((key) => folders[key].parent_id === null)
+			.sort((a, b) =>
+				folders[a].name.localeCompare(folders[b].name, undefined, {
+					numeric: true,
+					sensitivity: 'base'
+				})
+			);
+	});
 </script>
 
 {#each folderList as folderId (folderId)}
@@ -33,7 +41,7 @@
 		on:update={(e) => {
 			dispatch('update', e.detail);
 		}}
-		on:change={(e) => {
+		onchange={(e) => {
 			dispatch('change', e.detail);
 		}}
 	/>

@@ -1,32 +1,45 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
 import { onMount, onDestroy } from 'svelte';
 import { parseArtifactsFromContent } from '$lib/utils/artifacts/xml-artifact-parser';
 import ArtifactRenderer from '$lib/components/artifacts/ArtifactRenderer.svelte';
 import { showArtifacts, showControls } from '$lib/stores';
 
-export let identifier: string;
-export let type: string = 'text/html';
-export let title: string = 'Untitled';
-export let rawXml: string = '';
+  interface Props {
+    identifier: string;
+    type?: string;
+    title?: string;
+    rawXml?: string;
+  }
 
-let parsedArtifact: any = null;
+  let {
+    identifier,
+    type = 'text/html',
+    title = 'Untitled',
+    rawXml = ''
+  }: Props = $props();
+
+let parsedArtifact: any = $state(null);
 
 // Parse artifact from raw XML
-$: if (rawXml && identifier && type && title) {
-  console.log('🎯 [ArtifactComponent] Parsing raw XML:', rawXml.substring(0, 200) + '...');
+run(() => {
+    if (rawXml && identifier && type && title) {
+    console.log('🎯 [ArtifactComponent] Parsing raw XML:', rawXml.substring(0, 200) + '...');
 
-  const result = parseArtifactsFromContent(rawXml);
-  if (result.hasArtifacts && result.artifacts.length > 0) {
-    parsedArtifact = result.artifacts[0];
-    console.log('🎯 [ArtifactComponent] Successfully parsed artifact:', parsedArtifact);
+    const result = parseArtifactsFromContent(rawXml);
+    if (result.hasArtifacts && result.artifacts.length > 0) {
+      parsedArtifact = result.artifacts[0];
+      console.log('🎯 [ArtifactComponent] Successfully parsed artifact:', parsedArtifact);
 
-    // Show artifact panel
-    showArtifacts.set(true);
-    showControls.set(true);
-  } else {
-    console.warn('🎯 [ArtifactComponent] Failed to parse artifact from XML');
+      // Show artifact panel
+      showArtifacts.set(true);
+      showControls.set(true);
+    } else {
+      console.warn('🎯 [ArtifactComponent] Failed to parse artifact from XML');
+    }
   }
-}
+  });
 
 </script>
 

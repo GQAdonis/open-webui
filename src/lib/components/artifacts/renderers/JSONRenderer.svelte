@@ -1,21 +1,24 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 import { getPrimaryFile } from '$lib/utils/artifacts/artifact-parser';
 import CodeRenderer from './CodeRenderer.svelte';
 
-export let artifact: ParsedArtifact;
-export let height: string = '400px';
+	interface Props {
+		artifact: ParsedArtifact;
+		height?: string;
+	}
+
+	let { artifact, height = '400px' }: Props = $props();
 
 const dispatch = createEventDispatcher();
 
 let jsonContent: string = '';
-let formattedJson: string = '';
-let error: string | null = null;
+let formattedJson: string = $state('');
+let error: string | null = $state(null);
 
-$: {
-loadJSON();
-}
 
 function loadJSON() {
 try {
@@ -52,6 +55,9 @@ dispatch('error', event.detail);
 function handleRendererLoad(event) {
 dispatch('load', event.detail);
 }
+run(() => {
+loadJSON();
+});
 </script>
 
 <div class="json-renderer" style="height: {height};">

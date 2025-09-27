@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
@@ -26,30 +28,32 @@
 	import XMark from '../icons/XMark.svelte';
 	import GarbageBin from '../icons/GarbageBin.svelte';
 
-	let shiftKey = false;
+	let shiftKey = $state(false);
 
 	const i18n = getContext('i18n');
-	let promptsImportInputElement: HTMLInputElement;
-	let loaded = false;
+	let promptsImportInputElement: HTMLInputElement = $state();
+	let loaded = $state(false);
 
-	let importFiles = '';
-	let query = '';
+	let importFiles = $state('');
+	let query = $state('');
 
-	let prompts = [];
+	let prompts = $state([]);
 
-	let showDeleteConfirm = false;
-	let deletePrompt = null;
+	let showDeleteConfirm = $state(false);
+	let deletePrompt = $state(null);
 
-	let filteredItems = [];
-	$: filteredItems = prompts.filter((p) => {
-		if (query === '') return true;
-		const lowerQuery = query.toLowerCase();
-		return (
-			(p.title || '').toLowerCase().includes(lowerQuery) ||
-			(p.command || '').toLowerCase().includes(lowerQuery) ||
-			(p.user?.name || '').toLowerCase().includes(lowerQuery) ||
-			(p.user?.email || '').toLowerCase().includes(lowerQuery)
-		);
+	let filteredItems = $state([]);
+	run(() => {
+		filteredItems = prompts.filter((p) => {
+			if (query === '') return true;
+			const lowerQuery = query.toLowerCase();
+			return (
+				(p.title || '').toLowerCase().includes(lowerQuery) ||
+				(p.command || '').toLowerCase().includes(lowerQuery) ||
+				(p.user?.name || '').toLowerCase().includes(lowerQuery) ||
+				(p.user?.email || '').toLowerCase().includes(lowerQuery)
+			);
+		});
 	});
 
 	const shareHandler = async (prompt) => {
@@ -165,7 +169,7 @@
 		<div class="flex justify-between items-center">
 			<div class="flex md:self-center text-xl font-medium px-0.5 items-center">
 				{$i18n.t('Prompts')}
-				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850" />
+				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850"></div>
 				<span class="text-lg font-medium text-gray-500 dark:text-gray-300"
 					>{filteredItems.length}</span
 				>
@@ -187,7 +191,7 @@
 					<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 						<button
 							class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-							on:click={() => {
+							onclick={() => {
 								query = '';
 							}}
 						>
@@ -245,7 +249,7 @@
 							<button
 								class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									deleteHandler(prompt);
 								}}
 							>
@@ -266,11 +270,9 @@
 								stroke="currentColor"
 								class="w-4 h-4"
 							>
-								<path
-									stroke-linecap="round"
+								<path stroke-linecap="round"
 									stroke-linejoin="round"
-									d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
-								/>
+									d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path>
 							</svg>
 						</a>
 
@@ -313,7 +315,7 @@
 					type="file"
 					accept=".json"
 					hidden
-					on:change={() => {
+					onchange={() => {
 						console.log(importFiles);
 
 						const reader = new FileReader();
@@ -346,7 +348,7 @@
 
 				<button
 					class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-					on:click={() => {
+					onclick={() => {
 						promptsImportInputElement.click();
 					}}
 				>
@@ -359,11 +361,9 @@
 							fill="currentColor"
 							class="w-4 h-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 9.5a.75.75 0 0 1-.75-.75V8.06l-.72.72a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0l2 2a.75.75 0 1 1-1.06 1.06l-.72-.72v2.69a.75.75 0 0 1-.75.75Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</button>
@@ -371,7 +371,7 @@
 				{#if prompts.length}
 					<button
 						class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-						on:click={async () => {
+						onclick={async () => {
 							let blob = new Blob([JSON.stringify(prompts)], {
 								type: 'application/json'
 							});
@@ -389,11 +389,9 @@
 								fill="currentColor"
 								class="w-4 h-4"
 							>
-								<path
-									fill-rule="evenodd"
+								<path fill-rule="evenodd"
 									d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 3.5a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 0 1 1.06-1.06l.72.72V6.25A.75.75 0 0 1 8 5.5Z"
-									clip-rule="evenodd"
-								/>
+									clip-rule="evenodd"></path>
 							</svg>
 						</div>
 					</button>

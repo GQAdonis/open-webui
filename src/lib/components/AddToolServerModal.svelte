@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -18,33 +20,44 @@
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
-	export let onSubmit: Function = () => {};
-	export let onDelete: Function = () => {};
 
-	export let show = false;
-	export let edit = false;
 
-	export let direct = false;
-	export let connection = null;
+	interface Props {
+		onSubmit?: Function;
+		onDelete?: Function;
+		show?: boolean;
+		edit?: boolean;
+		direct?: boolean;
+		connection?: any;
+	}
 
-	let url = '';
-	let path = 'openapi.json';
+	let {
+		onSubmit = () => {},
+		onDelete = () => {},
+		show = $bindable(false),
+		edit = false,
+		direct = false,
+		connection = null
+	}: Props = $props();
 
-	let type = 'openapi'; // 'openapi', 'mcp'
+	let url = $state('');
+	let path = $state('openapi.json');
 
-	let auth_type = 'bearer';
-	let key = '';
+	let type = $state('openapi'); // 'openapi', 'mcp'
 
-	let accessControl = {};
+	let auth_type = $state('bearer');
+	let key = $state('');
 
-	let id = '';
-	let name = '';
-	let description = '';
+	let accessControl = $state({});
 
-	let oauthClientInfo = null;
+	let id = $state('');
+	let name = $state('');
+	let description = $state('');
 
-	let enable = true;
-	let loading = false;
+	let oauthClientInfo = $state(null);
+
+	let enable = $state(true);
+	let loading = $state(false);
 
 	const registerOAuthClientHandler = async () => {
 		if (url === '') {
@@ -208,9 +221,11 @@
 		}
 	};
 
-	$: if (show) {
-		init();
-	}
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
 
 	onMount(() => {
 		init();
@@ -230,7 +245,7 @@
 			<button
 				class="self-center"
 				aria-label={$i18n.t('Close Configure Connection Modal')}
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -242,7 +257,7 @@
 			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
 				<form
 					class="flex flex-col w-full"
-					on:submit={(e) => {
+					onsubmit={(e) => {
 						e.preventDefault();
 						submitHandler();
 					}}
@@ -255,7 +270,7 @@
 
 									<div class="">
 										<button
-											on:click={() => {
+											onclick={() => {
 												type = ['', 'openapi'].includes(type) ? 'mcp' : 'openapi';
 											}}
 											type="button"
@@ -300,7 +315,7 @@
 									>
 										<button
 											class="self-center p-1 bg-transparent hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-850 rounded-lg transition"
-											on:click={() => {
+											onclick={() => {
 												verifyHandler();
 											}}
 											aria-label={$i18n.t('Verify Connection')}
@@ -313,11 +328,9 @@
 												class="w-4 h-4"
 												aria-hidden="true"
 											>
-												<path
-													fill-rule="evenodd"
+												<path fill-rule="evenodd"
 													d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
-													clip-rule="evenodd"
-												/>
+													clip-rule="evenodd"></path>
 											</svg>
 										</button>
 									</Tooltip>
@@ -381,7 +394,7 @@
 													<button
 														class=" text-xs underline dark:text-gray-500 dark:hover:text-gray-200 text-gray-700 hover:text-gray-900 transition"
 														type="button"
-														on:click={() => {
+														onclick={() => {
 															registerOAuthClientHandler();
 														}}
 													>
@@ -571,7 +584,7 @@
 							<button
 								class="px-3.5 py-1.5 text-sm font-medium dark:bg-black dark:hover:bg-gray-900 dark:text-white bg-white text-black hover:bg-gray-100 transition rounded-full flex flex-row space-x-1 items-center"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									onDelete();
 									show = false;
 								}}

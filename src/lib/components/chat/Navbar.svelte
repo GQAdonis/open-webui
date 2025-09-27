@@ -40,21 +40,35 @@
 
 	const i18n = getContext('i18n');
 
-	export let initNewChat: Function;
-	export let shareEnabled: boolean = false;
 
-	export let chat;
-	export let history;
-	export let selectedModels;
-	export let showModelSelector = true;
 
-	export let onSaveTempChat: () => {};
-	export let archiveChatHandler: (id: string) => void;
-	export let moveChatHandler: (id: string, folderId: string) => void;
+	interface Props {
+		initNewChat: Function;
+		shareEnabled?: boolean;
+		chat: any;
+		history: any;
+		selectedModels: any;
+		showModelSelector?: boolean;
+		onSaveTempChat: () => {};
+		archiveChatHandler: (id: string) => void;
+		moveChatHandler: (id: string, folderId: string) => void;
+	}
 
-	let closedBannerIds = [];
+	let {
+		initNewChat,
+		shareEnabled = false,
+		chat,
+		history,
+		selectedModels = $bindable(),
+		showModelSelector = true,
+		onSaveTempChat,
+		archiveChatHandler,
+		moveChatHandler
+	}: Props = $props();
 
-	let showShareChatModal = false;
+	let closedBannerIds = $state([]);
+
+	let showShareChatModal = $state(false);
 	let showDownloadChatModal = false;
 </script>
 
@@ -63,11 +77,11 @@
 <button
 	id="new-chat-button"
 	class="hidden"
-	on:click={() => {
+	onclick={() => {
 		initNewChat();
 	}}
 	aria-label="New Chat"
-/>
+></button>
 
 <nav class="sticky top-0 z-30 w-full py-1 -mb-8 flex flex-col items-center drag-region">
 	<div class="flex items-center w-full pl-1.5 pr-1">
@@ -84,7 +98,7 @@
 						<Tooltip content={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}>
 							<button
 								class=" cursor-pointer flex rounded-lg hover:bg-gray-100 dark:hover:bg-gray-850 transition"
-								on:click={() => {
+								onclick={() => {
 									showSidebar.set(!$showSidebar);
 								}}
 							>
@@ -107,7 +121,7 @@
 				</div>
 
 				<div class="self-start flex flex-none items-center text-gray-600 dark:text-gray-400">
-					<!-- <div class="md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700" /> -->
+					<!-- <div class="md:hidden flex self-center w-[1px] h-5 mx-2 bg-gray-300 dark:bg-stone-700"></div> -->
 
 					{#if $user?.role === 'user' ? ($user?.permissions?.chat?.temporary ?? true) && !($user?.permissions?.chat?.temporary_enforced ?? false) : true}
 						{#if !chat?.id}
@@ -115,7 +129,7 @@
 								<button
 									class="flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
 									id="temporary-chat-button"
-									on:click={async () => {
+									onclick={async () => {
 										if (($settings?.temporaryChatByDefault ?? false) && $temporaryChatEnabled) {
 											// for proper initNewChat handling
 											await temporaryChatEnabled.set(null);
@@ -147,7 +161,7 @@
 								<button
 									class="flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
 									id="save-temporary-chat-button"
-									on:click={async () => {
+									onclick={async () => {
 										onSaveTempChat();
 									}}
 								>
@@ -165,7 +179,7 @@
 								class=" flex {$showSidebar
 									? 'md:hidden'
 									: ''} cursor-pointer px-2 py-2 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-								on:click={() => {
+								onclick={() => {
 									initNewChat();
 								}}
 								aria-label="New Chat"
@@ -204,7 +218,7 @@
 						<Tooltip content={$i18n.t('Controls')}>
 							<button
 								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-								on:click={async () => {
+								onclick={async () => {
 									await showControls.set(!$showControls);
 								}}
 								aria-label="Controls"

@@ -3,19 +3,28 @@
   import { dependencyResolver } from '$lib/services/artifact-dependency-resolver/dependency-resolver';
   import type { ResolutionResult } from '$lib/services/artifact-dependency-resolver/dependency-resolver';
   
-  export let originalCode: string;
-  export let errorMessage: string;
-  export let messageContent: string = '';
-  export let language: string = 'tsx';
+  interface Props {
+    originalCode: string;
+    errorMessage: string;
+    messageContent?: string;
+    language?: string;
+  }
+
+  let {
+    originalCode,
+    errorMessage,
+    messageContent = '',
+    language = 'tsx'
+  }: Props = $props();
   
   const dispatch = createEventDispatcher<{
     'resolution-attempt': { success: boolean; result?: ResolutionResult; error?: string };
     'code-fixed': { fixedCode: string; method: string; details: ResolutionResult };
   }>();
   
-  let isProcessing = false;
-  let lastResolutionResult: ResolutionResult | null = null;
-  let processingStep = '';
+  let isProcessing = $state(false);
+  let lastResolutionResult: ResolutionResult | null = $state(null);
+  let processingStep = $state('');
   
   // Processing steps for user feedback
   const steps = [
@@ -101,7 +110,7 @@
       return `
         <div class="spinner-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.23"/>
+            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.23"></path>
           </svg>
         </div>
       `;
@@ -109,8 +118,8 @@
     
     return `
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 3a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"/>
-        <path d="M9 12l2 2 4-4"/>
+        <path d="M12 3a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"></path>
+        <path d="M9 12l2 2 4-4"></path>
       </svg>
     `;
   }
@@ -121,7 +130,7 @@
     class="recovery-btn" 
     class:processing={isProcessing}
     class:success={lastResolutionResult?.success}
-    on:click={attemptAutoResolution}
+    onclick={attemptAutoResolution}
     disabled={isProcessing}
     title={isProcessing ? processingStep : 'Attempt to auto-fix dependency issues'}
   >

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Fuse from 'fuse.js';
 
 	import dayjs from 'dayjs';
@@ -28,39 +30,43 @@
 	import Tooltip from '../common/Tooltip.svelte';
 	import XMark from '../icons/XMark.svelte';
 
-	let loaded = false;
+	let loaded = $state(false);
 
-	let query = '';
-	let selectedItem = null;
-	let showDeleteConfirm = false;
+	let query = $state('');
+	let selectedItem = $state(null);
+	let showDeleteConfirm = $state(false);
 
-	let fuse = null;
+	let fuse = $state(null);
 
-	let knowledgeBases = [];
-	let filteredItems = [];
+	let knowledgeBases = $state([]);
+	let filteredItems = $state([]);
 
-	$: if (knowledgeBases.length > 0) {
-		// Added a check for non-empty array, good practice
-		fuse = new Fuse(knowledgeBases, {
-			keys: [
-				'name',
-				'description',
-				'user.name', // Ensures Fuse looks into item.user.name
-				'user.email' // Ensures Fuse looks into item.user.email
-			],
-			threshold: 0.3
-		});
-	} else {
-		fuse = null; // Reset fuse if knowledgeBases is empty
-	}
+	run(() => {
+		if (knowledgeBases.length > 0) {
+			// Added a check for non-empty array, good practice
+			fuse = new Fuse(knowledgeBases, {
+				keys: [
+					'name',
+					'description',
+					'user.name', // Ensures Fuse looks into item.user.name
+					'user.email' // Ensures Fuse looks into item.user.email
+				],
+				threshold: 0.3
+			});
+		} else {
+			fuse = null; // Reset fuse if knowledgeBases is empty
+		}
+	});
 
-	$: if (fuse) {
-		filteredItems = query
-			? fuse.search(query).map((e) => {
-					return e.item;
-				})
-			: knowledgeBases;
-	}
+	run(() => {
+		if (fuse) {
+			filteredItems = query
+				? fuse.search(query).map((e) => {
+						return e.item;
+					})
+				: knowledgeBases;
+		}
+	});
 
 	const deleteHandler = async (item) => {
 		const res = await deleteKnowledgeById(localStorage.token, item.id).catch((e) => {
@@ -98,7 +104,7 @@
 		<div class="flex justify-between items-center">
 			<div class="flex md:self-center text-xl font-medium px-0.5 items-center">
 				{$i18n.t('Knowledge')}
-				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850" />
+				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850"></div>
 				<span class="text-lg font-medium text-gray-500 dark:text-gray-300"
 					>{filteredItems.length}</span
 				>
@@ -119,7 +125,7 @@
 					<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 						<button
 							class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-							on:click={() => {
+							onclick={() => {
 								query = '';
 							}}
 						>
@@ -133,7 +139,7 @@
 				<button
 					class=" px-2 py-2 rounded-xl hover:bg-gray-700/10 dark:hover:bg-gray-100/10 dark:text-gray-300 dark:hover:text-white transition font-medium text-sm flex items-center space-x-1"
 					aria-label={$i18n.t('Create Knowledge')}
-					on:click={() => {
+					onclick={() => {
 						goto('/workspace/knowledge/create');
 					}}
 				>
@@ -147,7 +153,7 @@
 		{#each filteredItems as item}
 			<button
 				class=" flex space-x-4 cursor-pointer text-left w-full px-4 py-3 border border-gray-50 dark:border-gray-850 hover:bg-black/5 dark:hover:bg-white/5 transition rounded-2xl"
-				on:click={() => {
+				onclick={() => {
 					if (item?.meta?.document) {
 						toast.error(
 							$i18n.t(

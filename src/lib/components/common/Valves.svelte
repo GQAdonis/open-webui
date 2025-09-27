@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { onMount, getContext, createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
 	const i18n = getContext('i18n');
@@ -7,8 +7,12 @@
 	import MapSelector from './Valves/MapSelector.svelte';
 	import { split } from 'postcss/lib/list';
 
-	export let valvesSpec = null;
-	export let valves = {};
+	interface Props {
+		valvesSpec?: any;
+		valves?: any;
+	}
+
+	let { valvesSpec = null, valves = $bindable({}) }: Props = $props();
 </script>
 
 {#if valvesSpec && Object.keys(valvesSpec?.properties ?? {}).length}
@@ -26,7 +30,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						const propertySpec = valvesSpec.properties[property] ?? {};
 
 						if ((valves[property] ?? null) === null) {
@@ -66,7 +70,7 @@
 							<select
 								class="w-full rounded-lg py-2 px-4 text-sm dark:text-gray-300 dark:bg-gray-850 outline-hidden border border-gray-100 dark:border-gray-850"
 								bind:value={valves[property]}
-								on:change={() => {
+								onchange={() => {
 									dispatch('change');
 								}}
 							>
@@ -85,7 +89,7 @@
 								<div class=" pr-2">
 									<Switch
 										bind:state={valves[property]}
-										on:change={() => {
+										onchange={() => {
 											dispatch('change');
 										}}
 									/>
@@ -99,7 +103,7 @@
 								bind:value={valves[property]}
 								autocomplete="off"
 								required
-								on:change={() => {
+								onchange={() => {
 									dispatch('change');
 								}}
 							/>
@@ -111,7 +115,7 @@
 											type="color"
 											class="size-6 rounded cursor-pointer border border-gray-200 dark:border-gray-700"
 											value={valves[property] ?? '#000000'}
-											on:input={(e) => {
+											oninput={(e) => {
 												// Convert the color value to uppercase immediately
 												valves[property] = e.target.value.toUpperCase();
 												dispatch('change');
@@ -126,7 +130,7 @@
 										bind:value={valves[property]}
 										autocomplete="off"
 										disabled
-										on:change={() => {
+										onchange={() => {
 											dispatch('change');
 										}}
 									/>
@@ -151,7 +155,7 @@
 											placeholder={$i18n.t('Enter coordinates (e.g. 51.505, -0.09)')}
 											bind:value={valves[property]}
 											autocomplete="off"
-											on:change={() => {
+											onchange={() => {
 												dispatch('change');
 											}}
 										/>
@@ -165,10 +169,10 @@
 								bind:value={valves[property]}
 								autocomplete="off"
 								required
-								on:change={() => {
+								onchange={() => {
 									dispatch('change');
 								}}
-							/>
+							></textarea>
 						{/if}
 					</div>
 				</div>

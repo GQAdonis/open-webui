@@ -8,20 +8,29 @@
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Image from '$lib/components/common/Image.svelte';
 
-	export let show = false;
-	export let selectedModelId = '';
-	export let files = [];
 
-	export let onUpdate = (files: any[]) => {
+	interface Props {
+		show?: boolean;
+		selectedModelId?: string;
+		files?: any;
+		onUpdate?: any; // Default no-op function
+	}
+
+	let {
+		show = $bindable(false),
+		selectedModelId = $bindable(''),
+		files = $bindable([]),
+		onUpdate = (files: any[]) => {
 		// Default no-op function
-	};
+	}
+	}: Props = $props();
 </script>
 
 <div class="flex items-center mb-1.5 pt-1.5 px-2.5">
 	<div class=" mr-1 flex items-center">
 		<button
 			class="p-0.5 bg-transparent transition rounded-lg"
-			on:click={() => {
+			onclick={() => {
 				show = !show;
 			}}
 		>
@@ -61,7 +70,7 @@
 
 							onUpdate(files);
 						}}
-						on:click={() => {
+						onclick={() => {
 							console.log(file);
 						}}
 					/>

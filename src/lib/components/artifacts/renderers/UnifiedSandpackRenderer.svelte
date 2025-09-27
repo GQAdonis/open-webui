@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { browser } from '$app/environment';
   import type { DetectedArtifact } from '$lib/artifacts/detectArtifacts';
@@ -6,27 +8,36 @@
   import { RendererStateMachine } from '$lib/services/renderer-state-machine';
   import type { RendererState } from '$lib/services/renderer-state-machine';
 
-  export let artifact: DetectedArtifact | ParsedArtifact;
-  export let height: string = '400px';
-  export let width: string = '100%';
-  export let showCode: boolean = false;
+  interface Props {
+    artifact: DetectedArtifact | ParsedArtifact;
+    height?: string;
+    width?: string;
+    showCode?: boolean;
+  }
+
+  let {
+    artifact,
+    height = '400px',
+    width = '100%',
+    showCode = false
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
-  let containerElement: HTMLDivElement;
-  let codeContainerElement: HTMLDivElement;
+  let containerElement: HTMLDivElement = $state();
+  let codeContainerElement: HTMLDivElement = $state();
   let reactRoot: any = null;
   let codeReactRoot: any = null;
-  let loading = true;
-  let error: string | null = null;
-  let setupAttempts = 0;
+  let loading = $state(true);
+  let error: string | null = $state(null);
+  let setupAttempts = $state(0);
   let maxAttempts = 3;
-  let isSettingUp = false;
+  let isSettingUp = $state(false);
   let abortController: AbortController | null = null;
 
   // State machine integration
   let stateMachine: RendererStateMachine;
-  let currentState: RendererState = 'idle';
+  let currentState: RendererState = $state('idle');
   let stateUnsubscribe: (() => void) | null = null;
 
   // Determine if this is a legacy or PAS 3.0 artifact
@@ -602,41 +613,45 @@ export default app;`
   }
 
   // Reactive updates - with guards to prevent infinite loops
-  let lastArtifactId: string | undefined;
-  let lastShowCode: boolean | undefined;
-  let pendingSetup: Promise<void> | null = null;
+  let lastArtifactId: string | undefined = $state();
+  let lastShowCode: boolean | undefined = $state();
+  let pendingSetup: Promise<void> | null = $state(null);
 
-  $: if (browser && artifact && !loading && !isSettingUp) {
-    const currentArtifactId = isLegacyArtifact(artifact)
-      ? `${artifact.type}-${artifact.entryCode?.substring(0, 50)}`
-      : `${artifact.type}-${artifact.identifier}`;
+  run(() => {
+    if (browser && artifact && !loading && !isSettingUp) {
+      const currentArtifactId = isLegacyArtifact(artifact)
+        ? `${artifact.type}-${artifact.entryCode?.substring(0, 50)}`
+        : `${artifact.type}-${artifact.identifier}`;
 
-    // Only setup if artifact actually changed and no setup is in progress
-    if (currentArtifactId !== lastArtifactId && !pendingSetup) {
-      lastArtifactId = currentArtifactId;
-      setupAttempts = 0;
-      pendingSetup = setupSandpack().finally(() => {
-        pendingSetup = null;
-      });
+      // Only setup if artifact actually changed and no setup is in progress
+      if (currentArtifactId !== lastArtifactId && !pendingSetup) {
+        lastArtifactId = currentArtifactId;
+        setupAttempts = 0;
+        pendingSetup = setupSandpack().finally(() => {
+          pendingSetup = null;
+        });
+      }
     }
-  }
+  });
 
-  $: if (browser && containerElement && showCode !== lastShowCode && !loading && !isSettingUp) {
-    // Only re-setup when showCode actually changes, not on initial mount
-    if (lastShowCode !== undefined && !pendingSetup) {
-      lastShowCode = showCode;
-      pendingSetup = new Promise(resolve => {
-        setTimeout(() => {
-          setupSandpack().finally(() => {
-            pendingSetup = null;
-            resolve();
-          });
-        }, 100);
-      });
-    } else {
-      lastShowCode = showCode;
+  run(() => {
+    if (browser && containerElement && showCode !== lastShowCode && !loading && !isSettingUp) {
+      // Only re-setup when showCode actually changes, not on initial mount
+      if (lastShowCode !== undefined && !pendingSetup) {
+        lastShowCode = showCode;
+        pendingSetup = new Promise(resolve => {
+          setTimeout(() => {
+            setupSandpack().finally(() => {
+              pendingSetup = null;
+              resolve();
+            });
+          }, 100);
+        });
+      } else {
+        lastShowCode = showCode;
+      }
     }
-  }
+  });
 
   onMount(() => {
     if (browser) {
@@ -719,7 +734,7 @@ export default app;`
     <div class="error-container">
       <div class="error-icon">
         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
       </div>
       <h3 class="error-title">Preview Failed</h3>
@@ -736,7 +751,7 @@ export default app;`
       </details>
       <button
         class="retry-button"
-        on:click={() => {
+        onclick={() => {
           setupAttempts = 0;
           setupSandpack();
         }}

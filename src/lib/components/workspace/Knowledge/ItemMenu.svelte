@@ -18,14 +18,19 @@
 
 	const i18n = getContext('i18n');
 
-	export let onClose: Function = () => {};
+	interface Props {
+		onClose?: Function;
+		children?: import('svelte').Snippet;
+	}
 
-	let show = false;
+	let { onClose = () => {}, children }: Props = $props();
+
+	let show = $state(false);
 </script>
 
 <Dropdown
 	bind:show
-	on:change={(e) => {
+	onchange={(e) => {
 		if (e.detail === false) {
 			onClose();
 		}
@@ -33,36 +38,37 @@
 	align="end"
 >
 	<Tooltip content={$i18n.t('More')}>
-		<slot
-			><button
+		{#if children}{@render children()}{:else}<button
 				class="self-center w-fit text-sm p-1.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 				type="button"
-				on:click={(e) => {
+				onclick={(e) => {
 					e.stopPropagation();
 					show = true;
 				}}
 			>
 				<EllipsisHorizontal className="size-5" />
 			</button>
-		</slot>
+		{/if}
 	</Tooltip>
 
-	<div slot="content">
-		<DropdownMenu.Content
-			class="w-full max-w-[170px] rounded-2xl px-1 py-1 border border-gray-100  dark:border-gray-800 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg"
-			side="bottom"
-			align="end"
-			transition={flyAndScale}
-		>
-			<DropdownMenu.Item
-				class="flex  gap-2  items-center px-3 py-1.5 text-sm   cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
-				on:click={() => {
-					dispatch('delete');
-				}}
+	{#snippet content()}
+		<div >
+			<DropdownMenu.Content
+				class="w-full max-w-[170px] rounded-2xl px-1 py-1 border border-gray-100  dark:border-gray-800 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg"
+				side="bottom"
+				align="end"
+				transition={flyAndScale}
 			>
-				<GarbageBin />
-				<div class="flex items-center">{$i18n.t('Delete')}</div>
-			</DropdownMenu.Item>
-		</DropdownMenu.Content>
-	</div>
+				<DropdownMenu.Item
+					class="flex  gap-2  items-center px-3 py-1.5 text-sm   cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl"
+					onclick={() => {
+						dispatch('delete');
+					}}
+				>
+					<GarbageBin />
+					<div class="flex items-center">{$i18n.t('Delete')}</div>
+				</DropdownMenu.Item>
+			</DropdownMenu.Content>
+		</div>
+	{/snippet}
 </Dropdown>

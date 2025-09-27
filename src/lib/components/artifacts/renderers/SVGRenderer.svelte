@@ -1,19 +1,22 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 import { getPrimaryFile } from '$lib/utils/artifacts/artifact-parser';
 
-export let artifact: ParsedArtifact;
-export let height: string = '400px';
+	interface Props {
+		artifact: ParsedArtifact;
+		height?: string;
+	}
+
+	let { artifact, height = '400px' }: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let svgContent: string = '';
-let error: string | null = null;
+let svgContent: string = $state('');
+let error: string | null = $state(null);
 
-$: {
-loadSVG();
-}
 
 function loadSVG() {
 try {
@@ -32,6 +35,9 @@ error = e instanceof Error ? e.message : 'Unknown error loading SVG';
 dispatch('error', { message: error, error: e });
 }
 }
+run(() => {
+loadSVG();
+});
 </script>
 
 <div class="svg-renderer" style="height: {height};">

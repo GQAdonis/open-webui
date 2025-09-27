@@ -10,17 +10,28 @@
 
 	import { connect } from 'socket.io-client';
 
-	export let onDelete = () => {};
-	export let onSubmit = () => {};
 
-	export let pipeline = false;
 
-	export let url = '';
-	export let key = '';
-	export let config = {};
+	interface Props {
+		onDelete?: any;
+		onSubmit?: any;
+		pipeline?: boolean;
+		url?: string;
+		key?: string;
+		config?: any;
+	}
 
-	let showConfigModal = false;
-	let showDeleteConfirmDialog = false;
+	let {
+		onDelete = () => {},
+		onSubmit = () => {},
+		pipeline = false,
+		url = $bindable(''),
+		key = $bindable(''),
+		config = $bindable({})
+	}: Props = $props();
+
+	let showConfigModal = $state(false);
+	let showDeleteConfirmDialog = $state(false);
 </script>
 
 <ConfirmDialog
@@ -81,15 +92,9 @@
 								fill="currentColor"
 								class="size-4"
 							>
-								<path
-									d="M11.644 1.59a.75.75 0 0 1 .712 0l9.75 5.25a.75.75 0 0 1 0 1.32l-9.75 5.25a.75.75 0 0 1-.712 0l-9.75-5.25a.75.75 0 0 1 0-1.32l9.75-5.25Z"
-								/>
-								<path
-									d="m3.265 10.602 7.668 4.129a2.25 2.25 0 0 0 2.134 0l7.668-4.13 1.37.739a.75.75 0 0 1 0 1.32l-9.75 5.25a.75.75 0 0 1-.71 0l-9.75-5.25a.75.75 0 0 1 0-1.32l1.37-.738Z"
-								/>
-								<path
-									d="m10.933 19.231-7.668-4.13-1.37.739a.75.75 0 0 0 0 1.32l9.75 5.25c.221.12.489.12.71 0l9.75-5.25a.75.75 0 0 0 0-1.32l-1.37-.738-7.668 4.13a2.25 2.25 0 0 1-2.134-.001Z"
-								/>
+								<path d="M11.644 1.59a.75.75 0 0 1 .712 0l9.75 5.25a.75.75 0 0 1 0 1.32l-9.75 5.25a.75.75 0 0 1-.712 0l-9.75-5.25a.75.75 0 0 1 0-1.32l9.75-5.25Z"></path>
+								<path d="m3.265 10.602 7.668 4.129a2.25 2.25 0 0 0 2.134 0l7.668-4.13 1.37.739a.75.75 0 0 1 0 1.32l-9.75 5.25a.75.75 0 0 1-.71 0l-9.75-5.25a.75.75 0 0 1 0-1.32l1.37-.738Z"></path>
+								<path d="m10.933 19.231-7.668-4.13-1.37.739a.75.75 0 0 0 0 1.32l9.75 5.25c.221.12.489.12.71 0l9.75-5.25a.75.75 0 0 0 0-1.32l-1.37-.738-7.668 4.13a2.25 2.25 0 0 1-2.134-.001Z"></path>
 							</svg>
 						</Tooltip>
 					</div>
@@ -102,7 +107,7 @@
 		<Tooltip content={$i18n.t('Configure')} className="self-start">
 			<button
 				class="self-center p-1 bg-transparent hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-850 rounded-lg transition"
-				on:click={() => {
+				onclick={() => {
 					showConfigModal = true;
 				}}
 				type="button"

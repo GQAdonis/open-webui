@@ -7,8 +7,12 @@
 	import ManageOllama from '../Models/Manage/ManageOllama.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
-	export let show = false;
-	export let urlIdx: number | null = null;
+	interface Props {
+		show?: boolean;
+		urlIdx?: number | null;
+	}
+
+	let { show = $bindable(false), urlIdx = null }: Props = $props();
 </script>
 
 <Modal size="sm" bind:show>
@@ -23,7 +27,7 @@
 			</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>

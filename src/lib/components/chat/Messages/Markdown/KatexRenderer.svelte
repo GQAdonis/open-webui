@@ -2,10 +2,14 @@
 	import type { renderToString as katexRenderToString } from 'katex';
 	import { onMount } from 'svelte';
 
-	export let content: string;
-	export let displayMode: boolean = false;
+	interface Props {
+		content: string;
+		displayMode?: boolean;
+	}
 
-	let renderToString: typeof katexRenderToString | null = null;
+	let { content, displayMode = false }: Props = $props();
+
+	let renderToString: typeof katexRenderToString | null = $state(null);
 
 	onMount(async () => {
 		const [katex] = await Promise.all([

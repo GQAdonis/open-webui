@@ -6,17 +6,37 @@
 
 	import { createEventDispatcher } from 'svelte';
 
-	export let variant: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' = 'primary';
-	export let size: 'small' | 'medium' | 'large' = 'medium';
-	export let disabled: boolean = false;
-	export let loading: boolean = false;
-	export let icon: string = '';
-	export let loadingText: string = '';
-	export let type: 'button' | 'submit' | 'reset' = 'button';
-	export let fullWidth: boolean = false;
-	export let pulse: boolean = false;
-	export let success: boolean = false;
-	export let testId: string = '';
+	interface Props {
+		variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
+		size?: 'small' | 'medium' | 'large';
+		disabled?: boolean;
+		loading?: boolean;
+		icon?: string;
+		loadingText?: string;
+		type?: 'button' | 'submit' | 'reset';
+		fullWidth?: boolean;
+		pulse?: boolean;
+		success?: boolean;
+		testId?: string;
+		children?: import('svelte').Snippet;
+		[key: string]: any
+	}
+
+	let {
+		variant = 'primary',
+		size = 'medium',
+		disabled = false,
+		loading = false,
+		icon = '',
+		loadingText = '',
+		type = 'button',
+		fullWidth = false,
+		pulse = false,
+		success = false,
+		testId = '',
+		children,
+		...rest
+	}: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		click: MouseEvent;
@@ -47,7 +67,7 @@
 		}
 	}
 
-	$: buttonText = loading && loadingText ? loadingText : $$slots.default;
+	let buttonText = $derived(loading && loadingText ? loadingText : children);
 </script>
 
 <button
@@ -59,23 +79,21 @@
 	class:pulse
 	class:success
 	{disabled}
-	on:click={handleClick}
+	onclick={handleClick}
 	data-testid={testId}
-	{...$$restProps}
+	{...rest}
 >
 	<div class="btn-content">
 		{#if loading}
 			<div class="btn-spinner" aria-hidden="true">
 				<svg class="spinner-svg" viewBox="0 0 24 24" fill="none">
-					<circle
-						class="spinner-circle"
+					<circle class="spinner-circle"
 						cx="12"
 						cy="12"
 						r="10"
 						stroke="currentColor"
 						stroke-width="2"
-						stroke-linecap="round"
-					/>
+						stroke-linecap="round"></circle>
 				</svg>
 			</div>
 		{:else if success}
@@ -91,7 +109,7 @@
 		{/if}
 
 		<span class="btn-text">
-			<slot />
+			{@render children?.()}
 		</span>
 	</div>
 

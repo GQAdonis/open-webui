@@ -24,13 +24,17 @@
 	import Emoji from '$lib/components/common/Emoji.svelte';
 	import EmojiPicker from '$lib/components/common/EmojiPicker.svelte';
 
-	export let folder = null;
 
-	export let onUpdate: Function = (folderId) => {};
-	export let onDelete: Function = (folderId) => {};
+	interface Props {
+		folder?: any;
+		onUpdate?: Function;
+		onDelete?: Function;
+	}
 
-	let showFolderModal = false;
-	let showDeleteConfirm = false;
+	let { folder = $bindable(null), onUpdate = (folderId) => {}, onDelete = (folderId) => {} }: Props = $props();
+
+	let showFolderModal = $state(false);
+	let showDeleteConfirm = $state(false);
 
 	const updateHandler = async ({ name, meta, data }) => {
 		if (name === '') {
@@ -174,7 +178,7 @@
 					exportHandler();
 				}}
 			>
-				<button class="p-1.5 dark:hover:bg-gray-850 rounded-full touch-auto" on:click={(e) => {}}>
+				<button class="p-1.5 dark:hover:bg-gray-850 rounded-full touch-auto" onclick={(e) => {}}>
 					<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
 				</button>
 			</FolderMenu>

@@ -4,38 +4,58 @@ Provides comprehensive error handling and recovery for artifact rendering failur
 Enhanced with smart dependency resolution integration
 -->
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
   import { createEventDispatcher, onDestroy } from 'svelte';
   import { retryLoopMonitor } from '$lib/services/retry-loop-monitor';
   import type { ComponentState } from '$lib/types/retry-monitoring';
   import EnhancedErrorRecovery from './EnhancedErrorRecovery.svelte';
 
-  export let artifactId: string;
-  export let componentId: string = `error-boundary-${artifactId}`;
-  export let maxRetries = 3;
-  export let showDetails = false;
-  export let autoRetry = false;
-  export let retryDelay = 2000;
 
-  // NEW: Enhanced error recovery props
-  export let artifactCode: string = '';
-  export let messageContent: string = '';
-  export let language: string = 'javascript';
-  export let enableSmartRecovery = true;
+  
+  interface Props {
+    artifactId: string;
+    componentId?: string;
+    maxRetries?: number;
+    showDetails?: boolean;
+    autoRetry?: boolean;
+    retryDelay?: number;
+    // NEW: Enhanced error recovery props
+    artifactCode?: string;
+    messageContent?: string;
+    language?: string;
+    enableSmartRecovery?: boolean;
+    children?: import('svelte').Snippet;
+  }
+
+  let {
+    artifactId,
+    componentId = `error-boundary-${artifactId}`,
+    maxRetries = 3,
+    showDetails = $bindable(false),
+    autoRetry = false,
+    retryDelay = 2000,
+    artifactCode = '',
+    messageContent = '',
+    language = 'javascript',
+    enableSmartRecovery = true,
+    children
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
-  let error: Error | null = null;
+  let error: Error | null = $state(null);
   let errorInfo: any = null;
-  let hasError = false;
-  let retryCount = 0;
-  let isRetrying = false;
+  let hasError = $state(false);
+  let retryCount = $state(0);
+  let isRetrying = $state(false);
   let retryTimer: NodeJS.Timeout | null = null;
-  let componentState: ComponentState | null = null;
+  let componentState: ComponentState | null = $state(null);
 
   // NEW: Enhanced error recovery state
-  let showSmartRecovery = false;
+  let showSmartRecovery = $state(false);
   let smartRecoveryAttempts = 0;
-  let recoveryInProgress = false;
+  let recoveryInProgress = $state(false);
 
   // Error types for better handling
   interface ArtifactError extends Error {
@@ -46,12 +66,14 @@ Enhanced with smart dependency resolution integration
   }
 
   // Update component state from retry monitor
-  $: if (componentId) {
-    componentState = retryLoopMonitor.getComponentState(componentId);
-    if (componentState) {
-      retryCount = componentState.totalRetries;
+  run(() => {
+    if (componentId) {
+      componentState = retryLoopMonitor.getComponentState(componentId);
+      if (componentState) {
+        retryCount = componentState.totalRetries;
+      }
     }
-  }
+  });
 
   // Enhanced error handling function
   export function handleError(err: ArtifactError, info?: any) {
@@ -452,11 +474,11 @@ Enhanced with smart dependency resolution integration
       <div class="error-icon">
         {#if getErrorSeverity() === 'critical'}
           <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
           </svg>
         {:else}
           <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         {/if}
       </div>
@@ -502,9 +524,9 @@ Enhanced with smart dependency resolution integration
           <span>Retrying...</span>
         </div>
       {:else if (error as ArtifactError).retryable && retryCount < maxRetries && !showSmartRecovery}
-        <button class="retry-btn" on:click={retry}>
+        <button class="retry-btn" onclick={retry}>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
           Retry ({retryCount}/{maxRetries})
         </button>
@@ -512,29 +534,29 @@ Enhanced with smart dependency resolution integration
 
       <!-- NEW: Smart Recovery trigger button -->
       {#if enableSmartRecovery && !showSmartRecovery && shouldShowSmartRecovery(error as ArtifactError)}
-        <button class="smart-recovery-btn" on:click={triggerSmartRecovery} disabled={recoveryInProgress}>
+        <button class="smart-recovery-btn" onclick={triggerSmartRecovery} disabled={recoveryInProgress}>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9h2m6 0h2m-6 6h2m6 0h2M13 3h6a2 2 0 012 2v6a2 2 0 01-2 2h-6m-4 0H3a2 2 0 01-2-2V5a2 2 0 012-2h6m4 0v8a2 2 0 01-2 2H9a2 2 0 01-2-2V3h8z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9h2m6 0h2m-6 6h2m6 0h2M13 3h6a2 2 0 012 2v6a2 2 0 01-2 2h-6m-4 0H3a2 2 0 01-2-2V5a2 2 0 012-2h6m4 0v8a2 2 0 01-2 2H9a2 2 0 01-2-2V3h8z"></path>
           </svg>
           {recoveryInProgress ? 'Recovery in Progress...' : 'Try Smart Recovery'}
         </button>
       {/if}
 
-      <button class="reset-btn" on:click={reset}>
+      <button class="reset-btn" onclick={reset}>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
         Reset
       </button>
 
-      <button class="report-btn" on:click={reportError}>
+      <button class="report-btn" onclick={reportError}>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
         </svg>
         Report Issue
       </button>
 
-      <button class="details-toggle" on:click={() => showDetails = !showDetails}>
+      <button class="details-toggle" onclick={() => showDetails = !showDetails}>
         {showDetails ? 'Hide' : 'Show'} Details
       </button>
     </div>
@@ -564,7 +586,7 @@ Enhanced with smart dependency resolution integration
   </div>
 {:else}
   <!-- Render children when no error -->
-  <slot />
+  {@render children?.()}
 {/if}
 
 <style>

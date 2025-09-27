@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -13,27 +15,43 @@
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
-	export let onSubmit: Function = () => {};
-	export let onDelete: Function = () => {};
 
-	export let show = false;
-	export let edit = false;
 
-	export let users = [];
-	export let group = null;
 
-	export let custom = true;
 
-	export let tabs = ['general', 'permissions', 'users'];
 
-	let selectedTab = 'general';
-	let loading = false;
-	let showDeleteConfirmDialog = false;
+	let selectedTab = $state('general');
+	let loading = $state(false);
+	let showDeleteConfirmDialog = $state(false);
 
-	export let name = '';
-	export let description = '';
 
-	export let permissions = {
+	interface Props {
+		onSubmit?: Function;
+		onDelete?: Function;
+		show?: boolean;
+		edit?: boolean;
+		users?: any;
+		group?: any;
+		custom?: boolean;
+		tabs?: any;
+		name?: string;
+		description?: string;
+		permissions?: any;
+		userIds?: any;
+	}
+
+	let {
+		onSubmit = () => {},
+		onDelete = () => {},
+		show = $bindable(false),
+		edit = false,
+		users = [],
+		group = null,
+		custom = true,
+		tabs = ['general', 'permissions', 'users'],
+		name = $bindable(''),
+		description = $bindable(''),
+		permissions = $bindable({
 		workspace: {
 			models: false,
 			knowledge: false,
@@ -73,8 +91,9 @@
 			image_generation: true,
 			code_interpreter: true
 		}
-	};
-	export let userIds = [];
+	}),
+		userIds = $bindable([])
+	}: Props = $props();
 
 	const submitHandler = async () => {
 		loading = true;
@@ -102,9 +121,11 @@
 		}
 	};
 
-	$: if (show) {
-		init();
-	}
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
 
 	onMount(() => {
 		selectedTab = tabs[0];
@@ -136,7 +157,7 @@
 			</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -148,7 +169,7 @@
 			<div class=" flex flex-col w-full sm:flex-row sm:justify-center sm:space-x-6">
 				<form
 					class="flex flex-col w-full"
-					on:submit={(e) => {
+					onsubmit={(e) => {
 						e.preventDefault();
 						submitHandler();
 					}}
@@ -164,7 +185,7 @@
 									'general'
 										? ''
 										: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-									on:click={() => {
+									onclick={() => {
 										selectedTab = 'general';
 									}}
 									type="button"
@@ -176,11 +197,9 @@
 											fill="currentColor"
 											class="w-4 h-4"
 										>
-											<path
-												fill-rule="evenodd"
+											<path fill-rule="evenodd"
 												d="M6.955 1.45A.5.5 0 0 1 7.452 1h1.096a.5.5 0 0 1 .497.45l.17 1.699c.484.12.94.312 1.356.562l1.321-1.081a.5.5 0 0 1 .67.033l.774.775a.5.5 0 0 1 .034.67l-1.08 1.32c.25.417.44.873.561 1.357l1.699.17a.5.5 0 0 1 .45.497v1.096a.5.5 0 0 1-.45.497l-1.699.17c-.12.484-.312.94-.562 1.356l1.082 1.322a.5.5 0 0 1-.034.67l-.774.774a.5.5 0 0 1-.67.033l-1.322-1.08c-.416.25-.872.44-1.356.561l-.17 1.699a.5.5 0 0 1-.497.45H7.452a.5.5 0 0 1-.497-.45l-.17-1.699a4.973 4.973 0 0 1-1.356-.562L4.108 13.37a.5.5 0 0 1-.67-.033l-.774-.775a.5.5 0 0 1-.034-.67l1.08-1.32a4.971 4.971 0 0 1-.561-1.357l-1.699-.17A.5.5 0 0 1 1 8.548V7.452a.5.5 0 0 1 .45-.497l1.699-.17c.12-.484.312-.94.562-1.356L2.629 4.107a.5.5 0 0 1 .034-.67l.774-.774a.5.5 0 0 1 .67-.033L5.43 3.71a4.97 4.97 0 0 1 1.356-.561l.17-1.699ZM6 8c0 .538.212 1.026.558 1.385l.057.057a2 2 0 0 0 2.828-2.828l-.058-.056A2 2 0 0 0 6 8Z"
-												clip-rule="evenodd"
-											/>
+												clip-rule="evenodd"></path>
 										</svg>
 									</div>
 									<div class=" self-center">{$i18n.t('General')}</div>
@@ -193,7 +212,7 @@
 									'permissions'
 										? ''
 										: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-									on:click={() => {
+									onclick={() => {
 										selectedTab = 'permissions';
 									}}
 									type="button"
@@ -211,7 +230,7 @@
 									'users'
 										? ''
 										: ' text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-									on:click={() => {
+									onclick={() => {
 										selectedTab = 'users';
 									}}
 									type="button"
@@ -246,7 +265,7 @@
 								'display'
 									? ' dark:border-white'
 									: 'border-transparent text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-								on:click={() => {
+								onclick={() => {
 									selectedTab = 'display';
 								}}
 								type="button"
@@ -261,7 +280,7 @@
 								'permissions'
 									? '  dark:border-white'
 									: 'border-transparent text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-								on:click={() => {
+								onclick={() => {
 									selectedTab = 'permissions';
 								}}
 								type="button"
@@ -276,7 +295,7 @@
 								'users'
 									? ' dark:border-white'
 									: ' border-transparent text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'}"
-								on:click={() => {
+								onclick={() => {
 									selectedTab = 'users';
 								}}
 								type="button"
@@ -291,7 +310,7 @@
 							<button
 								class="px-3.5 py-1.5 text-sm font-medium dark:bg-black dark:hover:bg-gray-900 dark:text-white bg-white text-black hover:bg-gray-100 transition rounded-full flex flex-row space-x-1 items-center"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									showDeleteConfirmDialog = true;
 								}}
 							>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import { onMount, getContext, createEventDispatcher, tick, onDestroy } from 'svelte';
@@ -43,21 +45,28 @@
 	import Sparkles from '$lib/components/icons/Sparkles.svelte';
 	import { generateTitle } from '$lib/apis';
 
-	export let className = '';
 
-	export let id;
-	export let title;
 
-	export let selected = false;
-	export let shiftKey = false;
+	interface Props {
+		className?: string;
+		id: any;
+		title: any;
+		selected?: boolean;
+		shiftKey?: boolean;
+	}
+
+	let {
+		className = '',
+		id,
+		title,
+		selected = false,
+		shiftKey = false
+	}: Props = $props();
 
 	let chat = null;
 
-	let mouseOver = false;
-	let draggable = false;
-	$: if (mouseOver) {
-		loadChat();
-	}
+	let mouseOver = $state(false);
+	let draggable = $state(false);
 
 	const loadChat = async () => {
 		if (!chat) {
@@ -67,10 +76,10 @@
 		}
 	};
 
-	let showShareChatModal = false;
-	let confirmEdit = false;
+	let showShareChatModal = $state(false);
+	let confirmEdit = $state(false);
 
-	let chatTitle = title;
+	let chatTitle = $state(title);
 
 	const editChatTitle = async (id, title) => {
 		if (title === '') {
@@ -160,16 +169,16 @@
 		}
 	};
 
-	let itemElement;
+	let itemElement = $state();
 
-	let generating = false;
+	let generating = $state(false);
 
-	let ignoreBlur = false;
-	let doubleClicked = false;
+	let ignoreBlur = $state(false);
+	let doubleClicked = $state(false);
 
-	let dragged = false;
-	let x = 0;
-	let y = 0;
+	let dragged = $state(false);
+	let x = $state(0);
+	let y = $state(0);
 
 	const dragImage = new Image();
 	dragImage.src =
@@ -239,7 +248,7 @@
 		}
 	});
 
-	let showDeleteConfirm = false;
+	let showDeleteConfirm = $state(false);
 
 	const chatTitleInputKeydownHandler = (e) => {
 		if (e.key === 'Enter') {
@@ -306,6 +315,11 @@
 
 		generating = false;
 	};
+	run(() => {
+		if (mouseOver) {
+			loadChat();
+		}
+	});
 </script>
 
 <ShareChatModal bind:show={showShareChatModal} chatId={id} />
@@ -359,8 +373,8 @@
 				class=" bg-transparent w-full outline-hidden mr-10"
 				placeholder={generating ? $i18n.t('Generating...') : ''}
 				disabled={generating}
-				on:keydown={chatTitleInputKeydownHandler}
-				on:blur={async (e) => {
+				onkeydown={chatTitleInputKeydownHandler}
+				onblur={async (e) => {
 					// check if target is generate button
 					if (ignoreBlur) {
 						ignoreBlur = false;
@@ -404,7 +418,7 @@
 					? 'bg-gray-100 dark:bg-gray-950 selected'
 					: ' group-hover:bg-gray-100 dark:group-hover:bg-gray-950'}  whitespace-nowrap text-ellipsis"
 			href="/c/{id}"
-			on:click={() => {
+			onclick={() => {
 				dispatch('select');
 
 				if ($selectedFolder) {
@@ -415,20 +429,20 @@
 					showSidebar.set(false);
 				}
 			}}
-			on:dblclick={async (e) => {
+			ondblclick={async (e) => {
 				e.preventDefault();
 				e.stopPropagation();
 
 				doubleClicked = true;
 				renameHandler();
 			}}
-			on:mouseenter={(e) => {
+			onmouseenter={(e) => {
 				mouseOver = true;
 			}}
-			on:mouseleave={(e) => {
+			onmouseleave={(e) => {
 				mouseOver = false;
 			}}
-			on:focus={(e) => {}}
+			onfocus={(e) => {}}
 			draggable="false"
 		>
 			<div class=" flex self-center flex-1 w-full">
@@ -439,7 +453,7 @@
 		</a>
 	{/if}
 
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		id="sidebar-chat-item-menu"
 		class="
@@ -453,10 +467,10 @@
 			: 'right-1'} top-[4px] py-1 pr-0.5 mr-1.5 pl-5 bg-linear-to-l from-80%
 
               to-transparent"
-		on:mouseenter={(e) => {
+		onmouseenter={(e) => {
 			mouseOver = true;
 		}}
-		on:mouseleave={(e) => {
+		onmouseleave={(e) => {
 			mouseOver = false;
 		}}
 	>
@@ -469,7 +483,7 @@
 						class=" self-center dark:hover:text-white transition disabled:cursor-not-allowed"
 						id="generate-title-button"
 						disabled={generating}
-						on:mouseenter={() => {
+						onmouseenter={() => {
 							ignoreBlur = true;
 						}}
 					>
@@ -482,7 +496,7 @@
 				<Tooltip content={$i18n.t('Archive')} className="flex items-center">
 					<button
 						class=" self-center dark:hover:text-white transition"
-						on:click={() => {
+						onclick={() => {
 							archiveChatHandler(id);
 						}}
 						type="button"
@@ -494,7 +508,7 @@
 				<Tooltip content={$i18n.t('Delete')}>
 					<button
 						class=" self-center dark:hover:text-white transition"
-						on:click={() => {
+						onclick={() => {
 							deleteChatHandler(id);
 						}}
 						type="button"
@@ -524,7 +538,7 @@
 					onClose={() => {
 						dispatch('unselect');
 					}}
-					on:change={async () => {
+					onchange={async () => {
 						dispatch('change');
 					}}
 					on:tag={(e) => {
@@ -534,7 +548,7 @@
 					<button
 						aria-label="Chat Menu"
 						class=" self-center dark:hover:text-white transition m-0"
-						on:click={() => {
+						onclick={() => {
 							dispatch('select');
 						}}
 					>
@@ -544,9 +558,7 @@
 							fill="currentColor"
 							class="w-4 h-4"
 						>
-							<path
-								d="M2 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM6.5 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12.5 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
-							/>
+							<path d="M2 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM6.5 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12.5 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"></path>
 						</svg>
 					</button>
 				</ChatMenu>
@@ -556,7 +568,7 @@
 					<button
 						id="delete-chat-button"
 						class="hidden"
-						on:click={() => {
+						onclick={() => {
 							showDeleteConfirm = true;
 						}}
 					>
@@ -566,9 +578,7 @@
 							fill="currentColor"
 							class="w-4 h-4"
 						>
-							<path
-								d="M2 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM6.5 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12.5 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"
-							/>
+							<path d="M2 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM6.5 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM12.5 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"></path>
 						</svg>
 					</button>
 				{/if}

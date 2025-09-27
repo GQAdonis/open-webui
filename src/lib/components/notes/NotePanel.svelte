@@ -5,15 +5,25 @@
 	import Drawer from '../common/Drawer.svelte';
 	import EllipsisVertical from '../icons/EllipsisVertical.svelte';
 
-	export let show = false;
-	export let pane = null;
 
-	export let containerId = 'note-container';
+	interface Props {
+		show?: boolean;
+		pane?: any;
+		containerId?: string;
+		children?: import('svelte').Snippet;
+	}
+
+	let {
+		show = $bindable(false),
+		pane = $bindable(null),
+		containerId = 'note-container',
+		children
+	}: Props = $props();
 
 	let mediaQuery;
-	let largeScreen = false;
+	let largeScreen = $state(false);
 
-	let minSize = 0;
+	let minSize = $state(0);
 
 	const handleMediaQuery = async (e) => {
 		if (e.matches) {
@@ -72,7 +82,7 @@
 			}}
 		>
 			<div class=" px-3.5 py-2.5 h-screen max-h-dvh flex flex-col">
-				<slot />
+				{@render children?.()}
 			</div>
 		</Drawer>
 	{/if}
@@ -83,7 +93,7 @@
 	>
 		<div
 			class=" absolute -left-1.5 -right-1.5 -top-0 -bottom-0 z-20 cursor-col-resize bg-transparent"
-		/>
+		></div>
 	</PaneResizer>
 
 	<Pane
@@ -101,7 +111,7 @@
 				<div
 					class="w-full pt-2 bg-white dark:shadow-lg dark:bg-gray-850 z-40 pointer-events-auto overflow-y-auto scrollbar-hidden flex flex-col"
 				>
-					<slot />
+					{@render children?.()}
 				</div>
 			</div>
 		{/if}

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import Sortable from 'sortablejs';
 
 	import { onMount } from 'svelte';
@@ -8,8 +8,12 @@
 	import { updateUserSettings } from '$lib/apis/users';
 	import PinnedModelItem from './PinnedModelItem.svelte';
 
-	export let selectedChatId = null;
-	export let shiftKey = false;
+	interface Props {
+		selectedChatId?: any;
+		shiftKey?: boolean;
+	}
+
+	let { selectedChatId = $bindable(null), shiftKey = false }: Props = $props();
 
 	const initPinnedModelsSortable = () => {
 		const pinnedModelsList = document.getElementById('pinned-models-list');

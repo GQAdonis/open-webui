@@ -10,12 +10,14 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import ArrowUpLeft from '$lib/components/icons/ArrowUpLeft.svelte';
 
-	export let message;
-	export let idx;
 
-	export let onDelete;
-	export let onEdit;
-	export let onInsert;
+	let {
+		message = $bindable(),
+		idx,
+		onDelete,
+		onEdit,
+		onInsert
+	} = $props();
 
 	let textAreaElement: HTMLTextAreaElement;
 </script>
@@ -30,7 +32,7 @@
 			<Tooltip placement="top" content={$i18n.t('Insert')}>
 				<button
 					class=" text-transparent group-hover:text-gray-500 dark:hover:text-gray-300 transition"
-					on:click={() => {
+					onclick={() => {
 						onInsert();
 					}}
 				>
@@ -41,7 +43,7 @@
 			<Tooltip placement="top" content={$i18n.t('Edit')}>
 				<button
 					class=" text-transparent group-hover:text-gray-500 dark:hover:text-gray-300 transition"
-					on:click={() => {
+					onclick={() => {
 						onEdit();
 					}}
 				>
@@ -52,7 +54,7 @@
 			<Tooltip placement="top" content={$i18n.t('Delete')}>
 				<button
 					class=" text-transparent group-hover:text-gray-500 dark:hover:text-gray-300 transition"
-					on:click={() => {
+					onclick={() => {
 						onDelete();
 					}}
 				>
@@ -64,11 +66,9 @@
 						stroke="currentColor"
 						class="size-4"
 					>
-						<path
-							stroke-linecap="round"
+						<path stroke-linecap="round"
 							stroke-linejoin="round"
-							d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-						/>
+							d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
 					</svg>
 				</button>
 			</Tooltip>

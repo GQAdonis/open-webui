@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { marked } from 'marked';
 
@@ -29,43 +31,70 @@
 
 	const i18n = getContext('i18n');
 
-	export let createMessagePair: Function;
-	export let stopResponse: Function;
 
-	export let autoScroll = false;
 
-	export let atSelectedModel: Model | undefined;
-	export let selectedModels: [''];
 
-	export let history;
 
-	export let prompt = '';
-	export let files = [];
-	export let messageInput = null;
 
-	export let selectedToolIds = [];
-	export let selectedFilterIds = [];
 
-	export let showCommands = false;
 
-	export let imageGenerationEnabled = false;
-	export let codeInterpreterEnabled = false;
-	export let webSearchEnabled = false;
 
-	export let onSelect = (e) => {};
-	export let onChange = (e) => {};
 
-	export let toolServers = [];
-
-	let models = [];
-
-	let selectedModelIdx = 0;
-
-	$: if (selectedModels.length > 0) {
-		selectedModelIdx = models.length - 1;
+	interface Props {
+		createMessagePair: Function;
+		stopResponse: Function;
+		autoScroll?: boolean;
+		atSelectedModel: Model | undefined;
+		selectedModels: [''];
+		history: any;
+		prompt?: string;
+		files?: any;
+		messageInput?: any;
+		selectedToolIds?: any;
+		selectedFilterIds?: any;
+		showCommands?: boolean;
+		imageGenerationEnabled?: boolean;
+		codeInterpreterEnabled?: boolean;
+		webSearchEnabled?: boolean;
+		onSelect?: any;
+		onChange?: any;
+		toolServers?: any;
 	}
 
-	$: models = selectedModels.map((id) => $_models.find((m) => m.id === id));
+	let {
+		createMessagePair,
+		stopResponse,
+		autoScroll = $bindable(false),
+		atSelectedModel = $bindable(),
+		selectedModels,
+		history,
+		prompt = $bindable(''),
+		files = $bindable([]),
+		messageInput = $bindable(null),
+		selectedToolIds = $bindable([]),
+		selectedFilterIds = $bindable([]),
+		showCommands = $bindable(false),
+		imageGenerationEnabled = $bindable(false),
+		codeInterpreterEnabled = $bindable(false),
+		webSearchEnabled = $bindable(false),
+		onSelect = (e) => {},
+		onChange = (e) => {},
+		toolServers = []
+	}: Props = $props();
+
+	let models = $state([]);
+
+	let selectedModelIdx = $state(0);
+
+	run(() => {
+		if (selectedModels.length > 0) {
+			selectedModelIdx = models.length - 1;
+		}
+	});
+
+	run(() => {
+		models = selectedModels.map((id) => $_models.find((m) => m.id === id));
+	});
 
 	onMount(() => {});
 </script>
@@ -119,7 +148,7 @@
 										aria-label={$i18n.t('Get information on {{name}} in the UI', {
 											name: models[modelIdx]?.name
 										})}
-										on:click={() => {
+										onclick={() => {
 											selectedModelIdx = modelIdx;
 										}}
 									>
@@ -226,7 +255,7 @@
 					on:upload={(e) => {
 						dispatch('upload', e.detail);
 					}}
-					on:submit={(e) => {
+					onsubmit={(e) => {
 						dispatch('submit', e.detail);
 					}}
 				/>

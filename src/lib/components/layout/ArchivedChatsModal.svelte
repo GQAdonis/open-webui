@@ -1,4 +1,6 @@
-<script>
+<script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
@@ -11,32 +13,28 @@
 
 	const i18n = getContext('i18n');
 
-	export let show = false;
-	export let onUpdate = () => {};
+	interface Props {
+		show?: boolean;
+		onUpdate?: any;
+	}
 
-	let chatList = null;
+	let { show = $bindable(false), onUpdate = () => {} }: Props = $props();
+
+	let chatList = $state(null);
 	let page = 1;
 
-	let query = '';
-	let orderBy = 'updated_at';
-	let direction = 'desc';
+	let query = $state('');
+	let orderBy = $state('updated_at');
+	let direction = $state('desc');
 
-	let allChatsLoaded = false;
-	let chatListLoading = false;
+	let allChatsLoaded = $state(false);
+	let chatListLoading = $state(false);
 	let searchDebounceTimeout;
 
-	let showUnarchiveAllConfirmDialog = false;
+	let showUnarchiveAllConfirmDialog = $state(false);
 
-	let filter = {};
-	$: filter = {
-		...(query ? { query } : {}),
-		...(orderBy ? { order_by: orderBy } : {}),
-		...(direction ? { direction } : {})
-	};
+	let filter = $state({});
 
-	$: if (filter !== null) {
-		searchHandler();
-	}
 
 	const searchHandler = async () => {
 		if (!show) {
@@ -118,9 +116,23 @@
 		chatList = await getArchivedChatList(localStorage.token);
 	};
 
-	$: if (show) {
-		init();
-	}
+	run(() => {
+		filter = {
+			...(query ? { query } : {}),
+			...(orderBy ? { order_by: orderBy } : {}),
+			...(direction ? { direction } : {})
+		};
+	});
+	run(() => {
+		if (filter !== null) {
+			searchHandler();
+		}
+	});
+	run(() => {
+		if (show) {
+			init();
+		}
+	});
 </script>
 
 <UnarchiveAllConfirmDialog
@@ -148,25 +160,27 @@
 	loadHandler={loadMoreChats}
 	{unarchiveHandler}
 >
-	<div slot="footer">
-		<div class="flex flex-wrap text-sm font-medium gap-1.5 mt-2 m-1 justify-end w-full">
-			<button
-				class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-800 rounded-3xl"
-				on:click={() => {
+	{#snippet footer()}
+		<div >
+			<div class="flex flex-wrap text-sm font-medium gap-1.5 mt-2 m-1 justify-end w-full">
+				<button
+					class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-800 rounded-3xl"
+					onclick={() => {
 					showUnarchiveAllConfirmDialog = true;
 				}}
-			>
-				{$i18n.t('Unarchive All Archived Chats')}
-			</button>
+				>
+					{$i18n.t('Unarchive All Archived Chats')}
+				</button>
 
-			<button
-				class="px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-800 rounded-3xl"
-				on:click={() => {
+				<button
+					class="px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-800 rounded-3xl"
+					onclick={() => {
 					exportChatsHandler();
 				}}
-			>
-				{$i18n.t('Export All Archived Chats')}
-			</button>
+				>
+					{$i18n.t('Export All Archived Chats')}
+				</button>
+			</div>
 		</div>
-	</div>
+	{/snippet}
 </ChatsModal>

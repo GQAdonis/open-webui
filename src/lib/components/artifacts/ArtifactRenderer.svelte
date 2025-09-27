@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onMount, onDestroy, createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/xml-artifact-parser';
 import type { DetectedArtifact } from '$lib/artifacts/detectArtifacts';
@@ -15,34 +17,41 @@ import { artifactActions } from '$lib/stores/artifacts/artifact-store';
 import { retryLoopMonitor } from '$lib/services/retry-loop-monitor';
 import type { ComponentState } from '$lib/types/retry-monitoring';
 
-export let artifact: ParsedArtifact | DetectedArtifact;
-export let viewMode: 'preview' | 'code' | 'xml' = 'preview';
-export let width = '100%';
-export let height = '400px';
-export let showControls = true;
-export let messageContent: string = ''; // NEW: Full message content for dependency resolution
+	interface Props {
+		artifact: ParsedArtifact | DetectedArtifact;
+		viewMode?: 'preview' | 'code' | 'xml';
+		width?: string;
+		height?: string;
+		showControls?: boolean;
+		messageContent?: string; // NEW: Full message content for dependency resolution
+	}
+
+	let {
+		artifact = $bindable(),
+		viewMode = 'preview',
+		width = '100%',
+		height = '400px',
+		showControls = true,
+		messageContent = ''
+	}: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let containerElement: HTMLDivElement;
-let currentRenderer: string | null = null;
-let error: string | null = null;
-let retryCount = 0;
-let isRetrying = false;
-let canRetry = true;
-let componentId: string;
+let containerElement: HTMLDivElement = $state();
+let currentRenderer: string | null = $state(null);
+let error: string | null = $state(null);
+let retryCount = $state(0);
+let isRetrying = $state(false);
+let canRetry = $state(true);
+let componentId: string = $state();
 let renderingTimeout: NodeJS.Timeout | null = null;
 let renderStartTime: number | null = null;
 
 // NEW: Enhanced error recovery state
-let showSmartRecovery = false;
+let showSmartRecovery = $state(false);
 let smartRecoveryAttempts = 0;
-let originalArtifact: ParsedArtifact | DetectedArtifact;
+let originalArtifact: ParsedArtifact | DetectedArtifact = $state();
 
-$: {
-// Update renderer when artifact or viewMode changes
-updateRenderer();
-}
 
 onMount(() => {
 // Store original artifact for recovery
@@ -496,6 +505,10 @@ document.body.removeChild(a);
 URL.revokeObjectURL(url);
 dispatch('download');
 }
+run(() => {
+// Update renderer when artifact or viewMode changes
+updateRenderer();
+});
 </script>
 
 <div
@@ -515,18 +528,18 @@ style="width: {width}; height: {height};"
 <button 
 class="action-btn" 
 class:active={viewMode === 'preview'}
-on:click={() => dispatch('viewModeChange', 'preview')}
+onclick={() => dispatch('viewModeChange', 'preview')}
 title="Preview"
 >
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-<circle cx="12" cy="12" r="3"/>
+<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+<circle cx="12" cy="12" r="3"></circle>
 </svg>
 </button>
 <button 
 class="action-btn"
 class:active={viewMode === 'code'}
-on:click={() => dispatch('viewModeChange', 'code')}
+onclick={() => dispatch('viewModeChange', 'code')}
 title="View Code"
 >
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -537,28 +550,28 @@ title="View Code"
 <button 
 class="action-btn"
 class:active={viewMode === 'xml'}
-on:click={() => dispatch('viewModeChange', 'xml')}
+onclick={() => dispatch('viewModeChange', 'xml')}
 title="View XML"
 >
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 <polyline points="14,2 14,8 20,8"/>
-<line x1="16" y1="13" x2="8" y2="21"/>
-<line x1="8" y1="13" x2="16" y2="21"/>
+<line x1="16" y1="13" x2="8" y2="21"></line>
+<line x1="8" y1="13" x2="16" y2="21"></line>
 </svg>
 </button>
 <div class="divider"></div>
-<button class="action-btn" on:click={copyToClipboard} title="Copy">
+<button class="action-btn" onclick={copyToClipboard} title="Copy">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
 </svg>
 </button>
-<button class="action-btn" on:click={downloadArtifact} title="Download">
+<button class="action-btn" onclick={downloadArtifact} title="Download">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
 <polyline points="7,10 12,15 17,10"/>
-<line x1="12" y1="15" x2="12" y2="3"/>
+<line x1="12" y1="15" x2="12" y2="3"></line>
 </svg>
 </button>
 </div>
@@ -571,9 +584,9 @@ title="View XML"
 <div class="error-header">
 <div class="error-icon">
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<circle cx="12" cy="12" r="10"/>
-<line x1="15" y1="9" x2="9" y2="15"/>
-<line x1="9" y1="9" x2="15" y2="15"/>
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="15" y1="9" x2="9" y2="15"></line>
+<line x1="9" y1="9" x2="15" y2="15"></line>
 </svg>
 </div>
 <h4>Preview Failed</h4>
@@ -638,19 +651,19 @@ Too many failures detected. Waiting {Math.ceil((config.circuitOpenDuration - (Da
 <!-- Action buttons -->
 <div class="error-actions">
 {#if canRetry && !isRetrying}
-<button class="retry-btn primary" on:click={retryRendering} title="Retry rendering">
+<button class="retry-btn primary" onclick={retryRendering} title="Retry rendering">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 <polyline points="23 4 23 10 17 10"/>
 <polyline points="1 20 1 14 7 14"/>
-<path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+<path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
 </svg>
 Retry ({retryCount}/{retryLoopMonitor.getConfig().maxConsecutiveFailures})
 </button>
-<button class="reset-btn secondary" on:click={resetRetryState} title="Reset retry state">
+<button class="reset-btn secondary" onclick={resetRetryState} title="Reset retry state">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-<path d="m3 3 2.01 2.01"/>
-<path d="m7 7 2.01 2.01"/>
+<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+<path d="m3 3 2.01 2.01"></path>
+<path d="m7 7 2.01 2.01"></path>
 </svg>
 Reset State
 </button>
@@ -666,11 +679,11 @@ Reset State
 <span>Retry limit reached</span>
 </div>
 <p class="disabled-message">Maximum retry attempts exceeded. You can reset to try again or refresh the page.</p>
-<button class="reset-btn primary" on:click={resetRetryState} title="Reset retry state">
+<button class="reset-btn primary" onclick={resetRetryState} title="Reset retry state">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-<path d="m3 3 2.01 2.01"/>
-<path d="m7 7 2.01 2.01"/>
+<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+<path d="m3 3 2.01 2.01"></path>
+<path d="m7 7 2.01 2.01"></path>
 </svg>
 Reset & Try Again
 </button>

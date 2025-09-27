@@ -6,7 +6,7 @@
 	import TagItem from './TagItem.svelte';
 	const dispatch = createEventDispatcher();
 
-	export let tags = [];
+	let { tags = [] } = $props();
 </script>
 
 {#each tags as tag}

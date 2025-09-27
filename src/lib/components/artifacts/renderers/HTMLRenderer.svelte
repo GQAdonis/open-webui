@@ -1,21 +1,22 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onMount, createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 import { getPrimaryFile } from '$lib/utils/artifacts/artifact-parser';
 
-export let artifact: ParsedArtifact;
-export let height: string = '400px';
+	interface Props {
+		artifact: ParsedArtifact;
+		height?: string;
+	}
+
+	let { artifact, height = '400px' }: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let iframeElement: HTMLIFrameElement;
-let error: string | null = null;
+let iframeElement: HTMLIFrameElement = $state();
+let error: string | null = $state(null);
 
-$: {
-if (iframeElement && artifact) {
-renderHTML();
-}
-}
 
 function renderHTML() {
 if (!iframeElement) return;
@@ -54,6 +55,11 @@ dispatch('error', { message: error, error: e });
 
 onMount(() => {
 renderHTML();
+});
+run(() => {
+if (iframeElement && artifact) {
+renderHTML();
+}
 });
 </script>
 

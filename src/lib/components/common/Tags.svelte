@@ -6,7 +6,7 @@
 
 	const i18n = getContext('i18n');
 
-	export let tags = [];
+	let { tags = [] } = $props();
 </script>
 
 <ul class="flex flex-row flex-wrap gap-[0.3rem] line-clamp-1">

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { v4 as uuidv4 } from 'uuid';
 	import {
 		chats,
@@ -24,41 +26,69 @@
 
 	const i18n = getContext('i18n');
 
-	export let className = 'h-full flex pt-8';
 
-	export let chatId = '';
-	export let user = $_user;
 
-	export let prompt;
-	export let history = {};
-	export let selectedModels;
-	export let atSelectedModel;
 
-	let messages = [];
+	let messages = $state([]);
 
-	export let setInputText: Function = () => {};
 
-	export let sendMessage: Function;
-	export let continueResponse: Function;
-	export let regenerateResponse: Function;
-	export let mergeResponses: Function;
 
-	export let chatActionHandler: Function;
-	export let showMessage: Function = () => {};
-	export let submitMessage: Function = () => {};
-	export let addMessages: Function = () => {};
 
-	export let readOnly = false;
-	export let editCodeBlock = true;
 
-	export let topPadding = false;
-	export let bottomPadding = false;
-	export let autoScroll;
 
-	export let onSelect = (e) => {};
 
-	export let messagesCount: number | null = 20;
-	let messagesLoading = false;
+	interface Props {
+		className?: string;
+		chatId?: string;
+		user?: any;
+		prompt: any;
+		history?: any;
+		selectedModels: any;
+		atSelectedModel: any;
+		setInputText?: Function;
+		sendMessage: Function;
+		continueResponse: Function;
+		regenerateResponse: Function;
+		mergeResponses: Function;
+		chatActionHandler: Function;
+		showMessage?: Function;
+		submitMessage?: Function;
+		addMessages?: Function;
+		readOnly?: boolean;
+		editCodeBlock?: boolean;
+		topPadding?: boolean;
+		bottomPadding?: boolean;
+		autoScroll: any;
+		onSelect?: any;
+		messagesCount?: number | null;
+	}
+
+	let {
+		className = 'h-full flex pt-8',
+		chatId = '',
+		user = $_user,
+		prompt,
+		history = $bindable({}),
+		selectedModels,
+		atSelectedModel,
+		setInputText = () => {},
+		sendMessage,
+		continueResponse,
+		regenerateResponse,
+		mergeResponses,
+		chatActionHandler,
+		showMessage = () => {},
+		submitMessage = () => {},
+		addMessages = () => {},
+		readOnly = false,
+		editCodeBlock = true,
+		topPadding = false,
+		bottomPadding = false,
+		autoScroll = $bindable(),
+		onSelect = (e) => {},
+		messagesCount = $bindable(20)
+	}: Props = $props();
+	let messagesLoading = $state(false);
 
 	const loadMoreMessages = async () => {
 		// scroll slightly down to disable continuous loading
@@ -73,26 +103,7 @@
 		messagesLoading = false;
 	};
 
-	$: if (history.currentId) {
-		let _messages = [];
 
-		let message = history.messages[history.currentId];
-		while (message && (messagesCount !== null ? _messages.length <= messagesCount : true)) {
-			_messages.unshift({ ...message });
-			message = message.parentId !== null ? history.messages[message.parentId] : null;
-		}
-
-		messages = _messages;
-	} else {
-		messages = [];
-	}
-
-	$: if (autoScroll && bottomPadding) {
-		(async () => {
-			await tick();
-			scrollToBottom();
-		})();
-	}
 
 	const scrollToBottom = () => {
 		const element = document.getElementById('messages-container');
@@ -401,6 +412,29 @@
 			}, 100);
 		}
 	};
+	run(() => {
+		if (history.currentId) {
+			let _messages = [];
+
+			let message = history.messages[history.currentId];
+			while (message && (messagesCount !== null ? _messages.length <= messagesCount : true)) {
+				_messages.unshift({ ...message });
+				message = message.parentId !== null ? history.messages[message.parentId] : null;
+			}
+
+			messages = _messages;
+		} else {
+			messages = [];
+		}
+	});
+	run(() => {
+		if (autoScroll && bottomPadding) {
+			(async () => {
+				await tick();
+				scrollToBottom();
+			})();
+		}
+	});
 </script>
 
 <div class={className}>
@@ -458,9 +492,9 @@
 						{/each}
 					</ul>
 				</section>
-				<div class="pb-18" />
+				<div class="pb-18"></div>
 				{#if bottomPadding}
-					<div class="  pb-6" />
+					<div class="  pb-6"></div>
 				{/if}
 			{/key}
 		</div>

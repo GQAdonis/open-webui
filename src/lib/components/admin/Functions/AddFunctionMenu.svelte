@@ -19,59 +19,71 @@
 
 	const i18n = getContext('i18n');
 
-	export let createHandler: Function;
-	export let importFromLinkHandler: Function;
 
-	export let onClose: Function = () => {};
+	interface Props {
+		createHandler: Function;
+		importFromLinkHandler: Function;
+		onClose?: Function;
+		children?: import('svelte').Snippet;
+	}
 
-	let show = false;
+	let {
+		createHandler,
+		importFromLinkHandler,
+		onClose = () => {},
+		children
+	}: Props = $props();
+
+	let show = $state(false);
 </script>
 
 <Dropdown
 	bind:show
-	on:change={(e) => {
+	onchange={(e) => {
 		if (e.detail === false) {
 			onClose();
 		}
 	}}
 >
 	<Tooltip content={$i18n.t('Create')}>
-		<slot />
+		{@render children?.()}
 	</Tooltip>
 
-	<div slot="content">
-		<DropdownMenu.Content
-			class="w-full max-w-[190px] text-sm rounded-xl p-1 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg font-primary"
-			sideOffset={-2}
-			side="bottom"
-			align="start"
-			transition={flyAndScale}
-		>
-			<button
-				class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-				on:click={async () => {
+	{#snippet content()}
+		<div >
+			<DropdownMenu.Content
+				class="w-full max-w-[190px] text-sm rounded-xl p-1 z-50 bg-white dark:bg-gray-850 dark:text-white shadow-lg font-primary"
+				sideOffset={-2}
+				side="bottom"
+				align="start"
+				transition={flyAndScale}
+			>
+				<button
+					class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+					onclick={async () => {
 					createHandler();
 					show = false;
 				}}
-			>
-				<div class=" self-center mr-2">
-					<PencilSolid />
-				</div>
-				<div class=" self-center truncate">{$i18n.t('New Function')}</div>
-			</button>
+				>
+					<div class=" self-center mr-2">
+						<PencilSolid />
+					</div>
+					<div class=" self-center truncate">{$i18n.t('New Function')}</div>
+				</button>
 
-			<button
-				class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-				on:click={async () => {
+				<button
+					class="flex rounded-md py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+					onclick={async () => {
 					importFromLinkHandler();
 					show = false;
 				}}
-			>
-				<div class=" self-center mr-2">
-					<Link />
-				</div>
-				<div class=" self-center truncate">{$i18n.t('Import From Link')}</div>
-			</button>
-		</DropdownMenu.Content>
-	</div>
+				>
+					<div class=" self-center mr-2">
+						<Link />
+					</div>
+					<div class=" self-center truncate">{$i18n.t('Import From Link')}</div>
+				</button>
+			</DropdownMenu.Content>
+		</div>
+	{/snippet}
 </Dropdown>

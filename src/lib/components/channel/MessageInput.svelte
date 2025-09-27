@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { v4 as uuidv4 } from 'uuid';
 
@@ -38,43 +40,27 @@
 	import MentionList from './MessageInput/MentionList.svelte';
 	import Skeleton from '../chat/Messages/Skeleton.svelte';
 
-	export let placeholder = $i18n.t('Type here...');
 
-	export let id = null;
-	export let chatInputElement;
 
-	export let typingUsers = [];
-	export let inputLoading = false;
 
-	export let onSubmit: Function = (e) => {};
-	export let onChange: Function = (e) => {};
-	export let onStop: Function = (e) => {};
 
-	export let scrollEnd = true;
-	export let scrollToBottom: Function = () => {};
 
-	export let disabled = false;
-	export let acceptFiles = true;
-	export let showFormattingToolbar = true;
 
-	export let userSuggestions = false;
-	export let channelSuggestions = false;
 
-	export let typingUsersClassName = 'from-white dark:from-gray-900';
 
-	let loaded = false;
-	let draggedOver = false;
+	let loaded = $state(false);
+	let draggedOver = $state(false);
 
-	let recording = false;
-	let content = '';
-	let files = [];
+	let recording = $state(false);
+	let content = $state('');
+	let files = $state([]);
 
-	let filesInputElement;
-	let inputFiles;
+	let filesInputElement = $state();
+	let inputFiles = $state();
 
-	let showInputVariablesModal = false;
-	let inputVariablesModalCallback: (variableValues: Record<string, any>) => void;
-	let inputVariables: Record<string, any> = {};
+	let showInputVariablesModal = $state(false);
+	let inputVariablesModalCallback: (variableValues: Record<string, any>) => void = $state();
+	let inputVariables: Record<string, any> = $state({});
 	let inputVariableValues = {};
 
 	const inputVariableHandler = async (text: string): Promise<string> => {
@@ -301,11 +287,53 @@
 		}
 	};
 
-	let command = '';
+	let command = $state('');
 
-	export let showCommands = false;
-	$: showCommands = ['/'].includes(command?.charAt(0));
-	let suggestions = null;
+	interface Props {
+		placeholder?: any;
+		id?: any;
+		chatInputElement: any;
+		typingUsers?: any;
+		inputLoading?: boolean;
+		onSubmit?: Function;
+		onChange?: Function;
+		onStop?: Function;
+		scrollEnd?: boolean;
+		scrollToBottom?: Function;
+		disabled?: boolean;
+		acceptFiles?: boolean;
+		showFormattingToolbar?: boolean;
+		userSuggestions?: boolean;
+		channelSuggestions?: boolean;
+		typingUsersClassName?: string;
+		showCommands?: boolean;
+		menu?: import('svelte').Snippet;
+	}
+
+	let {
+		placeholder = $i18n.t('Type here...'),
+		id = null,
+		chatInputElement = $bindable(),
+		typingUsers = [],
+		inputLoading = false,
+		onSubmit = (e) => {},
+		onChange = (e) => {},
+		onStop = (e) => {},
+		scrollEnd = $bindable(true),
+		scrollToBottom = () => {},
+		disabled = false,
+		acceptFiles = true,
+		showFormattingToolbar = true,
+		userSuggestions = false,
+		channelSuggestions = false,
+		typingUsersClassName = 'from-white dark:from-gray-900',
+		showCommands = $bindable(false),
+		menu
+	}: Props = $props();
+	run(() => {
+		showCommands = ['/'].includes(command?.charAt(0));
+	});
+	let suggestions = $state(null);
 
 	const screenCaptureHandler = async () => {
 		try {
@@ -558,9 +586,11 @@
 		}
 	};
 
-	$: if (content) {
-		onChange();
-	}
+	run(() => {
+		if (content) {
+			onChange();
+		}
+	});
 
 	onMount(async () => {
 		suggestions = [
@@ -660,7 +690,7 @@
 			type="file"
 			hidden
 			multiple
-			on:change={async () => {
+			onchange={async () => {
 				if (inputFiles && inputFiles.length > 0) {
 					inputFilesHandler(Array.from(inputFiles));
 				} else {
@@ -691,7 +721,7 @@
 							>
 								<button
 									class=" bg-white border border-gray-100 dark:border-none dark:bg-white/20 p-1.5 rounded-full pointer-events-auto"
-									on:click={() => {
+									onclick={() => {
 										scrollEnd = true;
 										scrollToBottom();
 									}}
@@ -702,11 +732,9 @@
 										fill="currentColor"
 										class="w-5 h-5"
 									>
-										<path
-											fill-rule="evenodd"
+										<path fill-rule="evenodd"
 											d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z"
-											clip-rule="evenodd"
-										/>
+											clip-rule="evenodd"></path>
 									</svg>
 								</button>
 							</div>
@@ -764,9 +792,9 @@
 				{:else}
 					<form
 						class="w-full flex gap-1.5"
-						on:submit|preventDefault={() => {
+						onsubmit={preventDefault(() => {
 							submitHandler();
-						}}
+						})}
 					>
 						<div
 							id="message-input-container"
@@ -789,7 +817,7 @@
 													<button
 														class=" bg-white text-black border border-white rounded-full group-hover:visible invisible transition"
 														type="button"
-														on:click={() => {
+														onclick={() => {
 															files.splice(fileIdx, 1);
 															files = files;
 														}}
@@ -800,9 +828,7 @@
 															fill="currentColor"
 															class="w-4 h-4"
 														>
-															<path
-																d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-															/>
+															<path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"></path>
 														</svg>
 													</button>
 												</div>
@@ -821,7 +847,7 @@
 													files.splice(fileIdx, 1);
 													files = files;
 												}}
-												on:click={() => {
+												onclick={() => {
 													console.log(file);
 												}}
 											/>
@@ -859,7 +885,7 @@
 												content = md;
 												command = getCommand();
 											}}
-											on:keydown={async (e) => {
+											onkeydown={async (e) => {
 												e = e.detail.event;
 												const isCtrlPressed = e.ctrlKey || e.metaKey; // metaKey is for Cmd key on Mac
 
@@ -933,7 +959,7 @@
 
 							<div class=" flex justify-between mb-2.5 mx-0.5">
 								<div class="ml-1 self-end flex space-x-1 flex-1">
-									<slot name="menu">
+									{#if menu}{@render menu()}{:else}
 										{#if acceptFiles}
 											<InputMenu
 												{screenCaptureHandler}
@@ -953,14 +979,12 @@
 														fill="currentColor"
 														class="size-5"
 													>
-														<path
-															d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
-														/>
+														<path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"></path>
 													</svg>
 												</button>
 											</InputMenu>
 										{/if}
-									</slot>
+									{/if}
 								</div>
 
 								<div class="self-end flex space-x-1 mr-1">
@@ -970,7 +994,7 @@
 												id="voice-input-button"
 												class=" text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 transition rounded-full p-1.5 mr-0.5 self-center"
 												type="button"
-												on:click={async () => {
+												onclick={async () => {
 													try {
 														let stream = await navigator.mediaDevices
 															.getUserMedia({ audio: true })
@@ -1004,10 +1028,8 @@
 													fill="currentColor"
 													class="w-5 h-5 translate-y-[0.5px]"
 												>
-													<path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
-													<path
-														d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"
-													/>
+													<path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z"></path>
+													<path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"></path>
 												</svg>
 											</button>
 										</Tooltip>
@@ -1019,7 +1041,7 @@
 												<Tooltip content={$i18n.t('Stop')}>
 													<button
 														class="bg-white hover:bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-1.5"
-														on:click={() => {
+														onclick={() => {
 															onStop();
 														}}
 													>
@@ -1029,11 +1051,9 @@
 															fill="currentColor"
 															class="size-5"
 														>
-															<path
-																fill-rule="evenodd"
+															<path fill-rule="evenodd"
 																d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm6-2.438c0-.724.588-1.312 1.313-1.312h4.874c.725 0 1.313.588 1.313 1.313v4.874c0 .725-.588 1.313-1.313 1.313H9.564a1.312 1.312 0 01-1.313-1.313V9.564z"
-																clip-rule="evenodd"
-															/>
+																clip-rule="evenodd"></path>
 														</svg>
 													</button>
 												</Tooltip>
@@ -1055,11 +1075,9 @@
 															fill="currentColor"
 															class="size-5"
 														>
-															<path
-																fill-rule="evenodd"
+															<path fill-rule="evenodd"
 																d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z"
-																clip-rule="evenodd"
-															/>
+																clip-rule="evenodd"></path>
 														</svg>
 													</button>
 												</Tooltip>

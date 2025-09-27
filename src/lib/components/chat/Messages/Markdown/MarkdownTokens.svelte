@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Event attribute must be a JavaScript expression, not a string
+https://svelte.dev/e/attribute_invalid_event_handler -->
 <script lang="ts">
 	import DOMPurify from 'dompurify';
 	import { onMount, getContext } from 'svelte';
@@ -184,13 +186,13 @@
 
 			<div class=" absolute top-1 right-1.5 z-20 invisible group-hover:visible">
 				<Tooltip content={$i18n.t('Export to CSV')}>
-					<button
-						class="p-1 rounded-lg bg-transparent transition"
-						on:click={(e) => {
-							e.stopPropagation();
-							exportTableToCSVHandler(token, tokenIdx);
-						}}
-					>
+				<button
+					class="p-1 rounded-lg bg-transparent transition"
+					onclick={(e) => {
+						e.stopPropagation();
+						exportTableToCSVHandler(token, tokenIdx);
+					}}
+				>
 						<Download className=" size-3.5" strokeWidth="1.5" />
 					</button>
 				</Tooltip>
@@ -222,7 +224,7 @@
 								class=" translate-y-[1px] -translate-x-1"
 								type="checkbox"
 								checked={item.checked}
-								on:change={(e) => {
+								onchange={(e) => {
 									onTaskClick({
 										id: id,
 										token: token,
@@ -256,7 +258,7 @@
 								class=""
 								type="checkbox"
 								checked={item.checked}
-								on:change={(e) => {
+								onchange={(e) => {
 									onTaskClick({
 										id: id,
 										token: token,
@@ -322,7 +324,9 @@
 			title={token.fileId}
 			width="100%"
 			frameborder="0"
-			onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
+			onload={(e) => {
+				e.target.style.height = (e.target.contentWindow.document.body.scrollHeight + 20) + 'px';
+			}}
 		></iframe>
 	{:else if token.type === 'paragraph'}
 		<p dir="auto">
@@ -373,7 +377,7 @@
 			rawXml={token.rawXml}
 		/>
 	{:else if token.type === 'space'}
-		<div class="my-2" />
+		<div class="my-2"></div>
 	{:else}
 		{console.log('Unknown token', token)}
 	{/if}

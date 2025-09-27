@@ -6,14 +6,14 @@ import { chatId } from '$lib/stores';
 
 const dispatch = createEventDispatcher();
 
-let panelElement: HTMLDivElement;
-let isDragging = false;
+let panelElement: HTMLDivElement = $state();
+let isDragging = $state(false);
 let dragStartX = 0;
 let dragStartWidth = 0;
 
 // Subscribe to stores
-$: uiState = $artifactUIState;
-$: artifact = $selectedArtifact;
+let uiState = $derived($artifactUIState);
+let artifact = $derived($selectedArtifact);
 
 function handleClose() {
 artifactActions.hidePanel();
@@ -81,7 +81,7 @@ style="width: {uiState.panelWidth}px;"
 <!-- Resize handle -->
 <div 
 class="resize-handle" 
-on:mousedown={startResize}
+onmousedown={startResize}
 title="Drag to resize panel"
 ></div>
 
@@ -90,7 +90,7 @@ title="Drag to resize panel"
 <div class="panel-title">
 <button 
 class="collapse-btn" 
-on:click={handleToggleCollapse}
+onclick={handleToggleCollapse}
 title={uiState.isPanelCollapsed ? 'Expand panel' : 'Collapse panel'}
 >
 <svg 
@@ -109,12 +109,12 @@ class:collapsed={uiState.isPanelCollapsed}
 </div>
 <button 
 class="close-btn" 
-on:click={handleClose}
+onclick={handleClose}
 title="Close artifacts panel"
 >
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<line x1="18" y1="6" x2="6" y2="18"/>
-<line x1="6" y1="6" x2="18" y2="18"/>
+<line x1="18" y1="6" x2="6" y2="18"></line>
+<line x1="6" y1="6" x2="18" y2="18"></line>
 </svg>
 </button>
 </div>
@@ -136,10 +136,10 @@ on:load={handleArtifactLoad}
 <div class="empty-state">
 <div class="empty-state-content">
 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 <polyline points="14,2 14,8 20,8"/>
-<line x1="16" y1="13" x2="8" y2="21"/>
-<line x1="8" y1="13" x2="16" y2="21"/>
+<line x1="16" y1="13" x2="8" y2="21"></line>
+<line x1="8" y1="13" x2="16" y2="21"></line>
 </svg>
 <h4>No Artifact Selected</h4>
 <p>Create or select an artifact to view it here.</p>
@@ -154,10 +154,10 @@ on:load={handleArtifactLoad}
 <div class="artifact-indicator">
 <div class="artifact-icon">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
 <polyline points="14,2 14,8 20,8"/>
-<line x1="16" y1="13" x2="8" y2="21"/>
-<line x1="8" y1="13" x2="16" y2="21"/>
+<line x1="16" y1="13" x2="8" y2="21"></line>
+<line x1="8" y1="13" x2="16" y2="21"></line>
 </svg>
 </div>
 <div class="artifact-title" title={artifact.artifact.title}>
@@ -173,7 +173,7 @@ on:load={handleArtifactLoad}
 <div 
 class="panel-overlay" 
 class:visible={uiState.isVisible}
-on:click={handleClose}
+onclick={handleClose}
 ></div>
 
 <style>

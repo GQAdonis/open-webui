@@ -1,22 +1,23 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onMount, createEventDispatcher } from 'svelte';
 import type { ParsedArtifact } from '$lib/utils/artifacts/artifact-parser';
 import { getPrimaryFile } from '$lib/utils/artifacts/artifact-parser';
 import Markdown from '$lib/components/chat/Messages/Markdown.svelte';
 
-export let artifact: ParsedArtifact;
-export let height: string = '400px';
+	interface Props {
+		artifact: ParsedArtifact;
+		height?: string;
+	}
+
+	let { artifact, height = '400px' }: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let markdownContent: string = '';
-let error: string | null = null;
+let markdownContent: string = $state('');
+let error: string | null = $state(null);
 
-$: {
-if (artifact) {
-loadMarkdown();
-}
-}
 
 function loadMarkdown() {
 try {
@@ -38,6 +39,11 @@ dispatch('error', { message: error, error: e });
 
 onMount(() => {
 loadMarkdown();
+});
+run(() => {
+if (artifact) {
+loadMarkdown();
+}
 });
 </script>
 

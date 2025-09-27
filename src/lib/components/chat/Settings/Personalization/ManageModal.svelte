@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import dayjs from 'dayjs';
 	import { getContext, createEventDispatcher } from 'svelte';
@@ -17,17 +19,21 @@
 	const i18n = getContext('i18n');
 	dayjs.extend(localizedFormat);
 
-	export let show = false;
+	interface Props {
+		show?: boolean;
+	}
 
-	let memories = [];
-	let loading = true;
+	let { show = $bindable(false) }: Props = $props();
 
-	let showAddMemoryModal = false;
-	let showEditMemoryModal = false;
+	let memories = $state([]);
+	let loading = $state(true);
 
-	let selectedMemory = null;
+	let showAddMemoryModal = $state(false);
+	let showEditMemoryModal = $state(false);
 
-	let showClearConfirmDialog = false;
+	let selectedMemory = $state(null);
+
+	let showClearConfirmDialog = $state(false);
 
 	let onClearConfirmed = async () => {
 		const res = await deleteMemoriesByUserId(localStorage.token).catch((error) => {
@@ -42,12 +48,14 @@
 		showClearConfirmDialog = false;
 	};
 
-	$: if (show && memories.length === 0 && loading) {
-		(async () => {
-			memories = await getMemories(localStorage.token);
-			loading = false;
-		})();
-	}
+	run(() => {
+		if (show && memories.length === 0 && loading) {
+			(async () => {
+				memories = await getMemories(localStorage.token);
+				loading = false;
+			})();
+		}
+	});
 </script>
 
 <Modal size="lg" bind:show>
@@ -56,7 +64,7 @@
 			<div class=" text-lg font-medium self-center">{$i18n.t('Memory')}</div>
 			<button
 				class="self-center"
-				on:click={() => {
+				onclick={() => {
 					show = false;
 				}}
 			>
@@ -66,9 +74,7 @@
 					fill="currentColor"
 					class="w-5 h-5"
 				>
-					<path
-						d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-					/>
+					<path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"></path>
 				</svg>
 			</button>
 		</div>
@@ -89,7 +95,7 @@
 										<th scope="col" class="px-3 py-2 hidden md:flex">
 											{$i18n.t('Last Modified')}
 										</th>
-										<th scope="col" class="px-3 py-2 text-right" />
+										<th scope="col" class="px-3 py-2 text-right"></th>
 									</tr>
 								</thead>
 								<tbody>
@@ -110,7 +116,7 @@
 													<Tooltip content="Edit">
 														<button
 															class="self-center w-fit text-sm px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-															on:click={() => {
+															onclick={() => {
 																selectedMemory = memory;
 																showEditMemoryModal = true;
 															}}
@@ -122,12 +128,10 @@
 																stroke-width="1.5"
 																stroke="currentColor"
 																class="w-4 h-4 s-FoVA_WMOgxUD"
-																><path
-																	stroke-linecap="round"
+																><path stroke-linecap="round"
 																	stroke-linejoin="round"
 																	d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-																	class="s-FoVA_WMOgxUD"
-																/></svg
+																	class="s-FoVA_WMOgxUD"></path></svg
 															>
 														</button>
 													</Tooltip>
@@ -135,7 +139,7 @@
 													<Tooltip content="Delete">
 														<button
 															class="self-center w-fit text-sm px-2 py-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
-															on:click={async () => {
+															onclick={async () => {
 																const res = await deleteMemoryById(
 																	localStorage.token,
 																	memory.id
@@ -158,11 +162,9 @@
 																stroke="currentColor"
 																class="w-4 h-4"
 															>
-																<path
-																	stroke-linecap="round"
+																<path stroke-linecap="round"
 																	stroke-linejoin="round"
-																	d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-																/>
+																	d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
 															</svg>
 														</button>
 													</Tooltip>
@@ -185,13 +187,13 @@
 			<div class="flex text-sm font-medium gap-1.5">
 				<button
 					class=" px-3.5 py-1.5 font-medium hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-gray-100 dark:outline-gray-800 rounded-3xl"
-					on:click={() => {
+					onclick={() => {
 						showAddMemoryModal = true;
 					}}>{$i18n.t('Add Memory')}</button
 				>
 				<button
 					class=" px-3.5 py-1.5 font-medium text-red-500 hover:bg-black/5 dark:hover:bg-white/5 outline outline-1 outline-red-100 dark:outline-red-800 rounded-3xl"
-					on:click={() => {
+					onclick={() => {
 						if (memories.length > 0) {
 							showClearConfirmDialog = true;
 						} else {

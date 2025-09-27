@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { marked } from 'marked';
 
 	import { toast } from 'svelte-sonner';
@@ -39,40 +41,27 @@
 	import EyeSlash from '../icons/EyeSlash.svelte';
 	import Eye from '../icons/Eye.svelte';
 
-	let shiftKey = false;
+	let shiftKey = $state(false);
 
-	let importFiles;
-	let modelsImportInputElement: HTMLInputElement;
-	let tagsContainerElement: HTMLDivElement;
+	let importFiles = $state();
+	let modelsImportInputElement: HTMLInputElement = $state();
+	let tagsContainerElement: HTMLDivElement = $state();
 
-	let loaded = false;
+	let loaded = $state(false);
 
-	let models = [];
-	let tags = [];
-	let selectedTag = '';
+	let models = $state([]);
+	let tags = $state([]);
+	let selectedTag = $state('');
 
-	let filteredModels = [];
-	let selectedModel = null;
+	let filteredModels = $state([]);
+	let selectedModel = $state(null);
 
-	let showModelDeleteConfirm = false;
+	let showModelDeleteConfirm = $state(false);
 
-	let group_ids = [];
+	let group_ids = $state([]);
 
-	$: if (models) {
-		filteredModels = models.filter((m) => {
-			if (query === '' && selectedTag === '') return true;
-			const lowerQuery = query.toLowerCase();
-			return (
-				((m.name || '').toLowerCase().includes(lowerQuery) ||
-					(m.user?.name || '').toLowerCase().includes(lowerQuery) || // Search by user name
-					(m.user?.email || '').toLowerCase().includes(lowerQuery)) && // Search by user email
-				(selectedTag === '' ||
-					m?.meta?.tags?.some((tag) => tag.name.toLowerCase() === selectedTag.toLowerCase()))
-			);
-		});
-	}
 
-	let query = '';
+	let query = $state('');
 
 	const deleteModelHandler = async (model) => {
 		const res = await deleteModelById(localStorage.token, model.id).catch((e) => {
@@ -216,6 +205,21 @@
 			window.removeEventListener('blur-sm', onBlur);
 		};
 	});
+	run(() => {
+		if (models) {
+			filteredModels = models.filter((m) => {
+				if (query === '' && selectedTag === '') return true;
+				const lowerQuery = query.toLowerCase();
+				return (
+					((m.name || '').toLowerCase().includes(lowerQuery) ||
+						(m.user?.name || '').toLowerCase().includes(lowerQuery) || // Search by user name
+						(m.user?.email || '').toLowerCase().includes(lowerQuery)) && // Search by user email
+					(selectedTag === '' ||
+						m?.meta?.tags?.some((tag) => tag.name.toLowerCase() === selectedTag.toLowerCase()))
+				);
+			});
+		}
+	});
 </script>
 
 <svelte:head>
@@ -236,7 +240,7 @@
 		<div class="flex justify-between items-center">
 			<div class="flex items-center md:self-center text-xl font-medium px-0.5">
 				{$i18n.t('Models')}
-				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850" />
+				<div class="flex self-center w-[1px] h-6 mx-2.5 bg-gray-50 dark:bg-gray-850"></div>
 				<span class="text-lg font-medium text-gray-500 dark:text-gray-300"
 					>{filteredModels.length}</span
 				>
@@ -258,7 +262,7 @@
 					<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 						<button
 							class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-							on:click={() => {
+							onclick={() => {
 								query = '';
 							}}
 						>
@@ -282,7 +286,7 @@
 	{#if tags.length > 0}
 		<div
 			class=" flex w-full bg-transparent overflow-x-auto scrollbar-none"
-			on:wheel={(e) => {
+			onwheel={(e) => {
 				if (e.deltaY !== 0) {
 					e.preventDefault();
 					e.currentTarget.scrollLeft += e.deltaY;
@@ -297,7 +301,7 @@
 					class="min-w-fit outline-none p-1.5 {selectedTag === ''
 						? ''
 						: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
-					on:click={() => {
+					onclick={() => {
 						selectedTag = '';
 					}}
 				>
@@ -309,7 +313,7 @@
 						class="min-w-fit outline-none p-1.5 {selectedTag === tag
 							? ''
 							: 'text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition capitalize"
-						on:click={() => {
+						onclick={() => {
 							selectedTag = tag;
 						}}
 					>
@@ -389,7 +393,7 @@
 								<button
 									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										hideModelHandler(model);
 									}}
 								>
@@ -405,7 +409,7 @@
 								<button
 									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										deleteModelHandler(model);
 									}}
 								>
@@ -427,11 +431,9 @@
 										stroke="currentColor"
 										class="w-4 h-4"
 									>
-										<path
-											stroke-linecap="round"
+										<path stroke-linecap="round"
 											stroke-linejoin="round"
-											d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
-										/>
+											d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"></path>
 									</svg>
 								</a>
 							{/if}
@@ -472,7 +474,7 @@
 								<Tooltip content={model.is_active ? $i18n.t('Enabled') : $i18n.t('Disabled')}>
 									<Switch
 										bind:state={model.is_active}
-										on:change={async (e) => {
+										onchange={async (e) => {
 											toggleModelById(localStorage.token, model.id);
 											_models.set(
 												await getModels(
@@ -502,7 +504,7 @@
 					type="file"
 					accept=".json"
 					hidden
-					on:change={() => {
+					onchange={() => {
 						console.log(importFiles);
 
 						let reader = new FileReader();
@@ -548,7 +550,7 @@
 
 				<button
 					class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-					on:click={() => {
+					onclick={() => {
 						modelsImportInputElement.click();
 					}}
 				>
@@ -561,11 +563,9 @@
 							fill="currentColor"
 							class="w-3.5 h-3.5"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 9.5a.75.75 0 0 1-.75-.75V8.06l-.72.72a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0l2 2a.75.75 0 1 1-1.06 1.06l-.72-.72v2.69a.75.75 0 0 1-.75.75Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</button>
@@ -573,7 +573,7 @@
 				{#if models.length}
 					<button
 						class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-						on:click={async () => {
+						onclick={async () => {
 							downloadModels(models);
 						}}
 					>
@@ -588,11 +588,9 @@
 								fill="currentColor"
 								class="w-3.5 h-3.5"
 							>
-								<path
-									fill-rule="evenodd"
+								<path fill-rule="evenodd"
 									d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 3.5a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 0 1 1.06-1.06l.72.72V6.25A.75.75 0 0 1 8 5.5Z"
-									clip-rule="evenodd"
-								/>
+									clip-rule="evenodd"></path>
 							</svg>
 						</div>
 					</button>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Switch from '$lib/components/common/Switch.svelte';
 	import Textarea from '$lib/components/common/Textarea.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -8,10 +10,10 @@
 	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
-	export let banners = [];
+	let { banners = $bindable([]) } = $props();
 
 	let sortable = null;
-	let bannerListElement = null;
+	let bannerListElement = $state(null);
 
 	const positionChangeHandler = () => {
 		const bannerIdOrder = Array.from(bannerListElement.children).map((child) =>
@@ -32,9 +34,6 @@
 		error: 'bg-red-500/20 text-red-700 dark:text-red-200'
 	};
 
-	$: if (banners) {
-		init();
-	}
 
 	const init = () => {
 		if (sortable) {
@@ -51,6 +50,11 @@
 			});
 		}
 	};
+	run(() => {
+		if (banners) {
+			init();
+		}
+	});
 </script>
 
 <div class=" flex flex-col gap-3 {banners?.length > 0 ? 'mt-2' : ''}" bind:this={bannerListElement}>
@@ -90,7 +94,7 @@
 			<button
 				class="pr-3"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					banners.splice(bannerIdx, 1);
 					banners = banners;
 				}}

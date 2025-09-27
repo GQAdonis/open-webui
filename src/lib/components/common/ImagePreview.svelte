@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { onDestroy, onMount, getContext } from 'svelte';
 	import panzoom, { type PanZoom } from 'panzoom';
 
@@ -7,29 +9,35 @@
 
 	import XMark from '$lib/components/icons/XMark.svelte';
 
-	export let show = false;
-	export let src = '';
-	export let alt = '';
+	interface Props {
+		show?: boolean;
+		src?: string;
+		alt?: string;
+	}
+
+	let { show = $bindable(false), src = '', alt = '' }: Props = $props();
 
 	const i18n = getContext('i18n');
 
 	let mounted = false;
 
-	let previewElement = null;
+	let previewElement = $state(null);
 
-	let instance: PanZoom;
+	let instance: PanZoom = $state();
 
 	let sceneParentElement: HTMLElement;
-	let sceneElement: HTMLElement;
+	let sceneElement: HTMLElement = $state();
 
-	$: if (sceneElement) {
-		instance = panzoom(sceneElement, {
-			bounds: true,
-			boundsPadding: 0.1,
+	run(() => {
+		if (sceneElement) {
+			instance = panzoom(sceneElement, {
+				bounds: true,
+				boundsPadding: 0.1,
 
-			zoomSpeed: 0.065
-		});
-	}
+				zoomSpeed: 0.065
+			});
+		}
+	});
 	const resetPanZoomViewport = () => {
 		instance.moveTo(0, 0);
 		instance.zoomAbs(0, 0, 1);
@@ -47,15 +55,17 @@
 		mounted = true;
 	});
 
-	$: if (show && previewElement) {
-		document.body.appendChild(previewElement);
-		window.addEventListener('keydown', handleKeyDown);
-		document.body.style.overflow = 'hidden';
-	} else if (previewElement) {
-		window.removeEventListener('keydown', handleKeyDown);
-		document.body.removeChild(previewElement);
-		document.body.style.overflow = 'unset';
-	}
+	run(() => {
+		if (show && previewElement) {
+			document.body.appendChild(previewElement);
+			window.addEventListener('keydown', handleKeyDown);
+			document.body.style.overflow = 'hidden';
+		} else if (previewElement) {
+			window.removeEventListener('keydown', handleKeyDown);
+			document.body.removeChild(previewElement);
+			document.body.style.overflow = 'unset';
+		}
+	});
 
 	onDestroy(() => {
 		show = false;
@@ -67,8 +77,8 @@
 </script>
 
 {#if show}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={previewElement}
 		class="modal fixed top-0 right-0 left-0 bottom-0 bg-black text-white w-full min-h-screen h-screen flex justify-center z-9999 overflow-hidden overscroll-contain"
@@ -77,12 +87,12 @@
 			<div>
 				<button
 					class=" p-5"
-					on:pointerdown={(e) => {
+					onpointerdown={(e) => {
 						e.stopImmediatePropagation();
 						e.preventDefault();
 						show = false;
 					}}
-					on:click={(e) => {
+					onclick={(e) => {
 						show = false;
 					}}
 				>
@@ -93,7 +103,7 @@
 			<div>
 				<button
 					class=" p-5 z-999"
-					on:click={() => {
+					onclick={() => {
 						if (src.startsWith('data:image/')) {
 							const base64Data = src.split(',')[1];
 							const blob = new Blob([Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))], {
@@ -171,12 +181,8 @@
 						fill="currentColor"
 						class="w-6 h-6"
 					>
-						<path
-							d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"
-						/>
-						<path
-							d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"
-						/>
+						<path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z"></path>
+						<path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"></path>
 					</svg>
 				</button>
 			</div>

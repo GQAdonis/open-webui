@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: Can only bind to an Identifier or MemberExpression or a `{get, set}` pair
+https://svelte.dev/e/bind_invalid_expression -->
 <script lang="ts">
 	import Switch from '$lib/components/common/Switch.svelte';
 	import Textarea from '$lib/components/common/Textarea.svelte';
@@ -71,7 +73,7 @@
 				</div>
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						params.stream_response =
 							(params?.stream_response ?? null) === null
 								? true
@@ -109,7 +111,7 @@
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							params.stream_delta_chunk_size =
 								(params?.stream_delta_chunk_size ?? null) === null ? 1 : null;
 						}}
@@ -164,7 +166,7 @@
 				</div>
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						params.function_calling = (params?.function_calling ?? null) === null ? 'native' : null;
 					}}
 					type="button"
@@ -194,7 +196,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-				on:click={() => {
+				onclick={() => {
 						if ((params?.reasoning_tags ?? null) === null) {
 							params.reasoning_tags = ['', ''];
 						} else if (Array.isArray(params?.reasoning_tags) && params.reasoning_tags.length === 2) {
@@ -260,7 +262,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.seed = (params?.seed ?? null) === null ? 0 : null;
 					}}
 				>
@@ -305,7 +307,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.stop = (params?.stop ?? null) === null ? '' : null;
 					}}
 				>
@@ -348,7 +350,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.temperature = (params?.temperature ?? null) === null ? 0.8 : null;
 					}}
 				>
@@ -403,7 +405,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.reasoning_effort = (params?.reasoning_effort ?? null) === null ? 'medium' : null;
 					}}
 				>
@@ -446,7 +448,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.logit_bias = (params?.logit_bias ?? null) === null ? '' : null;
 					}}
 				>
@@ -492,7 +494,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.max_tokens = (params?.max_tokens ?? null) === null ? 128 : null;
 					}}
 				>
@@ -546,7 +548,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.top_k = (params?.top_k ?? null) === null ? 40 : null;
 					}}
 				>
@@ -602,7 +604,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.top_p = (params?.top_p ?? null) === null ? 0.9 : null;
 					}}
 				>
@@ -657,7 +659,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.min_p = (params?.min_p ?? null) === null ? 0.0 : null;
 					}}
 				>
@@ -713,7 +715,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.frequency_penalty = (params?.frequency_penalty ?? null) === null ? 1.1 : null;
 					}}
 				>
@@ -769,7 +771,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded transition flex-shrink-0 outline-none"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.presence_penalty = (params?.presence_penalty ?? null) === null ? 0.0 : null;
 					}}
 				>
@@ -822,7 +824,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.mirostat = (params?.mirostat ?? null) === null ? 0 : null;
 					}}
 				>
@@ -877,7 +879,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.mirostat_eta = (params?.mirostat_eta ?? null) === null ? 0.1 : null;
 					}}
 				>
@@ -933,7 +935,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.mirostat_tau = (params?.mirostat_tau ?? null) === null ? 5.0 : null;
 					}}
 				>
@@ -987,7 +989,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.repeat_last_n = (params?.repeat_last_n ?? null) === null ? 64 : null;
 					}}
 				>
@@ -1043,7 +1045,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.tfs_z = (params?.tfs_z ?? null) === null ? 1 : null;
 					}}
 				>
@@ -1099,7 +1101,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded transition flex-shrink-0 outline-none"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.repeat_penalty = (params?.repeat_penalty ?? null) === null ? 1.1 : null;
 					}}
 				>
@@ -1155,7 +1157,7 @@
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							params.use_mmap = (params?.use_mmap ?? null) === null ? true : null;
 						}}
 					>
@@ -1196,7 +1198,7 @@
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							params.use_mlock = (params?.use_mlock ?? null) === null ? true : null;
 						}}
 					>
@@ -1237,7 +1239,7 @@
 				</div>
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						params.think = (params?.think ?? null) === null ? true : params.think ? false : null;
 					}}
 					type="button"
@@ -1266,7 +1268,7 @@
 				</div>
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition"
-					on:click={() => {
+					onclick={() => {
 						params.format = (params?.format ?? null) === null ? 'json' : null;
 					}}
 					type="button"
@@ -1307,7 +1309,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.num_keep = (params?.num_keep ?? null) === null ? 24 : null;
 					}}
 				>
@@ -1360,7 +1362,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.num_ctx = (params?.num_ctx ?? null) === null ? 2048 : null;
 					}}
 				>
@@ -1415,7 +1417,7 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						params.num_batch = (params?.num_batch ?? null) === null ? 512 : null;
 					}}
 				>
@@ -1471,7 +1473,7 @@
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							params.num_thread = (params?.num_thread ?? null) === null ? 2 : null;
 						}}
 					>
@@ -1527,7 +1529,7 @@
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 						type="button"
-						on:click={() => {
+						onclick={() => {
 							params.num_gpu = (params?.num_gpu ?? null) === null ? 0 : null;
 						}}
 					>
@@ -1581,7 +1583,7 @@
 					</div>
 					<button
 						class="p-1 px-3 text-xs flex rounded-sm transition"
-						on:click={() => {
+						onclick={() => {
 							params.keep_alive = (params?.keep_alive ?? null) === null ? '5m' : null;
 						}}
 						type="button"
@@ -1618,7 +1620,7 @@
 									class=" text-xs w-full bg-transparent outline-none"
 									placeholder={$i18n.t('Custom Parameter Name')}
 									value={key}
-								on:change={(e: InputEvent) => {
+								onchange={(e: InputEvent) => {
 									if (!e.target) return;
 									const newKey = e.target.value.trim();
 									if (newKey && newKey !== key && params.custom_params) {
@@ -1635,7 +1637,7 @@
 							<button
 								class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 								type="button"
-							on:click={() => {
+							onclick={() => {
 								if (params.custom_params) {
 									delete params.custom_params[key];
 									params = {
@@ -1651,7 +1653,14 @@
 						<div class="flex mt-0.5 space-x-2">
 							<div class=" flex-1">
 								<input
-								bind:value={params.custom_params?.[key]}
+									value={params.custom_params?.[key] || ''}
+									oninput={(e) => {
+										if (!params.custom_params) {
+											params.custom_params = {};
+										}
+										params.custom_params[key] = e.target.value;
+										params = { ...params, custom_params: { ...params.custom_params } };
+									}}
 									type="text"
 									class="text-sm w-full bg-transparent outline-hidden outline-none"
 									placeholder={$i18n.t('Custom Parameter Value')}
@@ -1664,7 +1673,7 @@
 				<button
 					class=" flex gap-2 items-center w-full text-center justify-center mt-1 mb-5"
 					type="button"
-				on:click={() => {
+				onclick={() => {
 					if (!params.custom_params) {
 						params.custom_params = {};
 					}

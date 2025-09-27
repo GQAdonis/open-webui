@@ -14,9 +14,9 @@
 		command: string;
 		content: string;
 		access_control: any | null;
-	} | null = null;
+	} | null = $state(null);
 
-	let clone = false;
+	let clone = $state(false);
 
 	const onSubmit = async (_prompt) => {
 		const res = await createNewPrompt(localStorage.token, _prompt).catch((error) => {

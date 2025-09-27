@@ -65,22 +65,22 @@
 
 	const BREAKPOINT = 768;
 
-	let scrollTop = 0;
+	let scrollTop = $state(0);
 
-	let navElement;
-	let shiftKey = false;
+	let navElement = $state();
+	let shiftKey = $state(false);
 
-	let selectedChatId = null;
-	let showPinnedChat = true;
+	let selectedChatId = $state(null);
+	let showPinnedChat = $state(true);
 
-	let showCreateChannel = false;
+	let showCreateChannel = $state(false);
 
 	// Pagination variables
-	let chatListLoading = false;
-	let allChatsLoaded = false;
+	let chatListLoading = $state(false);
+	let allChatsLoaded = $state(false);
 
-	let showCreateFolderModal = false;
-	let folders = {};
+	let showCreateFolderModal = $state(false);
+	let folders = $state({});
 	let newFolderId = null;
 
 	const initFolders = async () => {
@@ -482,17 +482,17 @@
 	}}
 />
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 
 {#if $showSidebar}
 	<div
 		class=" {$isApp
 			? ' ml-[4.5rem] md:ml-0'
 			: ''} fixed md:hidden z-40 top-0 right-0 left-0 bottom-0 bg-black/60 w-full min-h-screen h-screen flex justify-center overflow-hidden overscroll-contain"
-		on:mousedown={() => {
+		onmousedown={() => {
 			showSidebar.set(!$showSidebar);
 		}}
-	/>
+	></div>
 {/if}
 
 <SearchModal
@@ -507,11 +507,11 @@
 <button
 	id="sidebar-new-chat-button"
 	class="hidden"
-	on:click={() => {
+	onclick={() => {
 		goto('/');
 		newChatHandler();
 	}}
-/>
+></button>
 
 {#if !$mobile && !$showSidebar}
 	<div
@@ -520,7 +520,7 @@
 	>
 		<button
 			class="flex flex-col flex-1 {isWindows ? 'cursor-pointer' : 'cursor-[e-resize]'}"
-			on:click={async () => {
+			onclick={async () => {
 				showSidebar.set(!$showSidebar);
 			}}
 		>
@@ -556,7 +556,7 @@
 							class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
 							href="/"
 							draggable="false"
-							on:click={async (e) => {
+							onclick={async (e) => {
 								e.stopImmediatePropagation();
 								e.preventDefault();
 
@@ -576,7 +576,7 @@
 					<Tooltip content={$i18n.t('Search')} placement="right">
 						<button
 							class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
-							on:click={(e) => {
+							onclick={(e) => {
 								e.stopImmediatePropagation();
 								e.preventDefault();
 
@@ -598,7 +598,7 @@
 							<a
 								class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
 								href="/notes"
-								on:click={async (e) => {
+								onclick={async (e) => {
 									e.stopImmediatePropagation();
 									e.preventDefault();
 
@@ -622,7 +622,7 @@
 							<a
 								class=" cursor-pointer flex rounded-xl hover:bg-gray-100 dark:hover:bg-gray-850 transition group"
 								href="/workspace"
-								on:click={async (e) => {
+								onclick={async (e) => {
 									e.stopImmediatePropagation();
 									e.preventDefault();
 
@@ -641,11 +641,9 @@
 										stroke="currentColor"
 										class="size-4.5"
 									>
-										<path
-											stroke-linecap="round"
+										<path stroke-linecap="round"
 											stroke-linejoin="round"
-											d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
-										/>
+											d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"></path>
 									</svg>
 								</div>
 							</a>
@@ -712,7 +710,7 @@
 					class="flex items-center rounded-xl size-8.5 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
 					href="/"
 					draggable="false"
-					on:click={newChatHandler}
+					onclick={newChatHandler}
 				>
 					<img
 						crossorigin="anonymous"
@@ -722,7 +720,7 @@
 					/>
 				</a>
 
-				<a href="/" class="flex flex-1 px-1.5" on:click={newChatHandler}>
+				<a href="/" class="flex flex-1 px-1.5" onclick={newChatHandler}>
 					<div class=" self-center font-medium text-gray-850 dark:text-white font-primary">
 						{$WEBUI_NAME}
 					</div>
@@ -735,7 +733,7 @@
 						class="flex rounded-xl size-8.5 justify-center items-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition {isWindows
 							? 'cursor-pointer'
 							: 'cursor-[w-resize]'}"
-						on:click={() => {
+						onclick={() => {
 							showSidebar.set(!$showSidebar);
 						}}
 						aria-label={$showSidebar ? $i18n.t('Close Sidebar') : $i18n.t('Open Sidebar')}
@@ -755,7 +753,7 @@
 
 			<div
 				class="relative flex flex-col flex-1 overflow-y-auto scrollbar-hidden pt-3 pb-3"
-				on:scroll={(e) => {
+				onscroll={(e) => {
 					if (e.target.scrollTop === 0) {
 						scrollTop = 0;
 					} else {
@@ -770,7 +768,7 @@
 							class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
 							href="/"
 							draggable="false"
-							on:click={newChatHandler}
+							onclick={newChatHandler}
 							aria-label={$i18n.t('New Chat')}
 						>
 							<div class="self-center">
@@ -787,7 +785,7 @@
 						<button
 							id="sidebar-search-button"
 							class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
-							on:click={() => {
+							onclick={() => {
 								showSearch.set(true);
 							}}
 							draggable="false"
@@ -809,7 +807,7 @@
 								id="sidebar-notes-button"
 								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 								href="/notes"
-								on:click={itemClickHandler}
+								onclick={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Notes')}
 							>
@@ -830,7 +828,7 @@
 								id="sidebar-workspace-button"
 								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 								href="/workspace"
-								on:click={itemClickHandler}
+								onclick={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Workspace')}
 							>
@@ -843,11 +841,9 @@
 										stroke="currentColor"
 										class="size-4.5"
 									>
-										<path
-											stroke-linecap="round"
+										<path stroke-linecap="round"
 											stroke-linejoin="round"
-											d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"
-										/>
+											d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z"></path>
 									</svg>
 								</div>
 
@@ -900,7 +896,7 @@
 							showCreateFolderModal = true;
 						}}
 						onAddLabel={$i18n.t('New Folder')}
-						on:drop={async (e) => {
+						ondrop={async (e) => {
 							const { type, id, item } = e.detail;
 
 							if (type === 'folder') {
@@ -935,7 +931,7 @@
 								const { folderId, items } = e.detail;
 								importChatHandler(items, false, folderId);
 							}}
-							on:change={async () => {
+							onchange={async () => {
 								initChatList();
 							}}
 						/>
@@ -946,14 +942,14 @@
 					className="px-2 mt-0.5"
 					name={$i18n.t('Chats')}
 					chevron={false}
-					on:change={async (e) => {
+					onchange={async (e) => {
 						selectedFolder.set(null);
 						await goto('/');
 					}}
 					on:import={(e) => {
 						importChatHandler(e.detail);
 					}}
-					on:drop={async (e) => {
+					ondrop={async (e) => {
 						const { type, id, item } = e.detail;
 
 						if (type === 'chat') {
@@ -1013,14 +1009,14 @@
 								<Folder
 									buttonClassName=" text-gray-500"
 									bind:open={showPinnedChat}
-									on:change={(e) => {
+									onchange={(e) => {
 										localStorage.setItem('showPinnedChat', e.detail);
 										console.log(e.detail);
 									}}
 									on:import={(e) => {
 										importChatHandler(e.detail, true);
 									}}
-									on:drop={async (e) => {
+									ondrop={async (e) => {
 										const { type, id, item } = e.detail;
 
 										if (type === 'chat') {
@@ -1078,7 +1074,7 @@
 												on:unselect={() => {
 													selectedChatId = null;
 												}}
-												on:change={async () => {
+												onchange={async () => {
 													initChatList();
 												}}
 												on:tag={(e) => {
@@ -1138,7 +1134,7 @@
 										on:unselect={() => {
 											selectedChatId = null;
 										}}
-										on:change={async () => {
+										onchange={async () => {
 											initChatList();
 										}}
 										on:tag={(e) => {

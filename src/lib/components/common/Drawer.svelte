@@ -1,14 +1,26 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { onDestroy, onMount } from 'svelte';
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { fade, fly, slide } from 'svelte/transition';
 	import { isApp } from '$lib/stores';
 
-	export let show = false;
-	export let className = '';
-	export let onClose = () => {};
+	interface Props {
+		show?: boolean;
+		className?: string;
+		onClose?: any;
+		children?: import('svelte').Snippet;
+	}
 
-	let modalElement = null;
+	let {
+		show = $bindable(false),
+		className = '',
+		onClose = () => {},
+		children
+	}: Props = $props();
+
+	let modalElement = $state(null);
 	let mounted = false;
 
 	const handleKeyDown = (event: KeyboardEvent) => {
@@ -27,19 +39,21 @@
 		mounted = true;
 	});
 
-	$: if (show && modalElement) {
-		document.body.appendChild(modalElement);
-		window.addEventListener('keydown', handleKeyDown);
-		document.body.style.overflow = 'hidden';
-	} else if (modalElement) {
-		onClose();
-		window.removeEventListener('keydown', handleKeyDown);
+	run(() => {
+		if (show && modalElement) {
+			document.body.appendChild(modalElement);
+			window.addEventListener('keydown', handleKeyDown);
+			document.body.style.overflow = 'hidden';
+		} else if (modalElement) {
+			onClose();
+			window.removeEventListener('keydown', handleKeyDown);
 
-		if (document.body.contains(modalElement)) {
-			document.body.removeChild(modalElement);
-			document.body.style.overflow = 'unset';
+			if (document.body.contains(modalElement)) {
+				document.body.removeChild(modalElement);
+				document.body.style.overflow = 'unset';
+			}
 		}
-	}
+	});
 
 	onDestroy(() => {
 		show = false;
@@ -52,8 +66,8 @@
 	});
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 
 <div
 	bind:this={modalElement}
@@ -61,17 +75,17 @@
 		? ' ml-[4.5rem] max-w-[calc(100%-4.5rem)]'
 		: ''} left-0 bottom-0 bg-black/60 w-full h-screen max-h-[100dvh] flex justify-center z-999 overflow-hidden overscroll-contain"
 	in:fly={{ y: 100, duration: 100 }}
-	on:mousedown={() => {
+	onmousedown={() => {
 		show = false;
 	}}
 >
 	<div
 		class=" mt-auto w-full bg-gray-50 dark:bg-gray-900 dark:text-gray-100 {className} max-h-[100dvh] overflow-y-auto scrollbar-hidden"
-		on:mousedown={(e) => {
+		onmousedown={(e) => {
 			e.stopPropagation();
 		}}
 	>
-		<slot />
+		{@render children?.()}
 	</div>
 </div>
 

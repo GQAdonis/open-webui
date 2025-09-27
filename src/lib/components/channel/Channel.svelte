@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { Pane, PaneGroup, PaneResizer } from 'paneforge';
 
@@ -16,24 +18,25 @@
 	import Thread from './Thread.svelte';
 	import i18n from '$lib/i18n';
 
-	export let id = '';
+	interface Props {
+		id?: string;
+	}
 
-	let scrollEnd = true;
-	let messagesContainerElement = null;
+	let { id = '' }: Props = $props();
 
-	let top = false;
+	let scrollEnd = $state(true);
+	let messagesContainerElement = $state(null);
 
-	let channel = null;
-	let messages = null;
+	let top = $state(false);
 
-	let threadId = null;
+	let channel = $state(null);
+	let messages = $state(null);
 
-	let typingUsers = [];
+	let threadId = $state(null);
+
+	let typingUsers = $state([]);
 	let typingUsersTimeout = {};
 
-	$: if (id) {
-		initHandler();
-	}
 
 	const scrollToBottom = () => {
 		if (messagesContainerElement) {
@@ -167,7 +170,7 @@
 	};
 
 	let mediaQuery;
-	let largeScreen = false;
+	let largeScreen = $state(false);
 
 	onMount(() => {
 		if ($chatId) {
@@ -193,6 +196,11 @@
 	onDestroy(() => {
 		$socket?.off('channel-events', channelEventHandler);
 	});
+	run(() => {
+		if (id) {
+			initHandler();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -215,7 +223,7 @@
 						class=" pb-2.5 max-w-full z-10 scrollbar-hidden w-full h-full pt-6 flex-1 flex flex-col-reverse overflow-auto"
 						id="messages-container"
 						bind:this={messagesContainerElement}
-						on:scroll={(e) => {
+						onscroll={(e) => {
 							scrollEnd = Math.abs(messagesContainerElement.scrollTop) <= 50;
 						}}
 					>
@@ -291,7 +299,7 @@
 			>
 				<div
 					class=" absolute -left-1.5 -right-1.5 -top-0 -bottom-0 z-20 cursor-col-resize bg-transparent"
-				/>
+				></div>
 			</PaneResizer>
 
 			<Pane defaultSize={50} minSize={30} class="h-full w-full">

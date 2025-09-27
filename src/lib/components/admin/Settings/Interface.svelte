@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
@@ -26,7 +28,7 @@
 
 	const i18n = getContext('i18n');
 
-	let taskConfig = {
+	let taskConfig = $state({
 		TASK_MODEL: '',
 		TASK_MODEL_EXTERNAL: '',
 		ENABLE_TITLE_GENERATION: true,
@@ -42,10 +44,10 @@
 		ENABLE_RETRIEVAL_QUERY_GENERATION: true,
 		QUERY_GENERATION_PROMPT_TEMPLATE: '',
 		TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE: ''
-	};
+	});
 
-	let promptSuggestions = [];
-	let banners: Banner[] = [];
+	let promptSuggestions = $state([]);
+	let banners: Banner[] = $state([]);
 
 	const updateInterfaceHandler = async () => {
 		taskConfig = await updateTaskConfig(localStorage.token, taskConfig);
@@ -64,7 +66,7 @@
 	let workspaceModels = null;
 	let baseModels = null;
 
-	let models = null;
+	let models = $state(null);
 
 	const init = async () => {
 		taskConfig = await getTaskConfig(localStorage.token);
@@ -104,10 +106,10 @@
 {#if models !== null && taskConfig}
 	<form
 		class="flex flex-col h-full justify-between space-y-3 text-sm"
-		on:submit|preventDefault={() => {
+		onsubmit={preventDefault(() => {
 			updateInterfaceHandler();
 			dispatch('save');
-		}}
+		})}
 	>
 		<div class="  overflow-y-scroll scrollbar-hidden h-full pr-1.5">
 			<div class="mb-3.5">
@@ -130,11 +132,9 @@
 							stroke="currentColor"
 							class="size-3.5"
 						>
-							<path
-								stroke-linecap="round"
+							<path stroke-linecap="round"
 								stroke-linejoin="round"
-								d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-							/>
+								d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"></path>
 						</svg>
 					</Tooltip>
 				</div>
@@ -146,7 +146,7 @@
 							class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
 							bind:value={taskConfig.TASK_MODEL}
 							placeholder={$i18n.t('Select a model')}
-							on:change={() => {
+							onchange={() => {
 								if (taskConfig.TASK_MODEL) {
 									const model = models.find((m) => m.id === taskConfig.TASK_MODEL);
 									if (model) {
@@ -181,7 +181,7 @@
 							class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-hidden"
 							bind:value={taskConfig.TASK_MODEL_EXTERNAL}
 							placeholder={$i18n.t('Select a model')}
-							on:change={() => {
+							onchange={() => {
 								if (taskConfig.TASK_MODEL_EXTERNAL) {
 									const model = models.find((m) => m.id === taskConfig.TASK_MODEL_EXTERNAL);
 									if (model) {
@@ -397,7 +397,7 @@
 						<button
 							class="p-1 px-3 text-xs flex rounded-sm transition"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								if (banners.length === 0 || banners.at(-1).content !== '') {
 									banners = [
 										...banners,
@@ -419,9 +419,7 @@
 								fill="currentColor"
 								class="w-4 h-4"
 							>
-								<path
-									d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"
-								/>
+								<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"></path>
 							</svg>
 						</button>
 					</div>
@@ -439,7 +437,7 @@
 							<button
 								class="p-1 px-3 text-xs flex rounded-sm transition"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									if (promptSuggestions.length === 0 || promptSuggestions.at(-1).content !== '') {
 										promptSuggestions = [...promptSuggestions, { content: '', title: ['', ''] }];
 									}
@@ -451,9 +449,7 @@
 									fill="currentColor"
 									class="w-4 h-4"
 								>
-									<path
-										d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"
-									/>
+									<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"></path>
 								</svg>
 							</button>
 						</div>
@@ -486,14 +482,14 @@
 											)}
 											rows="3"
 											bind:value={prompt.content}
-										/>
+										></textarea>
 									</div>
 
 									<div class="">
 										<button
 											class="p-3"
 											type="button"
-											on:click={() => {
+											onclick={() => {
 												promptSuggestions.splice(promptIdx, 1);
 												promptSuggestions = promptSuggestions;
 											}}
@@ -504,9 +500,7 @@
 												fill="currentColor"
 												class="w-4 h-4"
 											>
-												<path
-													d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-												/>
+												<path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"></path>
 											</svg>
 										</button>
 									</div>
@@ -526,7 +520,7 @@
 								type="file"
 								accept=".json"
 								hidden
-								on:change={(e) => {
+								onchange={(e) => {
 									const files = e.target.files;
 									if (!files || files.length === 0) {
 										return;
@@ -565,7 +559,7 @@
 							<button
 								class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									const input = document.getElementById('prompt-suggestions-import-input');
 									if (input) {
 										input.click();
@@ -583,11 +577,9 @@
 										fill="currentColor"
 										class="w-3.5 h-3.5"
 									>
-										<path
-											fill-rule="evenodd"
+										<path fill-rule="evenodd"
 											d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 9.5a.75.75 0 0 1-.75-.75V8.06l-.72.72a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0l2 2a.75.75 0 1 1-1.06 1.06l-.72-.72v2.69a.75.75 0 0 1-.75.75Z"
-											clip-rule="evenodd"
-										/>
+											clip-rule="evenodd"></path>
 									</svg>
 								</div>
 							</button>
@@ -596,7 +588,7 @@
 								<button
 									class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
 									type="button"
-									on:click={async () => {
+									onclick={async () => {
 										let blob = new Blob([JSON.stringify(promptSuggestions)], {
 											type: 'application/json'
 										});
@@ -614,11 +606,9 @@
 											fill="currentColor"
 											class="w-3.5 h-3.5"
 										>
-											<path
-												fill-rule="evenodd"
+											<path fill-rule="evenodd"
 												d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 3.5a.75.75 0 0 1 .75.75v2.69l.72-.72a.75.75 0 1 1 1.06 1.06l-2 2a.75.75 0 0 1-1.06 0l-2-2a.75.75 0 0 1 1.06-1.06l.72.72V6.25A.75.75 0 0 1 8 5.5Z"
-												clip-rule="evenodd"
-											/>
+												clip-rule="evenodd"></path>
 										</svg>
 									</div>
 								</button>

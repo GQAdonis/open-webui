@@ -6,9 +6,21 @@
 
 	import { flyAndScale } from '$lib/utils/transitions';
 
-	export let show = false;
-	export let side = 'bottom';
-	export let align = 'start';
+	interface Props {
+		show?: boolean;
+		side?: string;
+		align?: string;
+		children?: import('svelte').Snippet;
+		content?: import('svelte').Snippet;
+	}
+
+	let {
+		show = $bindable(false),
+		side = 'bottom',
+		align = 'start',
+		children,
+		content
+	}: Props = $props();
 	const dispatch = createEventDispatcher();
 </script>
 
@@ -21,10 +33,10 @@
 	typeahead={false}
 >
 	<DropdownMenu.Trigger>
-		<slot />
+		{@render children?.()}
 	</DropdownMenu.Trigger>
 
-	<slot name="content">
+	{#if content}{@render content()}{:else}
 		<DropdownMenu.Content
 			class="w-full max-w-[130px] rounded-lg p-1 border border-gray-900 z-50 bg-gray-850 text-white"
 			sideOffset={8}
@@ -44,5 +56,5 @@
 				<div class="flex items-center">{$i18n.t('Profile')}</div>
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
-	</slot>
+	{/if}
 </DropdownMenu.Root>

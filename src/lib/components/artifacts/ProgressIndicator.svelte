@@ -1,21 +1,34 @@
 <script lang="ts">
-	/**
+	
+
+	interface Props {
+		/**
 	 * Progress Indicator Component
 	 * Shows recovery progress with animated indicators and stage information
 	 */
+		progress?: number; // 0-100
+		stage?: string;
+		animated?: boolean;
+		showPercentage?: boolean;
+		size?: 'small' | 'medium' | 'large';
+		variant?: 'linear' | 'circular';
+		color?: 'primary' | 'success' | 'warning' | 'danger';
+	}
 
-	export let progress: number = 0; // 0-100
-	export let stage: string = '';
-	export let animated: boolean = true;
-	export let showPercentage: boolean = true;
-	export let size: 'small' | 'medium' | 'large' = 'medium';
-	export let variant: 'linear' | 'circular' = 'linear';
-	export let color: 'primary' | 'success' | 'warning' | 'danger' = 'primary';
+	let {
+		progress = 0,
+		stage = '',
+		animated = true,
+		showPercentage = true,
+		size = 'medium',
+		variant = 'linear',
+		color = 'primary'
+	}: Props = $props();
 
 	// Reactive values
-	$: clampedProgress = Math.max(0, Math.min(100, progress));
-	$: isComplete = clampedProgress >= 100;
-	$: isIndeterminate = clampedProgress === 0 && animated;
+	let clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+	let isComplete = $derived(clampedProgress >= 100);
+	let isIndeterminate = $derived(clampedProgress === 0 && animated);
 
 	function getColorClass(): string {
 		switch (color) {
@@ -61,16 +74,13 @@
 		<!-- Circular progress indicator -->
 		<div class="progress-circular {getColorClass()}">
 			<svg class="circular-svg" viewBox="0 0 50 50">
-				<circle
-					class="circular-track"
+				<circle class="circular-track"
 					cx="25"
 					cy="25"
 					r="20"
 					fill="none"
-					stroke-width="4"
-				/>
-				<circle
-					class="circular-fill"
+					stroke-width="4"></circle>
+				<circle class="circular-fill"
 					class:animated
 					class:indeterminate={isIndeterminate}
 					cx="25"
@@ -79,8 +89,7 @@
 					fill="none"
 					stroke-width="4"
 					stroke-dasharray="125.6"
-					stroke-dashoffset="{125.6 - (clampedProgress / 100) * 125.6}"
-				/>
+					stroke-dashoffset="{125.6 - (clampedProgress / 100) * 125.6}"></circle>
 			</svg>
 
 			<div class="circular-content">

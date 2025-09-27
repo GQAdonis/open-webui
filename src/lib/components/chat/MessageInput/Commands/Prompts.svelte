@@ -1,24 +1,39 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import { tick, getContext, onMount, onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
 	const i18n = getContext('i18n');
 
-	export let query = '';
-	export let prompts = [];
-	export let onSelect = (e) => {};
 
-	let selectedPromptIdx = 0;
-	export let filteredItems = [];
-
-	$: filteredItems = prompts
-		.filter((p) => p.command.toLowerCase().includes(query.toLowerCase()))
-		.sort((a, b) => a.title.localeCompare(b.title));
-
-	$: if (query) {
-		selectedPromptIdx = 0;
+	let selectedPromptIdx = $state(0);
+	interface Props {
+		query?: string;
+		prompts?: any;
+		onSelect?: any;
+		filteredItems?: any;
 	}
+
+	let {
+		query = '',
+		prompts = [],
+		onSelect = (e) => {},
+		filteredItems = $bindable([])
+	}: Props = $props();
+
+	run(() => {
+		filteredItems = prompts
+			.filter((p) => p.command.toLowerCase().includes(query.toLowerCase()))
+			.sort((a, b) => a.title.localeCompare(b.title));
+	});
+
+	run(() => {
+		if (query) {
+			selectedPromptIdx = 0;
+		}
+	});
 
 	export const selectUp = () => {
 		selectedPromptIdx = Math.max(0, selectedPromptIdx - 1);
@@ -48,13 +63,13 @@
 						? '  bg-gray-50 dark:bg-gray-800 selected-command-option-button'
 						: ''} truncate"
 					type="button"
-					on:click={() => {
+					onclick={() => {
 						onSelect({ type: 'prompt', data: promptItem });
 					}}
-					on:mousemove={() => {
+					onmousemove={() => {
 						selectedPromptIdx = promptIdx;
 					}}
-					on:focus={() => {}}
+					onfocus={() => {}}
 					data-selected={promptIdx === selectedPromptIdx}
 				>
 					<span class=" font-medium text-black dark:text-gray-100">

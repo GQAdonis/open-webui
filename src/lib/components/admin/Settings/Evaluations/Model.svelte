@@ -5,16 +5,16 @@
 
 	import Cog6 from '$lib/components/icons/Cog6.svelte';
 	import ArenaModelModal from './ArenaModelModal.svelte';
-	export let model;
+	let { model } = $props();
 
-	let showModel = false;
+	let showModel = $state(false);
 </script>
 
 <ArenaModelModal
 	bind:show={showModel}
 	edit={true}
 	{model}
-	on:submit={async (e) => {
+	onsubmit={async (e) => {
 		dispatch('edit', e.detail);
 	}}
 	on:delete={async () => {
@@ -52,7 +52,7 @@
 			<button
 				class="self-center w-fit text-sm p-1.5 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					showModel = true;
 				}}
 			>

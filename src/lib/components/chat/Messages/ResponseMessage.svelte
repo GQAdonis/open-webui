@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import dayjs from 'dayjs';
 
@@ -53,64 +55,86 @@
 	import RegenerateMenu from './ResponseMessage/RegenerateMenu.svelte';
 	import StatusHistory from './ResponseMessage/StatusHistory.svelte';
 
-    export let chatId: string = '';
-    export let history: HistoryType;
-    export let messageId: string;
-    export let selectedModels: ModelSelection = [];
 
-	let message: MessageType = JSON.parse(JSON.stringify(history.messages[messageId]));
-	$: if (history.messages) {
-		if (JSON.stringify(message) !== JSON.stringify(history.messages[messageId])) {
-			message = JSON.parse(JSON.stringify(history.messages[messageId]));
-		}
+	let message: MessageType = $state(JSON.parse(JSON.stringify(history.messages[messageId])));
+
+
+
+
+
+
+	interface Props {
+		chatId?: string;
+		history: HistoryType;
+		messageId: string;
+		selectedModels?: ModelSelection;
+		siblings: string[];
+		setInputText?: Function;
+		gotoMessage?: Function;
+		showPreviousMessage?: Function;
+		showNextMessage?: Function;
+		updateChat?: Function;
+		editMessage?: Function;
+		saveMessage?: Function;
+		rateMessage?: Function;
+		actionMessage?: Function;
+		deleteMessage?: Function;
+		submitMessage?: Function;
+		continueResponse?: Function;
+		regenerateResponse?: Function;
+		addMessages?: Function;
+		isLastMessage?: boolean;
+		readOnly?: boolean;
+		editCodeBlock?: boolean;
+		topPadding?: boolean;
 	}
 
-    export let siblings: string[];
+	let {
+		chatId = '',
+		history = $bindable(),
+		messageId,
+		selectedModels = [],
+		siblings,
+		setInputText = () => {},
+		gotoMessage = () => {},
+		showPreviousMessage = () => {},
+		showNextMessage = () => {},
+		updateChat = () => Promise.resolve(),
+		editMessage = () => {},
+		saveMessage = () => {},
+		rateMessage = () => {},
+		actionMessage = () => {},
+		deleteMessage = () => {},
+		submitMessage = () => {},
+		continueResponse = () => {},
+		regenerateResponse = () => {},
+		addMessages = () => {},
+		isLastMessage = true,
+		readOnly = false,
+		editCodeBlock = true,
+		topPadding = false
+	}: Props = $props();
 
-	export let setInputText: Function = () => {};
-	export let gotoMessage: Function = () => {};
-	export let showPreviousMessage: Function = () => {};
-	export let showNextMessage: Function = () => {};
+	let citationsElement: HTMLDivElement = $state();
+	let buttonsContainerElement: HTMLDivElement = $state();
+	let showDeleteConfirm = $state(false);
 
-	export let updateChat: Function = () => Promise.resolve();
-	export let editMessage: Function = () => {};
-	export let saveMessage: Function = () => {};
-	export let rateMessage: Function = () => {};
-	export let actionMessage: Function = () => {};
-	export let deleteMessage: Function = () => {};
+	let model = $state(null);
 
-	export let submitMessage: Function = () => {};
-	export let continueResponse: Function = () => {};
-	export let regenerateResponse: Function = () => {};
+	let edit = $state(false);
+	let editedContent = $state('');
+	let editTextAreaElement: HTMLTextAreaElement = $state();
 
-	export let addMessages: Function = () => {};
-
-    export let isLastMessage: boolean = true;
-    export let readOnly: boolean = false;
-    export let editCodeBlock: boolean = true;
-    export let topPadding: boolean = false;
-
-	let citationsElement: HTMLDivElement;
-	let buttonsContainerElement: HTMLDivElement;
-	let showDeleteConfirm = false;
-
-	let model = null;
-	$: model = $models.find((m) => m.id === message.model);
-
-	let edit = false;
-	let editedContent = '';
-	let editTextAreaElement: HTMLTextAreaElement;
-
-	let messageIndexEdit = false;
+	let messageIndexEdit = $state(false);
 
 	let audioParts: Record<number, HTMLAudioElement | null> = {};
-	let speaking = false;
+	let speaking = $state(false);
 	let speakingIdx: number | undefined;
 
-	let loadingSpeech = false;
-	let generatingImage = false;
+	let loadingSpeech = $state(false);
+	let generatingImage = $state(false);
 
-	let showRateComment = false;
+	let showRateComment = $state(false);
 
 	const copyToClipboard = async (text) => {
 		text = removeAllDetails(text);
@@ -310,7 +334,7 @@
 
 		content = content.replace(/<details[\s\S]*?<\/details>/gi, (match) => {
 			detailsBlocks.push(match);
-			return `<details id="__DETAIL_${i++}__"/>`;
+			return `<details id="__DETAIL_${i++}__"></details>`;
 		});
 
 		// Store original blocks in the editedContent or globally (see merging later)
@@ -321,7 +345,7 @@
 
 	function postprocessAfterEditing(content: string): string {
 		const restoredContent = content.replace(
-			/<details id="__DETAIL_(\d+)__"\/>/g,
+			/<details id="__DETAIL_(\d+)__"><\/details>/g,
 			(_, index) => preprocessedDetailsCache[parseInt(index)] || ''
 		);
 
@@ -388,7 +412,7 @@
 		generatingImage = false;
 	};
 
-	let feedbackLoading = false;
+	let feedbackLoading = $state(false);
 
 	const feedbackHandler = async (rating: number | null = null, details: object | null = null) => {
 		feedbackLoading = true;
@@ -512,11 +536,6 @@
 		deleteMessage(message.id);
 	};
 
-	$: if (!edit) {
-		(async () => {
-			await tick();
-		})();
-	}
 
 	onMount(async () => {
 		// console.log('ResponseMessage mounted');
@@ -538,6 +557,23 @@
 					}
 				}
 			});
+		}
+	});
+	run(() => {
+		if (history.messages) {
+			if (JSON.stringify(message) !== JSON.stringify(history.messages[messageId])) {
+				message = JSON.parse(JSON.stringify(history.messages[messageId]));
+			}
+		}
+	});
+	run(() => {
+		model = $models.find((m) => m.id === message.model);
+	});
+	run(() => {
+		if (!edit) {
+			(async () => {
+				await tick();
+			})();
 		}
 	});
 </script>
@@ -631,11 +667,11 @@
 									bind:this={editTextAreaElement}
 									class=" bg-transparent outline-hidden w-full resize-none"
 									bind:value={editedContent}
-									on:input={(e) => {
+									oninput={(e) => {
 										e.target.style.height = '';
 										e.target.style.height = `${e.target.scrollHeight}px`;
 									}}
-									on:keydown={(e) => {
+									onkeydown={(e) => {
 										if (e.key === 'Escape') {
 											document.getElementById('close-edit-message-button')?.click();
 										}
@@ -647,14 +683,14 @@
 											document.getElementById('confirm-edit-message-button')?.click();
 										}
 									}}
-								/>
+								></textarea>
 
 								<div class=" mt-2 mb-1 flex justify-between text-sm font-medium">
 									<div>
 										<button
 											id="save-new-message-button"
 											class="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-200 transition rounded-3xl"
-											on:click={() => {
+											onclick={() => {
 												saveAsCopyHandler();
 											}}
 										>
@@ -666,7 +702,7 @@
 										<button
 											id="close-edit-message-button"
 											class="px-3.5 py-1.5 bg-white dark:bg-gray-900 hover:bg-gray-100 text-gray-800 dark:text-gray-100 transition rounded-3xl"
-											on:click={() => {
+											onclick={() => {
 												cancelEditMessage();
 											}}
 										>
@@ -676,7 +712,7 @@
 										<button
 											id="confirm-edit-message-button"
 											class="px-3.5 py-1.5 bg-gray-900 dark:bg-white hover:bg-gray-850 text-gray-100 dark:text-gray-800 transition rounded-3xl"
-											on:click={() => {
+											onclick={() => {
 												editMessageConfirmHandler();
 											}}
 										>
@@ -764,7 +800,7 @@
 									<button
 										aria-label={$i18n.t('Previous message')}
 										class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
-										on:click={() => {
+										onclick={() => {
 											showPreviousMessage(message);
 										}}
 									>
@@ -777,11 +813,9 @@
 											stroke-width="2.5"
 											class="size-3.5"
 										>
-											<path
-												stroke-linecap="round"
+											<path stroke-linecap="round"
 												stroke-linejoin="round"
-												d="M15.75 19.5 8.25 12l7.5-7.5"
-											/>
+												d="M15.75 19.5 8.25 12l7.5-7.5"></path>
 										</svg>
 									</button>
 
@@ -795,14 +829,14 @@
 												value={siblings.indexOf(message.id) + 1}
 												min="1"
 												max={siblings.length}
-												on:focus={(e) => {
+												onfocus={(e) => {
 													e.target.select();
 												}}
-												on:blur={(e) => {
+												onblur={(e) => {
 													gotoMessage(message, e.target.value - 1);
 													messageIndexEdit = false;
 												}}
-												on:keydown={(e) => {
+												onkeydown={(e) => {
 													if (e.key === 'Enter') {
 														gotoMessage(message, e.target.value - 1);
 														messageIndexEdit = false;
@@ -812,10 +846,10 @@
 											/>/{siblings.length}
 										</div>
 									{:else}
-										<!-- svelte-ignore a11y-no-static-element-interactions -->
+										<!-- svelte-ignore a11y_no_static_element_interactions -->
 										<div
 											class="text-sm tracking-widest font-semibold self-center dark:text-gray-100 min-w-fit"
-											on:dblclick={async () => {
+											ondblclick={async () => {
 												messageIndexEdit = true;
 
 												await tick();
@@ -832,7 +866,7 @@
 
 									<button
 										class="self-center p-1 hover:bg-black/5 dark:hover:bg-white/5 dark:hover:text-white hover:text-black rounded-md transition"
-										on:click={() => {
+										onclick={() => {
 											showNextMessage(message);
 										}}
 										aria-label={$i18n.t('Next message')}
@@ -846,11 +880,9 @@
 											stroke-width="2.5"
 											class="size-3.5"
 										>
-											<path
-												stroke-linecap="round"
+											<path stroke-linecap="round"
 												stroke-linejoin="round"
-												d="m8.25 4.5 7.5 7.5-7.5 7.5"
-											/>
+												d="m8.25 4.5 7.5 7.5-7.5 7.5"></path>
 										</svg>
 									</button>
 								</div>
@@ -865,7 +897,7 @@
 												class="{isLastMessage || ($settings?.highContrastMode ?? false)
 													? 'visible'
 													: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-												on:click={() => {
+												onclick={() => {
 													editMessageHandler();
 												}}
 											>
@@ -878,11 +910,9 @@
 													stroke="currentColor"
 													class="w-4 h-4"
 												>
-													<path
-														stroke-linecap="round"
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
-													/>
+														d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path>
 												</svg>
 											</button>
 										</Tooltip>
@@ -895,7 +925,7 @@
 										class="{isLastMessage || ($settings?.highContrastMode ?? false)
 											? 'visible'
 											: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition copy-response-button"
-										on:click={() => {
+										onclick={() => {
 											copyToClipboard(message.content);
 										}}
 									>
@@ -908,11 +938,9 @@
 											stroke="currentColor"
 											class="w-4 h-4"
 										>
-											<path
-												stroke-linecap="round"
+											<path stroke-linecap="round"
 												stroke-linejoin="round"
-												d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
-											/>
+												d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"></path>
 										</svg>
 									</button>
 								</Tooltip>
@@ -921,8 +949,7 @@
 								{#await import("$lib/utils/artifacts/integration") then { hasArtifactInMessage }}
 									{#if hasArtifactInMessage(message.content)}
 										{#await import("$lib/components/artifacts/EnhancedPreviewButton.svelte") then { default: EnhancedPreviewButton }}
-											<svelte:component
-												this={EnhancedPreviewButton}
+											<EnhancedPreviewButton
 												messageContent={message.content}
 												messageId={message.id}
 												style="minimal"
@@ -943,7 +970,7 @@
 											class="{isLastMessage || ($settings?.highContrastMode ?? false)
 												? 'visible'
 												: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-											on:click={() => {
+											onclick={() => {
 												if (!loadingSpeech) {
 													toggleSpeakMessage();
 												}
@@ -978,9 +1005,9 @@
 															}
 														}
 													</style>
-													<circle class="spinner_S1WN" cx="4" cy="12" r="3" />
-													<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3" />
-													<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3" />
+													<circle class="spinner_S1WN" cx="4" cy="12" r="3"></circle>
+													<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3"></circle>
+													<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3"></circle>
 												</svg>
 											{:else if speaking}
 												<svg
@@ -992,11 +1019,9 @@
 													stroke="currentColor"
 													class="w-4 h-4"
 												>
-													<path
-														stroke-linecap="round"
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z"
-													/>
+														d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z"></path>
 												</svg>
 											{:else}
 												<svg
@@ -1008,11 +1033,9 @@
 													stroke="currentColor"
 													class="w-4 h-4"
 												>
-													<path
-														stroke-linecap="round"
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"
-													/>
+														d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"></path>
 												</svg>
 											{/if}
 										</button>
@@ -1026,7 +1049,7 @@
 											class="{isLastMessage || ($settings?.highContrastMode ?? false)
 												? 'visible'
 												: 'invisible group-hover:visible'}  p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-											on:click={() => {
+											onclick={() => {
 												if (!generatingImage) {
 													generateImage(message);
 												}
@@ -1061,9 +1084,9 @@
 															}
 														}
 													</style>
-													<circle class="spinner_S1WN" cx="4" cy="12" r="3" />
-													<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3" />
-													<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3" />
+													<circle class="spinner_S1WN" cx="4" cy="12" r="3"></circle>
+													<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3"></circle>
+													<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3"></circle>
 												</svg>
 											{:else}
 												<svg
@@ -1075,11 +1098,9 @@
 													stroke="currentColor"
 													class="w-4 h-4"
 												>
-													<path
-														stroke-linecap="round"
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-													/>
+														d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"></path>
 												</svg>
 											{/if}
 										</button>
@@ -1106,7 +1127,7 @@
 											class=" {isLastMessage || ($settings?.highContrastMode ?? false)
 												? 'visible'
 												: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition whitespace-pre-wrap"
-											on:click={() => {
+											onclick={() => {
 												console.log(message);
 											}}
 											id="info-{message.id}"
@@ -1120,11 +1141,9 @@
 												stroke="currentColor"
 												class="w-4 h-4"
 											>
-												<path
-													stroke-linecap="round"
+												<path stroke-linecap="round"
 													stroke-linejoin="round"
-													d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-												/>
+													d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"></path>
 											</svg>
 										</button>
 									</Tooltip>
@@ -1143,7 +1162,7 @@
 													? 'bg-gray-100 dark:bg-gray-800'
 													: ''} dark:hover:text-white hover:text-black transition disabled:cursor-progress disabled:hover:bg-transparent"
 												disabled={feedbackLoading}
-												on:click={async () => {
+												onclick={async () => {
 													await feedbackHandler(1);
 													window.setTimeout(() => {
 														document
@@ -1163,9 +1182,7 @@
 													class="w-4 h-4"
 													xmlns="http://www.w3.org/2000/svg"
 												>
-													<path
-														d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-													/>
+													<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
 												</svg>
 											</button>
 										</Tooltip>
@@ -1181,7 +1198,7 @@
 													? 'bg-gray-100 dark:bg-gray-800'
 													: ''} dark:hover:text-white hover:text-black transition disabled:cursor-progress disabled:hover:bg-transparent"
 												disabled={feedbackLoading}
-												on:click={async () => {
+												onclick={async () => {
 													await feedbackHandler(-1);
 													window.setTimeout(() => {
 														document
@@ -1201,9 +1218,7 @@
 													class="w-4 h-4"
 													xmlns="http://www.w3.org/2000/svg"
 												>
-													<path
-														d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"
-													/>
+													<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
 												</svg>
 											</button>
 										</Tooltip>
@@ -1218,7 +1233,7 @@
 												class="{isLastMessage || ($settings?.highContrastMode ?? false)
 													? 'visible'
 													: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-												on:click={() => {
+												onclick={() => {
 													continueResponse();
 												}}
 											>
@@ -1231,16 +1246,12 @@
 													stroke="currentColor"
 													class="w-4 h-4"
 												>
-													<path
-														stroke-linecap="round"
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-													/>
-													<path
-														stroke-linecap="round"
+														d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+													<path stroke-linecap="round"
 														stroke-linejoin="round"
-														d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z"
-													/>
+														d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z"></path>
 												</svg>
 											</button>
 										</Tooltip>
@@ -1251,7 +1262,7 @@
 											<button
 												type="button"
 												class="hidden regenerate-response-button"
-												on:click={() => {
+												onclick={() => {
 													showRateComment = false;
 													regenerateResponse(message);
 
@@ -1267,7 +1278,7 @@
 														});
 													});
 												}}
-											/>
+											></button>
 
 											<RegenerateMenu
 												onRegenerate={(prompt = null) => {
@@ -1303,11 +1314,9 @@
 															stroke="currentColor"
 															class="w-4 h-4"
 														>
-															<path
-																stroke-linecap="round"
+															<path stroke-linecap="round"
 																stroke-linejoin="round"
-																d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-															/>
+																d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
 														</svg>
 													</div>
 												</Tooltip>
@@ -1320,7 +1329,7 @@
 													class="{isLastMessage
 														? 'visible'
 														: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition regenerate-response-button"
-													on:click={() => {
+													onclick={() => {
 														showRateComment = false;
 														regenerateResponse(message);
 
@@ -1346,11 +1355,9 @@
 														stroke="currentColor"
 														class="w-4 h-4"
 													>
-														<path
-															stroke-linecap="round"
+														<path stroke-linecap="round"
 															stroke-linejoin="round"
-															d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-														/>
+															d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path>
 													</svg>
 												</button>
 											</Tooltip>
@@ -1367,7 +1374,7 @@
 													class="{isLastMessage || ($settings?.highContrastMode ?? false)
 														? 'visible'
 														: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-													on:click={() => {
+													onclick={() => {
 														showDeleteConfirm = true;
 													}}
 												>
@@ -1380,11 +1387,9 @@
 														aria-hidden="true"
 														class="w-4 h-4"
 													>
-														<path
-															stroke-linecap="round"
+														<path stroke-linecap="round"
 															stroke-linejoin="round"
-															d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-														/>
+															d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"></path>
 													</svg>
 												</button>
 											</Tooltip>
@@ -1400,7 +1405,7 @@
 													class="{isLastMessage || ($settings?.highContrastMode ?? false)
 														? 'visible'
 														: 'invisible group-hover:visible'} p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-													on:click={() => {
+													onclick={() => {
 														actionMessage(action.id, message);
 													}}
 												>

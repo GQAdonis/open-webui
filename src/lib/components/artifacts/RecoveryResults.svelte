@@ -6,10 +6,19 @@
 
 	import type { RecoveryResult } from '../../services/artifact-dependency-resolver/strategy-executor';
 
-	export let result: RecoveryResult;
-	export let showDiagnostics: boolean = false;
-	export let showPerformanceMetrics: boolean = true;
-	export let compact: boolean = false;
+	interface Props {
+		result: RecoveryResult;
+		showDiagnostics?: boolean;
+		showPerformanceMetrics?: boolean;
+		compact?: boolean;
+	}
+
+	let {
+		result,
+		showDiagnostics = false,
+		showPerformanceMetrics = true,
+		compact = false
+	}: Props = $props();
 
 	function formatDuration(ms: number): string {
 		if (ms < 1000) return `${ms}ms`;
@@ -50,10 +59,10 @@
 		return 'Very Low';
 	}
 
-	$: totalStages = result.stages.length;
-	$: completedStages = result.stages.filter(s => s.status === 'completed').length;
-	$: failedStages = result.stages.filter(s => s.status === 'failed').length;
-	$: successRate = totalStages > 0 ? (completedStages / totalStages) * 100 : 0;
+	let totalStages = $derived(result.stages.length);
+	let completedStages = $derived(result.stages.filter(s => s.status === 'completed').length);
+	let failedStages = $derived(result.stages.filter(s => s.status === 'failed').length);
+	let successRate = $derived(totalStages > 0 ? (completedStages / totalStages) * 100 : 0);
 </script>
 
 <div class="recovery-results" data-testid="recovery-results">

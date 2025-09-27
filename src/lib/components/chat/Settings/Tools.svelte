@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';
 	import { getModels as _getModels, getToolServersData } from '$lib/apis';
@@ -16,10 +18,14 @@
 
 	import AddToolServerModal from '$lib/components/AddToolServerModal.svelte';
 
-	export let saveSettings: Function;
+	interface Props {
+		saveSettings: Function;
+	}
 
-	let servers = null;
-	let showConnectionModal = false;
+	let { saveSettings }: Props = $props();
+
+	let servers = $state(null);
+	let showConnectionModal = $state(false);
 
 	const addConnectionHandler = async (server) => {
 		servers = [...servers, server];
@@ -57,9 +63,9 @@
 <form
 	id="tab-tools"
 	class="flex flex-col h-full justify-between text-sm"
-	on:submit|preventDefault={() => {
+	onsubmit={preventDefault(() => {
 		updateHandler();
-	}}
+	})}
 >
 	<div class=" overflow-y-scroll scrollbar-hidden h-full">
 		{#if servers !== null}
@@ -76,7 +82,7 @@
 								<button
 									aria-label={$i18n.t(`Add Connection`)}
 									class="px-1"
-									on:click={() => {
+									onclick={() => {
 										showConnectionModal = true;
 									}}
 									type="button"
@@ -89,7 +95,7 @@
 						<div class="flex flex-col gap-1.5">
 							{#each servers as server, idx}
 								<Connection
-									bind:connection={server}
+									bind:connection={servers[idx]}
 									direct
 									onSubmit={() => {
 										updateHandler();

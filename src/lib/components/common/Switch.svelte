@@ -1,17 +1,30 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { createEventDispatcher, tick, getContext } from 'svelte';
 	import { Switch } from 'bits-ui';
 	import { settings } from '$lib/stores';
 	import Tooltip from './Tooltip.svelte';
-	export let state = true;
-	export let id = '';
-	export let ariaLabelledbyId = '';
-	export let tooltip = false;
+	interface Props {
+		state?: boolean;
+		id?: string;
+		ariaLabelledbyId?: string;
+		tooltip?: boolean;
+	}
+
+	let {
+		state = $bindable(true),
+		id = '',
+		ariaLabelledbyId = '',
+		tooltip = false
+	}: Props = $props();
 
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
 
-	$: dispatch('change', state);
+	run(() => {
+		dispatch('change', state);
+	});
 </script>
 
 <Tooltip

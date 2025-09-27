@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { getContext, onMount, tick } from 'svelte';
 	import { formatFileSize, getLineCount } from '$lib/utils';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
@@ -15,29 +17,35 @@
 	import Spinner from './Spinner.svelte';
 	import { getFileById } from '$lib/apis/files';
 
-	export let item;
-	export let show = false;
-	export let edit = false;
+	interface Props {
+		item: any;
+		show?: boolean;
+		edit?: boolean;
+	}
 
-	let enableFullContent = false;
+	let { item = $bindable(), show = $bindable(false), edit = false }: Props = $props();
+
+	let enableFullContent = $state(false);
 
 	let isPdf = false;
-	let isAudio = false;
-	let loading = false;
+	let isAudio = $state(false);
+	let loading = $state(false);
 
-	let selectedTab = '';
+	let selectedTab = $state('');
 
-	$: isPDF =
-		item?.meta?.content_type === 'application/pdf' ||
-		(item?.name && item?.name.toLowerCase().endsWith('.pdf'));
+	let isPDF =
+		$derived(item?.meta?.content_type === 'application/pdf' ||
+		(item?.name && item?.name.toLowerCase().endsWith('.pdf')));
 
-	$: isAudio =
-		(item?.meta?.content_type ?? '').startsWith('audio/') ||
-		(item?.name && item?.name.toLowerCase().endsWith('.mp3')) ||
-		(item?.name && item?.name.toLowerCase().endsWith('.wav')) ||
-		(item?.name && item?.name.toLowerCase().endsWith('.ogg')) ||
-		(item?.name && item?.name.toLowerCase().endsWith('.m4a')) ||
-		(item?.name && item?.name.toLowerCase().endsWith('.webm'));
+	run(() => {
+		isAudio =
+			(item?.meta?.content_type ?? '').startsWith('audio/') ||
+			(item?.name && item?.name.toLowerCase().endsWith('.mp3')) ||
+			(item?.name && item?.name.toLowerCase().endsWith('.wav')) ||
+			(item?.name && item?.name.toLowerCase().endsWith('.ogg')) ||
+			(item?.name && item?.name.toLowerCase().endsWith('.m4a')) ||
+			(item?.name && item?.name.toLowerCase().endsWith('.webm'));
+	});
 
 	const loadContent = async () => {
 		if (item?.type === 'collection') {
@@ -69,9 +77,11 @@
 		await tick();
 	};
 
-	$: if (show) {
-		loadContent();
-	}
+	run(() => {
+		if (show) {
+			loadContent();
+		}
+	});
 
 	onMount(() => {
 		console.log(item);
@@ -90,14 +100,14 @@
 						<a
 							href="#"
 							class="hover:underline line-clamp-1"
-							on:click|preventDefault={() => {
+							onclick={preventDefault(() => {
 								if (!isPDF && item.url) {
 									window.open(
 										item.type === 'file' ? `${item.url}/content` : `${item.url}`,
 										'_blank'
 									);
 								}
-							}}
+							})}
 						>
 							{item?.name ?? 'File'}
 						</a>
@@ -106,7 +116,7 @@
 
 				<div>
 					<button
-						on:click={() => {
+						onclick={() => {
 							show = false;
 						}}
 					>
@@ -179,7 +189,7 @@
 									{/if}
 									<Switch
 										bind:state={enableFullContent}
-										on:change={(e) => {
+										onchange={(e) => {
 											item.context = e.detail ? 'full' : undefined;
 										}}
 									/>
@@ -212,7 +222,7 @@
 								? ' '
 								: ' border-transparent text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								selectedTab = '';
 							}}>{$i18n.t('Content')}</button
 						>
@@ -222,7 +232,7 @@
 								? ' '
 								: ' border-transparent text-gray-300 dark:text-gray-600 hover:text-gray-700 dark:hover:text-white'} transition"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								selectedTab = 'preview';
 							}}>{$i18n.t('Preview')}</button
 						>
@@ -233,7 +243,7 @@
 							title={item?.name}
 							src={`${WEBUI_API_BASE_URL}/files/${item.id}/content`}
 							class="w-full h-[70vh] border-0 rounded-lg"
-						/>
+						></iframe>
 					{:else}
 						<div class="max-h-96 overflow-scroll scrollbar-hidden text-xs whitespace-pre-wrap">
 							{(item?.file?.data?.content ?? '').trim() || 'No content'}
@@ -246,7 +256,7 @@
 							class="w-full border-0 rounded-lg mb-2"
 							controls
 							playsinline
-						/>
+						></audio>
 					{/if}
 
 					{#if item?.file?.data}

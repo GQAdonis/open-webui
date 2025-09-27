@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 
 	import { createEventDispatcher, onMount, getContext } from 'svelte';
@@ -22,12 +24,12 @@
 
 	const i18n = getContext('i18n');
 
-	let loading = false;
+	let loading = $state(false);
 
-	let config = null;
-	let imageGenerationConfig = null;
+	let config = $state(null);
+	let imageGenerationConfig = $state(null);
 
-	let models = null;
+	let models = $state(null);
 
 	let samplers = [
 		'DPM++ 2M',
@@ -66,7 +68,7 @@
 		'Beta'
 	];
 
-	let requiredWorkflowNodes = [
+	let requiredWorkflowNodes = $state([
 		{
 			type: 'prompt',
 			key: 'text',
@@ -97,7 +99,7 @@
 			key: 'seed',
 			node_ids: ''
 		}
-	];
+	]);
 
 	const getModels = async () => {
 		models = await getImageGenerationModels(localStorage.token).catch((error) => {
@@ -230,9 +232,9 @@
 
 <form
 	class="flex flex-col h-full justify-between space-y-3 text-sm"
-	on:submit|preventDefault={async () => {
+	onsubmit={preventDefault(async () => {
 		saveHandler();
-	}}
+	})}
 >
 	<div class=" space-y-3 overflow-y-scroll scrollbar-hidden pr-2">
 		{#if config && imageGenerationConfig}
@@ -248,7 +250,7 @@
 						<div class="px-1">
 							<Switch
 								bind:state={config.enabled}
-								on:change={(e) => {
+								onchange={(e) => {
 									const enabled = e.detail;
 
 									if (enabled) {
@@ -296,7 +298,7 @@
 							class=" dark:bg-gray-900 w-fit pr-8 cursor-pointer rounded-sm px-2 p-1 text-xs bg-transparent outline-hidden text-right"
 							bind:value={config.engine}
 							placeholder={$i18n.t('Select Engine')}
-							on:change={async () => {
+							onchange={async () => {
 								updateConfigHandler();
 							}}
 						>
@@ -325,7 +327,7 @@
 							<button
 								class="px-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-100 rounded-lg transition"
 								type="button"
-								on:click={async () => {
+								onclick={async () => {
 									await updateConfigHandler();
 									const res = await verifyConfigUrl(localStorage.token).catch((error) => {
 										toast.error(`${error}`);
@@ -343,11 +345,9 @@
 									fill="currentColor"
 									class="w-4 h-4"
 								>
-									<path
-										fill-rule="evenodd"
+									<path fill-rule="evenodd"
 										d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
-										clip-rule="evenodd"
-									/>
+										clip-rule="evenodd"></path>
 								</svg>
 							</button>
 						</div>
@@ -461,7 +461,7 @@
 							<button
 								class="px-2.5 bg-gray-50 hover:bg-gray-100 text-gray-800 dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-gray-100 rounded-lg transition"
 								type="button"
-								on:click={async () => {
+								onclick={async () => {
 									await updateConfigHandler();
 									const res = await verifyConfigUrl(localStorage.token).catch((error) => {
 										toast.error(`${error}`);
@@ -479,11 +479,9 @@
 									fill="currentColor"
 									class="w-4 h-4"
 								>
-									<path
-										fill-rule="evenodd"
+									<path fill-rule="evenodd"
 										d="M15.312 11.424a5.5 5.5 0 01-9.201 2.466l-.312-.311h2.433a.75.75 0 000-1.5H3.989a.75.75 0 00-.75.75v4.242a.75.75 0 001.5 0v-2.43l.31.31a7 7 0 0011.712-3.138.75.75 0 00-1.449-.39zm1.23-3.723a.75.75 0 00.219-.53V2.929a.75.75 0 00-1.5 0V5.36l-.31-.31A7 7 0 003.239 8.188a.75.75 0 101.448.389A5.5 5.5 0 0113.89 6.11l.311.31h-2.432a.75.75 0 000 1.5h4.243a.75.75 0 00.53-.219z"
-										clip-rule="evenodd"
-									/>
+										clip-rule="evenodd"></path>
 								</svg>
 							</button>
 						</div>
@@ -521,7 +519,7 @@
 									hidden
 									type="file"
 									accept=".json"
-									on:change={(e) => {
+									onchange={(e) => {
 										const file = e.target.files[0];
 										const reader = new FileReader();
 
@@ -537,7 +535,7 @@
 								<button
 									class="w-full text-sm font-medium py-2 bg-transparent hover:bg-gray-50 border border-dashed border-gray-50 dark:border-gray-850 dark:hover:bg-gray-850 text-center rounded-xl"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										document.getElementById('upload-comfyui-workflow-input')?.click();
 									}}
 								>

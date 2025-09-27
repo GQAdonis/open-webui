@@ -3,12 +3,10 @@
 
 	const i18n = getContext('i18n');
 
-	export let message;
-	export let idx;
 
-	export let onDelete;
+	let { message = $bindable(), idx, onDelete } = $props();
 
-	let textAreaElement: HTMLTextAreaElement;
+	let textAreaElement: HTMLTextAreaElement = $state();
 
 	onMount(() => {
 		textAreaElement.style.height = '';
@@ -36,24 +34,24 @@
 				role: message.role === 'user' ? $i18n.t('a user') : $i18n.t('an assistant')
 			})}
 			rows="1"
-			on:input={(e) => {
+			oninput={(e) => {
 				textAreaElement.style.height = '';
 				textAreaElement.style.height = textAreaElement.scrollHeight + 'px';
 			}}
-			on:focus={(e) => {
+			onfocus={(e) => {
 				textAreaElement.style.height = '';
 				textAreaElement.style.height = textAreaElement.scrollHeight + 'px';
 
 				// e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
 			}}
 			bind:value={message.content}
-		/>
+		></textarea>
 	</div>
 
 	<div class=" pt-1">
 		<button
 			class=" group-hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300 transition"
-			on:click={() => {
+			onclick={() => {
 				onDelete();
 			}}
 		>
@@ -65,11 +63,9 @@
 				stroke="currentColor"
 				class="w-5 h-5"
 			>
-				<path
-					stroke-linecap="round"
+				<path stroke-linecap="round"
 					stroke-linejoin="round"
-					d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-				/>
+					d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
 			</svg>
 		</button>
 	</div>

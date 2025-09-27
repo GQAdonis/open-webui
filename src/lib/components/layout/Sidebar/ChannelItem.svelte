@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: `<button>` cannot be a child of `<button>`. The browser will 'repair' the HTML (by moving, removing, or inserting elements) which breaks Svelte's assumptions about the structure of your components.
+https://svelte.dev/e/node_invalid_placement -->
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import { onMount, getContext, tick, onDestroy } from 'svelte';
@@ -54,7 +56,7 @@
 	<a
 		class=" w-full flex justify-between"
 		href="/channels/{channel.id}"
-		on:click={() => {
+		onclick={() => {
 			console.log(channel);
 			if ($mobile) {
 				showSidebar.set(false);
@@ -79,15 +81,13 @@
 
 	{#if $user?.role === 'admin'}
 		<button
-			class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
-			on:click={(e) => {
+			class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300 p-0.5 dark:hover:bg-gray-850 rounded-lg touch-auto"
+			onclick={(e) => {
 				e.stopPropagation();
 				showEditChannelModal = true;
 			}}
 		>
-			<button class="p-0.5 dark:hover:bg-gray-850 rounded-lg touch-auto" on:click={(e) => {}}>
-				<Cog6 className="size-3.5" />
-			</button>
+			<Cog6 className="size-3.5" />
 		</button>
 	{/if}
 </div>

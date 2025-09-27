@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 import { onMount, createEventDispatcher } from 'svelte';
 import type { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
@@ -11,21 +13,25 @@ import { python } from '@codemirror/lang-python';
 import { xml } from '@codemirror/lang-xml';
 import { oneDark } from '@codemirror/theme-one-dark';
 
-export let content: string;
-export let language: string = 'typescript';  // Default to TypeScript
-export let readonly: boolean = false;
-export let height: string = '400px';
+	interface Props {
+		content: string;
+		language?: string; // Default to TypeScript
+		readonly?: boolean;
+		height?: string;
+	}
+
+	let {
+		content,
+		language = 'typescript',
+		readonly = false,
+		height = '400px'
+	}: Props = $props();
 
 const dispatch = createEventDispatcher();
 
-let editorContainer: HTMLDivElement;
-let editorView: EditorView | null = null;
+let editorContainer: HTMLDivElement = $state();
+let editorView: EditorView | null = $state(null);
 
-$: {
-if (editorView && editorContainer) {
-updateEditor();
-}
-}
 
 function getLanguageExtension() {
 switch (language.toLowerCase()) {
@@ -128,6 +134,11 @@ updateEditor();
 }
 });
 }
+run(() => {
+if (editorView && editorContainer) {
+updateEditor();
+}
+});
 </script>
 
 <div 

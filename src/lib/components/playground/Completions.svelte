@@ -14,14 +14,14 @@
 	const i18n = getContext('i18n');
 
 	let loaded = false;
-	let text = '';
+	let text = $state('');
 
-	let selectedModelId = '';
+	let selectedModelId = $state('');
 
-	let loading = false;
+	let loading = $state(false);
 	let stopResponseFlag = false;
 
-	let textCompletionAreaElement: HTMLTextAreaElement;
+	let textCompletionAreaElement: HTMLTextAreaElement = $state();
 
 	const scrollToBottom = () => {
 		const element = textCompletionAreaElement;
@@ -154,7 +154,7 @@
 							class="w-full h-full p-3 bg-transparent border border-gray-100 dark:border-gray-850 outline-hidden resize-none rounded-lg text-sm"
 							bind:value={text}
 							placeholder={$i18n.t("You're a helpful assistant.")}
-						/>
+						></textarea>
 					</div>
 				</div>
 			</div>
@@ -163,7 +163,7 @@
 				{#if !loading}
 					<button
 						class="px-3.5 py-1.5 text-sm font-medium bg-black hover:bg-gray-900 text-white dark:bg-white dark:text-black dark:hover:bg-gray-100 transition rounded-full"
-						on:click={() => {
+						onclick={() => {
 							submitHandler();
 						}}
 					>
@@ -172,7 +172,7 @@
 				{:else}
 					<button
 						class="px-3 py-1.5 text-sm font-medium bg-gray-300 text-black transition rounded-full"
-						on:click={() => {
+						onclick={() => {
 							stopResponse();
 						}}
 					>

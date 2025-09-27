@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { goto } from '$app/navigation';
 
 	import { socket, user } from '$lib/stores';
@@ -14,22 +16,23 @@
 
 	const i18n = getContext('i18n');
 
-	export let threadId = null;
-	export let channel = null;
 
-	export let onClose = () => {};
+	interface Props {
+		threadId?: any;
+		channel?: any;
+		onClose?: any;
+	}
 
-	let messages = null;
-	let top = false;
+	let { threadId = null, channel = null, onClose = () => {} }: Props = $props();
 
-	let typingUsers = [];
+	let messages = $state(null);
+	let top = $state(false);
+
+	let typingUsers = $state([]);
 	let typingUsersTimeout = {};
 
-	let messagesContainerElement = null;
+	let messagesContainerElement = $state(null);
 
-	$: if (threadId) {
-		initHandler();
-	}
 
 	const scrollToBottom = () => {
 		messagesContainerElement.scrollTop = messagesContainerElement.scrollHeight;
@@ -156,6 +159,11 @@
 	onDestroy(() => {
 		$socket?.off('channel-events', channelEventHandler);
 	});
+	run(() => {
+		if (threadId) {
+			initHandler();
+		}
+	});
 </script>
 
 {#if channel}
@@ -166,7 +174,7 @@
 			<div>
 				<button
 					class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-2"
-					on:click={() => {
+					onclick={() => {
 						onClose();
 					}}
 				>

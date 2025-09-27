@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { marked } from 'marked';
 
 	import { toast } from 'svelte-sonner';
@@ -25,8 +27,6 @@
 		}
 	}
 
-	// Assuming $i18n.languages is an array of language codes
-	$: loadLocale($i18n.languages);
 
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -48,27 +48,18 @@
 	import XMark from '../icons/XMark.svelte';
 
 	const i18n = getContext('i18n');
-	let loaded = false;
+	let loaded = $state(false);
 
 	let importFiles = '';
-	let query = '';
+	let query = $state('');
 
-	let noteItems = [];
-	let fuse = null;
+	let noteItems = $state([]);
+	let fuse = $state(null);
 
-	let selectedNote = null;
-	let notes = {};
-	$: if (fuse) {
-		notes = groupNotes(
-			query
-				? fuse.search(query).map((e) => {
-						return e.item;
-					})
-				: noteItems
-		);
-	}
+	let selectedNote = $state(null);
+	let notes = $state({});
 
-	let showDeleteConfirm = false;
+	let showDeleteConfirm = $state(false);
 
 	const groupNotes = (res) => {
 		console.log(res);
@@ -259,7 +250,7 @@
 		}
 	};
 
-	let dragged = false;
+	let dragged = $state(false);
 
 	const onDragOver = (e) => {
 		e.preventDefault();
@@ -320,6 +311,21 @@
 		dropzoneElement?.addEventListener('drop', onDrop);
 		dropzoneElement?.addEventListener('dragleave', onDragLeave);
 	});
+	// Assuming $i18n.languages is an array of language codes
+	run(() => {
+		loadLocale($i18n.languages);
+	});
+	run(() => {
+		if (fuse) {
+			notes = groupNotes(
+				query
+					? fuse.search(query).map((e) => {
+							return e.item;
+						})
+					: noteItems
+			);
+		}
+	});
 </script>
 
 <svelte:head>
@@ -361,7 +367,7 @@
 						<div class="self-center pl-1.5 translate-y-[0.5px] rounded-l-xl bg-transparent">
 							<button
 								class="p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 transition"
-								on:click={() => {
+								onclick={() => {
 									query = '';
 								}}
 							>
@@ -486,7 +492,7 @@
 					<button
 						class="cursor-pointer p-2.5 flex rounded-full border border-gray-50 bg-white dark:border-none dark:bg-gray-850 hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-xl"
 						type="button"
-						on:click={async () => {
+						onclick={async () => {
 							createNoteHandler();
 						}}
 					>
@@ -511,7 +517,7 @@
 					type="file"
 					accept=".md"
 					hidden
-					on:change={() => {
+					onchange={() => {
 						console.log(importFiles);
 
 						const reader = new FileReader();
@@ -525,7 +531,7 @@
 
 				<button
 					class="flex text-xs items-center space-x-1 px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200 transition"
-					on:click={() => {
+					onclick={() => {
 						const notesImportInputElement = document.getElementById('notes-import-input');
 						if (notesImportInputElement) {
 							notesImportInputElement.click();
@@ -541,11 +547,9 @@
 							fill="currentColor"
 							class="w-4 h-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4 2a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L9.94 2.439A1.5 1.5 0 0 0 8.878 2H4Zm4 9.5a.75.75 0 0 1-.75-.75V8.06l-.72.72a.75.75 0 0 1-1.06-1.06l2-2a.75.75 0 0 1 1.06 0l2 2a.75.75 0 1 1-1.06 1.06l-.72-.72v2.69a.75.75 0 0 1-.75.75Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</button>

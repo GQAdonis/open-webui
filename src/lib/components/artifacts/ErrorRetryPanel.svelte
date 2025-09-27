@@ -5,13 +5,25 @@ Reusable component for handling retry operations with circuit breaker pattern
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
 
-  export let error: string | null = null;
-  export let canRetry = true;
-  export let isRetrying = false;
-  export let retryCount = 0;
-  export let maxRetries = 3;
-  export let showResetOption = true;
-  export let componentId: string | null = null;
+  interface Props {
+    error?: string | null;
+    canRetry?: boolean;
+    isRetrying?: boolean;
+    retryCount?: number;
+    maxRetries?: number;
+    showResetOption?: boolean;
+    componentId?: string | null;
+  }
+
+  let {
+    error = null,
+    canRetry = true,
+    isRetrying = false,
+    retryCount = 0,
+    maxRetries = 3,
+    showResetOption = true,
+    componentId = null
+  }: Props = $props();
 
   const dispatch = createEventDispatcher();
 
@@ -24,16 +36,16 @@ Reusable component for handling retry operations with circuit breaker pattern
     dispatch('reset', { componentId });
   }
 
-  $: retryButtonText = `Retry (${retryCount}/${maxRetries})`;
+  let retryButtonText = $derived(`Retry (${retryCount}/${maxRetries})`);
 </script>
 
 {#if error}
   <div class="error-retry-panel">
     <div class="error-header">
       <svg class="error-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
       <h4 class="error-title">Rendering Error</h4>
     </div>
@@ -44,14 +56,14 @@ Reusable component for handling retry operations with circuit breaker pattern
       <div class="retry-actions">
         <button
           class="retry-btn"
-          on:click={handleRetry}
+          onclick={handleRetry}
           title="Retry rendering"
           disabled={isRetrying}
         >
           <svg class="retry-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"/>
             <polyline points="1 20 1 14 7 14"/>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
           </svg>
           {retryButtonText}
         </button>
@@ -59,13 +71,13 @@ Reusable component for handling retry operations with circuit breaker pattern
         {#if showResetOption}
           <button
             class="reset-btn"
-            on:click={handleReset}
+            onclick={handleReset}
             title="Reset retry state"
           >
             <svg class="reset-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="m3 3 2.01 2.01"/>
-              <path d="m7 7 2.01 2.01"/>
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="m3 3 2.01 2.01"></path>
+              <path d="m7 7 2.01 2.01"></path>
             </svg>
             Reset
           </button>
@@ -82,13 +94,13 @@ Reusable component for handling retry operations with circuit breaker pattern
         {#if showResetOption}
           <button
             class="reset-btn small"
-            on:click={handleReset}
+            onclick={handleReset}
             title="Reset retry state"
           >
             <svg class="reset-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="m3 3 2.01 2.01"/>
-              <path d="m7 7 2.01 2.01"/>
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="m3 3 2.01 2.01"></path>
+              <path d="m7 7 2.01 2.01"></path>
             </svg>
             Reset
           </button>

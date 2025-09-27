@@ -43,7 +43,8 @@
 		}
 	};
 
-	export let capabilities: {
+	interface Props {
+		capabilities?: {
 		vision?: boolean;
 		file_upload?: boolean;
 		web_search?: boolean;
@@ -52,7 +53,10 @@
 		usage?: boolean;
 		citations?: boolean;
 		status_updates?: boolean;
-	} = {};
+	};
+	}
+
+	let { capabilities = $bindable({}) }: Props = $props();
 </script>
 
 <div>
@@ -64,7 +68,7 @@
 			<div class=" flex items-center gap-2 mr-3">
 				<Checkbox
 					state={capabilities[capability] ? 'checked' : 'unchecked'}
-					on:change={(e) => {
+					onchange={(e) => {
 						capabilities[capability] = e.detail === 'checked';
 					}}
 				/>

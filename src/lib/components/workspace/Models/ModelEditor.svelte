@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run, preventDefault } from 'svelte/legacy';
+
 	import { toast } from 'svelte-sonner';
 
 	import { onMount, getContext, tick } from 'svelte';
@@ -25,45 +27,57 @@
 
 	const i18n = getContext('i18n');
 
-	export let onSubmit: Function;
-	export let onBack: null | Function = null;
 
-	export let model = null;
-	export let edit = false;
 
-	export let preset = true;
+	interface Props {
+		onSubmit: Function;
+		onBack?: null | Function;
+		model?: any;
+		edit?: boolean;
+		preset?: boolean;
+	}
 
-	let loading = false;
+	let {
+		onSubmit,
+		onBack = null,
+		model = $bindable(null),
+		edit = false,
+		preset = true
+	}: Props = $props();
+
+	let loading = $state(false);
 	let success = false;
 
-	let filesInputElement;
-	let inputFiles;
+	let filesInputElement = $state();
+	let inputFiles = $state();
 
-	let showAdvanced = false;
-	let showPreview = false;
+	let showAdvanced = $state(false);
+	let showPreview = $state(false);
 
-	let loaded = false;
+	let loaded = $state(false);
 
 	// ///////////
 	// model
 	// ///////////
 
-	let id = '';
-	let name = '';
+	let id = $state('');
+	let name = $state('');
 
-	let enableDescription = true;
+	let enableDescription = $state(true);
 
-	$: if (!edit) {
-		if (name) {
-			id = name
-				.replace(/\s+/g, '-')
-				.replace(/[^a-zA-Z0-9-]/g, '')
-				.toLowerCase();
+	run(() => {
+		if (!edit) {
+			if (name) {
+				id = name
+					.replace(/\s+/g, '-')
+					.replace(/[^a-zA-Z0-9-]/g, '')
+					.toLowerCase();
+			}
 		}
-	}
+	});
 
-	let system = '';
-	let info = {
+	let system = $state('');
+	let info = $state({
 		id: '',
 		base_model_id: null,
 		name: '',
@@ -76,19 +90,19 @@
 		params: {
 			system: ''
 		}
-	};
+	});
 
-	let params = {
+	let params = $state({
 		system: ''
-	};
+	});
 
-	let knowledge = [];
-	let toolIds = [];
+	let knowledge = $state([]);
+	let toolIds = $state([]);
 
-	let filterIds = [];
-	let defaultFilterIds = [];
+	let filterIds = $state([]);
+	let defaultFilterIds = $state([]);
 
-	let capabilities = {
+	let capabilities = $state({
 		vision: true,
 		file_upload: true,
 		web_search: true,
@@ -97,11 +111,11 @@
 		citations: true,
 		status_updates: true,
 		usage: undefined
-	};
-	let defaultFeatureIds = [];
+	});
+	let defaultFeatureIds = $state([]);
 
-	let actionIds = [];
-	let accessControl = {};
+	let actionIds = $state([]);
+	let accessControl = $state({});
 
 	const addUsage = (base_model_id) => {
 		const baseModel = $models.find((m) => m.id === base_model_id);
@@ -319,7 +333,7 @@
 	{#if onBack}
 		<button
 			class="flex space-x-1"
-			on:click={() => {
+			onclick={() => {
 				onBack();
 			}}
 		>
@@ -330,11 +344,9 @@
 					fill="currentColor"
 					class="h-4 w-4"
 				>
-					<path
-						fill-rule="evenodd"
+					<path fill-rule="evenodd"
 						d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
-						clip-rule="evenodd"
-					/>
+						clip-rule="evenodd"></path>
 				</svg>
 			</div>
 			<div class=" self-center text-sm font-medium">{$i18n.t('Back')}</div>
@@ -348,7 +360,7 @@
 			type="file"
 			hidden
 			accept="image/*"
-			on:change={() => {
+			onchange={() => {
 				let reader = new FileReader();
 				reader.onload = (event) => {
 					let originalImageUrl = `${event.target.result}`;
@@ -413,9 +425,9 @@
 		{#if !edit || (edit && model)}
 			<form
 				class="flex flex-col md:flex-row w-full gap-3 md:gap-6"
-				on:submit|preventDefault={() => {
+				onsubmit={preventDefault(() => {
 					submitHandler();
-				}}
+				})}
 			>
 				<div class="self-center md:self-start flex justify-center my-2 shrink-0">
 					<div class="self-center">
@@ -425,7 +437,7 @@
 								? 'bg-transparent'
 								: 'bg-white'} shadow-xl group relative"
 							type="button"
-							on:click={() => {
+							onclick={() => {
 								filesInputElement.click();
 							}}
 						>
@@ -454,11 +466,9 @@
 											fill="currentColor"
 											class="size-5"
 										>
-											<path
-												fill-rule="evenodd"
+											<path fill-rule="evenodd"
 												d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Zm10.5 5.707a.5.5 0 0 0-.146-.353l-1-1a.5.5 0 0 0-.708 0L9.354 9.646a.5.5 0 0 1-.708 0L6.354 7.354a.5.5 0 0 0-.708 0l-2 2a.5.5 0 0 0-.146.353V12a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5V9.707ZM12 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
-												clip-rule="evenodd"
-											/>
+												clip-rule="evenodd"></path>
 										</svg>
 									</div>
 								</div>
@@ -472,7 +482,7 @@
 						<div class="flex w-full mt-1 justify-end">
 							<button
 								class="px-2 py-1 text-gray-500 rounded-lg text-xs"
-								on:click={() => {
+								onclick={() => {
 									info.meta.profile_image_url = `${WEBUI_BASE_URL}/static/favicon.png`;
 								}}
 								type="button"
@@ -518,7 +528,7 @@
 									class="text-sm w-full bg-transparent outline-hidden"
 									placeholder={$i18n.t('Select a base model (e.g. llama3, gpt-4o)')}
 									bind:value={info.base_model_id}
-									on:change={(e) => {
+									onchange={(e) => {
 										addUsage(e.target.value);
 									}}
 									required
@@ -545,7 +555,7 @@
 								aria-label={enableDescription
 									? $i18n.t('Custom description enabled')
 									: $i18n.t('Default description enabled')}
-								on:click={() => {
+								onclick={() => {
 									enableDescription = !enableDescription;
 								}}
 							>
@@ -626,7 +636,7 @@
 								<button
 									class="p-1 px-3 text-xs flex rounded-sm transition"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										showAdvanced = !showAdvanced;
 									}}
 								>
@@ -658,7 +668,7 @@
 								<button
 									class="p-1 text-xs flex rounded-sm transition"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										if ((info?.meta?.suggestion_prompts ?? null) === null) {
 											info.meta.suggestion_prompts = [{ content: '' }];
 										} else {
@@ -678,7 +688,7 @@
 								<button
 									class="p-1 px-2 text-xs flex rounded-sm transition"
 									type="button"
-									on:click={() => {
+									onclick={() => {
 										if (
 											info.meta.suggestion_prompts.length === 0 ||
 											info.meta.suggestion_prompts.at(-1).content !== ''
@@ -696,9 +706,7 @@
 										fill="currentColor"
 										class="w-4 h-4"
 									>
-										<path
-											d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"
-										/>
+										<path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"></path>
 									</svg>
 								</button>
 							{/if}
@@ -718,7 +726,7 @@
 											<button
 												class="px-2"
 												type="button"
-												on:click={() => {
+												onclick={() => {
 													info.meta.suggestion_prompts.splice(promptIdx, 1);
 													info.meta.suggestion_prompts = info.meta.suggestion_prompts;
 												}}
@@ -802,7 +810,7 @@
 							<button
 								class="p-1 px-3 text-xs flex rounded-sm transition"
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									showPreview = !showPreview;
 								}}
 							>
@@ -822,7 +830,7 @@
 									value={JSON.stringify(info, null, 2)}
 									disabled
 									readonly
-								/>
+								></textarea>
 							</div>
 						{/if}
 					</div>

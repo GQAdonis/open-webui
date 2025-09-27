@@ -11,17 +11,28 @@
 
 	import { onMount } from 'svelte';
 
-	export let char = '';
-	export let query = '';
-	export let command: (payload: { id: string; label: string }) => void;
 
-	export let onSelect = (e) => {};
-	export let onUpload = (e) => {};
-	export let insertTextHandler = (text) => {};
+	interface Props {
+		char?: string;
+		query?: string;
+		command: (payload: { id: string; label: string }) => void;
+		onSelect?: any;
+		onUpload?: any;
+		insertTextHandler?: any;
+	}
 
-	let suggestionElement = null;
-	let loading = false;
-	let filteredItems = [];
+	let {
+		char = '',
+		query = '',
+		command,
+		onSelect = (e) => {},
+		onUpload = (e) => {},
+		insertTextHandler = (text) => {}
+	}: Props = $props();
+
+	let suggestionElement = $state(null);
+	let loading = $state(false);
+	let filteredItems = $state([]);
 
 	const init = async () => {
 		loading = true;

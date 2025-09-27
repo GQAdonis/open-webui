@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: `<button>` cannot be a child of `<button>`. The browser will 'repair' the HTML (by moving, removing, or inserting elements) which breaks Svelte's assumptions about the structure of your components.
+https://svelte.dev/e/node_invalid_placement -->
 <script>
 	import { getContext, createEventDispatcher, onMount, onDestroy, tick } from 'svelte';
 
@@ -375,7 +377,7 @@
 <DeleteConfirmDialog
 	bind:show={showDeleteConfirm}
 	title={$i18n.t('Delete folder?')}
-	on:confirm={() => {
+onconfirm={() => {
 		deleteHandler();
 	}}
 >
@@ -433,14 +435,14 @@
 				folderId
 					? 'bg-gray-100 dark:bg-gray-900 selected'
 					: ''}"
-				on:dblclick={(e) => {
+			ondblclick={(e) => {
 					if (clickTimer) {
 						clearTimeout(clickTimer); // cancel the single-click action
 						clickTimer = null;
 					}
 					renameHandler();
 				}}
-				on:click={async (e) => {
+				onclick={async (e) => {
 					(e) => e.stopPropagation();
 					if (clickTimer) {
 						clearTimeout(clickTimer);
@@ -458,16 +460,26 @@
 						clickTimer = null;
 					}, 100); // 100ms delay (typical double-click threshold)
 				}}
-				on:pointerup={(e) => {
+			onpointerup={(e) => {
 					e.stopPropagation();
 				}}
 			>
-				<button
-					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg"
-					on:click={(e) => {
+				<div
+					class="text-gray-500 dark:text-gray-500 transition-all p-1 hover:bg-gray-200 dark:hover:bg-gray-850 rounded-lg cursor-pointer"
+					role="button"
+					tabindex="0"
+					onclick={(e) => {
 						e.stopPropagation();
 						open = !open;
 						isExpandedUpdateDebounceHandler();
+					}}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							e.preventDefault();
+							e.stopPropagation();
+							open = !open;
+							isExpandedUpdateDebounceHandler();
+						}
 					}}
 				>
 					{#if folders[folderId]?.meta?.icon}
@@ -491,7 +503,7 @@
 							{/if}
 						</div>
 					{/if}
-				</button>
+				</div>
 
 				<div class="translate-y-[0.5px] flex-1 justify-start text-start line-clamp-1">
 					{#if edit}
@@ -499,20 +511,20 @@
 							id="folder-{folderId}-input"
 							type="text"
 							bind:value={name}
-							on:blur={() => {
+							onblur={() => {
 								console.log('Blur');
 								updateHandler({ name });
 								edit = false;
 							}}
-							on:click={(e) => {
+							onclick={(e) => {
 								// Prevent accidental collapse toggling when clicking inside input
 								e.stopPropagation();
 							}}
-							on:mousedown={(e) => {
+							onmousedown={(e) => {
 								// Prevent accidental collapse toggling when clicking inside input
 								e.stopPropagation();
 							}}
-							on:keydown={(e) => {
+							onkeydown={(e) => {
 								if (e.key === 'Enter') {
 									updateHandler({ name });
 									edit = false;
@@ -525,7 +537,7 @@
 					{/if}
 				</div>
 
-				<button
+				<div
 					class="absolute z-10 right-2 invisible group-hover:visible self-center flex items-center dark:text-gray-300"
 				>
 					<FolderMenu
@@ -543,7 +555,7 @@
 							<EllipsisHorizontal className="size-4" strokeWidth="2.5" />
 						</div>
 					</FolderMenu>
-				</button>
+				</div>
 			</button>
 		</div>
 
@@ -569,13 +581,13 @@
 								{shiftKey}
 								parentDragged={dragged}
 								{onDelete}
-								on:import={(e) => {
-									dispatch('import', e.detail);
-								}}
-								on:update={(e) => {
-									dispatch('update', e.detail);
-								}}
-								on:change={(e) => {
+						onimport={(e) => {
+							dispatch('import', e.detail);
+						}}
+						onupdate={(e) => {
+							dispatch('update', e.detail);
+						}}
+								onchange={(e) => {
 									dispatch('change', e.detail);
 								}}
 							/>
@@ -588,7 +600,7 @@
 								id={chat.id}
 								title={chat.title}
 								{shiftKey}
-								on:change={(e) => {
+								onchange={(e) => {
 									dispatch('change', e.detail);
 								}}
 							/>

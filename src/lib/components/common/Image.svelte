@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { WEBUI_BASE_URL } from '$lib/constants';
 
 	import { settings } from '$lib/stores';
@@ -6,22 +8,35 @@
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import { getContext } from 'svelte';
 
-	export let src = '';
-	export let alt = '';
 
-	export let className = ` w-full ${($settings?.highContrastMode ?? false) ? '' : 'outline-hidden focus:outline-hidden'}`;
 
-	export let imageClassName = 'rounded-lg';
 
-	export let dismissible = false;
-	export let onDismiss = () => {};
+	interface Props {
+		src?: string;
+		alt?: string;
+		className?: any;
+		imageClassName?: string;
+		dismissible?: boolean;
+		onDismiss?: any;
+	}
+
+	let {
+		src = '',
+		alt = '',
+		className = ` w-full ${($settings?.highContrastMode ?? false) ? '' : 'outline-hidden focus:outline-hidden'}`,
+		imageClassName = 'rounded-lg',
+		dismissible = false,
+		onDismiss = () => {}
+	}: Props = $props();
 
 	const i18n = getContext('i18n');
 
-	let _src = '';
-	$: _src = src.startsWith('/') ? `${WEBUI_BASE_URL}${src}` : src;
+	let _src = $state('');
+	run(() => {
+		_src = src.startsWith('/') ? `${WEBUI_BASE_URL}${src}` : src;
+	});
 
-	let showImagePreview = false;
+	let showImagePreview = $state(false);
 </script>
 
 <ImagePreview bind:show={showImagePreview} src={_src} {alt} />
@@ -29,7 +44,7 @@
 <div class=" relative group w-fit flex items-center">
 	<button
 		class={className}
-		on:click={() => {
+		onclick={() => {
 			showImagePreview = true;
 		}}
 		aria-label={$i18n.t('Show image preview')}
@@ -44,7 +59,7 @@
 				aria-label={$i18n.t('Remove image')}
 				class=" bg-white text-black border border-white rounded-full group-hover:visible invisible transition"
 				type="button"
-				on:click={() => {
+				onclick={() => {
 					onDismiss();
 				}}
 			>

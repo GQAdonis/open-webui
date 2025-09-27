@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `let state = false;` to `$state` because there's a variable named state.
+     Rename the variable and try again or migrate by hand. -->
 <script lang="ts">
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import ChevronUp from '$lib/components/icons/ChevronUp.svelte';
@@ -10,7 +12,7 @@
 
 <Collapsible grow={true} className="w-full" buttonClassName="w-full" bind:open={state}>
 	<div class="flex items-center gap-2 text-gray-500 transition">
-		<slot />
+		<slot ></slot>
 		{#if state}
 			<ChevronUp strokeWidth="2.5" className="size-3.5 " />
 		{:else}
@@ -46,11 +48,9 @@
 						fill="currentColor"
 						class="size-4"
 					>
-						<path
-							fill-rule="evenodd"
+						<path fill-rule="evenodd"
 							d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z"
-							clip-rule="evenodd"
-						/>
+							clip-rule="evenodd"></path>
 					</svg>
 				</div>
 			</a>
@@ -87,11 +87,9 @@
 							fill="currentColor"
 							class="size-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</a>
@@ -127,11 +125,9 @@
 							fill="currentColor"
 							class="size-4"
 						>
-							<path
-								fill-rule="evenodd"
+							<path fill-rule="evenodd"
 								d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z"
-								clip-rule="evenodd"
-							/>
+								clip-rule="evenodd"></path>
 						</svg>
 					</div>
 				</a>
