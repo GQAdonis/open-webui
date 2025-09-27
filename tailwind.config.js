@@ -1,5 +1,4 @@
 import typography from '@tailwindcss/typography';
-import containerQueries from '@tailwindcss/container-queries';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -42,5 +41,5 @@ export default {
 			}
 		}
 	},
-	plugins: [typography, containerQueries]
+	plugins: [typography]
 };

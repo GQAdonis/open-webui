@@ -116,7 +116,7 @@
 	const gotoMessage = async (message, idx) => {
 		// Determine the correct sibling list (either parent's children or root messages)
 		let siblings;
-		if (message.parentId !== null) {
+		if (message.parentId !== null && history.messages[message.parentId]) {
 			siblings = history.messages[message.parentId].childrenIds;
 		} else {
 			siblings = Object.values(history.messages)
@@ -155,7 +155,7 @@
 	};
 
 	const showPreviousMessage = async (message) => {
-		if (message.parentId !== null) {
+		if (message.parentId !== null && history.messages[message.parentId]) {
 			let messageId =
 				history.messages[message.parentId].childrenIds[
 					Math.max(history.messages[message.parentId].childrenIds.indexOf(message.id) - 1, 0)
@@ -202,7 +202,7 @@
 	};
 
 	const showNextMessage = async (message) => {
-		if (message.parentId !== null) {
+		if (message.parentId !== null && history.messages[message.parentId]) {
 			let messageId =
 				history.messages[message.parentId].childrenIds[
 					Math.min(
@@ -285,11 +285,13 @@
 
 				let messageParentId = history.messages[messageId].parentId;
 
-				if (messageParentId !== null) {
+				if (messageParentId !== null && history.messages[messageParentId]) {
 					history.messages[messageParentId].childrenIds = [
 						...history.messages[messageParentId].childrenIds,
 						userMessageId
 					];
+				} else if (messageParentId !== null) {
+					console.error('Parent message not found in editMessage:', messageParentId);
 				}
 
 				history.messages[userMessageId] = userMessage;
@@ -324,11 +326,13 @@
 				history.currentId = responseMessageId;
 
 				// Append messageId to childrenIds of parent message
-				if (parentId !== null) {
+				if (parentId !== null && history.messages[parentId]) {
 					history.messages[parentId].childrenIds = [
 						...history.messages[parentId].childrenIds,
 						responseMessageId
 					];
+				} else if (parentId !== null) {
+					console.error('Parent message not found in editMessage response:', parentId);
 				}
 
 				await updateChat();

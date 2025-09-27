@@ -694,7 +694,9 @@
 					// Disable StarterKit codeBlock to avoid conflicts with CodeBlockLowlight
 					codeBlock: false,
 					// Disable history to avoid keymap conflicts
-					history: false
+					history: false,
+					// Disable listKeymap to avoid conflicts with ListKit's listKeymap
+					listKeymap: false
 				}),
 				...(dragHandle ? [ListItemDragHandle] : []),
 				Placeholder.configure({ placeholder: () => _placeholder, showOnlyWhenEditable: false }),

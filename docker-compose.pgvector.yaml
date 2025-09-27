@@ -1,0 +1,26 @@
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openwebui
+      POSTGRES_USER: openwebui
+      POSTGRES_PASSWORD: openwebui_secure_password_2024
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "1234:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openwebui -d openwebui"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pgvector_data:
+    driver: local

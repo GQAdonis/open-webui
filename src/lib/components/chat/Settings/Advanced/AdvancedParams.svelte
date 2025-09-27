@@ -4,15 +4,17 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Plus from '$lib/components/icons/Plus.svelte';
 	import { getContext } from 'svelte';
+	import type { AdvancedParams } from '$lib/types/chat';
+	import type { I18nContext, InputEvent } from '$lib/types/components';
 
-	const i18n = getContext('i18n');
+	const i18n = getContext<I18nContext>('i18n');
 
-	export let onChange: (params: any) => void = () => {};
+	export let onChange: (params: AdvancedParams) => void = () => {};
 
 	export let admin = false;
 	export let custom = false;
 
-	const defaultParams = {
+	const defaultParams: AdvancedParams = {
 		// Advanced
 		stream_response: null, // Set stream responses for this model individually
 		stream_delta_chunk_size: null, // Set the chunk size for streaming responses
@@ -44,10 +46,11 @@
 		num_ctx: null,
 		num_batch: null,
 		num_thread: null,
-		num_gpu: null
+		num_gpu: null,
+		custom_params: {}
 	};
 
-	export let params = defaultParams;
+	export let params: AdvancedParams = defaultParams;
 	$: if (params) {
 		onChange(params);
 	}
@@ -191,10 +194,10 @@
 				<button
 					class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 					type="button"
-					on:click={() => {
+				on:click={() => {
 						if ((params?.reasoning_tags ?? null) === null) {
 							params.reasoning_tags = ['', ''];
-						} else if ((params?.reasoning_tags ?? []).length === 2) {
+						} else if (Array.isArray(params?.reasoning_tags) && params.reasoning_tags.length === 2) {
 							params.reasoning_tags = true;
 						} else if ((params?.reasoning_tags ?? null) !== false) {
 							params.reasoning_tags = false;
@@ -216,14 +219,14 @@
 			</div>
 		</Tooltip>
 
-		{#if ![true, false, null].includes(params?.reasoning_tags ?? null) && (params?.reasoning_tags ?? []).length === 2}
+	{#if Array.isArray(params?.reasoning_tags) && params.reasoning_tags.length === 2}
 			<div class="flex mt-0.5 space-x-2">
 				<div class=" flex-1">
 					<input
 						class="text-sm w-full bg-transparent outline-hidden outline-none"
 						type="text"
 						placeholder={$i18n.t('Start Tag')}
-						bind:value={params.reasoning_tags[0]}
+						bind:value={(params.reasoning_tags as string[])[0]}
 						autocomplete="off"
 					/>
 				</div>
@@ -233,7 +236,7 @@
 						class="text-sm w-full bg-transparent outline-hidden outline-none"
 						type="text"
 						placeholder={$i18n.t('End Tag')}
-						bind:value={params.reasoning_tags[1]}
+						bind:value={(params.reasoning_tags as string[])[1]}
 						autocomplete="off"
 					/>
 				</div>
@@ -1606,7 +1609,7 @@
 
 		{#if custom && admin}
 			<div class="flex flex-col justify-center">
-				{#each Object.keys(params?.custom_params ?? {}) as key}
+			{#each Object.keys(params?.custom_params || {}) as key}
 					<div class=" py-0.5 w-full justify-between mb-1">
 						<div class="flex w-full justify-between">
 							<div class=" self-center text-xs font-medium">
@@ -1615,29 +1618,32 @@
 									class=" text-xs w-full bg-transparent outline-none"
 									placeholder={$i18n.t('Custom Parameter Name')}
 									value={key}
-									on:change={(e) => {
-										const newKey = e.target.value.trim();
-										if (newKey && newKey !== key) {
-											params.custom_params[newKey] = params.custom_params[key];
-											delete params.custom_params[key];
-											params = {
-												...params,
-												custom_params: { ...params.custom_params }
-											};
-										}
-									}}
+								on:change={(e: InputEvent) => {
+									if (!e.target) return;
+									const newKey = e.target.value.trim();
+									if (newKey && newKey !== key && params.custom_params) {
+										params.custom_params[newKey] = params.custom_params[key];
+										delete params.custom_params[key];
+										params = {
+											...params,
+											custom_params: { ...params.custom_params }
+										};
+									}
+								}}
 								/>
 							</div>
 							<button
 								class="p-1 px-3 text-xs flex rounded-sm transition shrink-0 outline-hidden"
 								type="button"
-								on:click={() => {
+							on:click={() => {
+								if (params.custom_params) {
 									delete params.custom_params[key];
 									params = {
 										...params,
 										custom_params: { ...params.custom_params }
 									};
-								}}
+								}
+							}}
 							>
 								{$i18n.t('Remove')}
 							</button>
@@ -1645,7 +1651,7 @@
 						<div class="flex mt-0.5 space-x-2">
 							<div class=" flex-1">
 								<input
-									bind:value={params.custom_params[key]}
+								bind:value={params.custom_params?.[key]}
 									type="text"
 									class="text-sm w-full bg-transparent outline-hidden outline-none"
 									placeholder={$i18n.t('Custom Parameter Value')}
@@ -1658,10 +1664,12 @@
 				<button
 					class=" flex gap-2 items-center w-full text-center justify-center mt-1 mb-5"
 					type="button"
-					on:click={() => {
-						params.custom_params = (params?.custom_params ?? {}) || {};
-						params.custom_params['custom_param_name'] = 'custom_param_value';
-					}}
+				on:click={() => {
+					if (!params.custom_params) {
+						params.custom_params = {};
+					}
+					params.custom_params['custom_param_name'] = 'custom_param_value';
+				}}
 				>
 					<div>
 						<Plus />

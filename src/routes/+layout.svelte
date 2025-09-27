@@ -24,6 +24,7 @@
 		isLastActiveTab,
 		isApp,
 		appInfo,
+		appData,
 		toolServers,
 		playingNotificationSound
 	} from '$lib/stores';
@@ -343,7 +344,10 @@
 						try {
 							if (API_CONFIG?.prefix_id) {
 								const prefixId = API_CONFIG.prefix_id;
-								form_data['model'] = form_data['model'].replace(`${prefixId}.`, ``);
+								const currentModel = form_data['model'];
+								if (typeof currentModel === 'string') {
+									form_data['model'] = currentModel.replace(`${prefixId}.`, ``);
+								}
 							}
 
 							const [res, controller] = await chatCompletion(
@@ -380,7 +384,7 @@
 											const chunk = decoder.decode(value, { stream: true });
 
 											// Process lines within the chunk
-											const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+											const lines = (typeof chunk === 'string' ? chunk : String(chunk)).split('\n').filter((line) => line.trim() !== '');
 
 											for (const line of lines) {
 												console.log(line);
@@ -488,17 +492,18 @@
 		let touchstartY = 0;
 
 		function isNavOrDescendant(el) {
+			if (!el) return false;
 			const nav = document.querySelector('nav'); // change selector if needed
 			return nav && (el === nav || nav.contains(el));
 		}
 
 		document.addEventListener('touchstart', (e) => {
-			if (!isNavOrDescendant(e.target)) return;
+			if (!e.target || !e.touches?.[0] || !isNavOrDescendant(e.target)) return;
 			touchstartY = e.touches[0].clientY;
 		});
 
 		document.addEventListener('touchmove', (e) => {
-			if (!isNavOrDescendant(e.target)) return;
+			if (!e.target || !e.touches?.[0] || !isNavOrDescendant(e.target)) return;
 			const touchY = e.touches[0].clientY;
 			const touchDiff = touchY - touchstartY;
 			if (touchDiff > 50 && window.scrollY === 0) {
@@ -508,7 +513,7 @@
 		});
 
 		document.addEventListener('touchend', (e) => {
-			if (!isNavOrDescendant(e.target)) return;
+			if (!e.target || !isNavOrDescendant(e.target)) return;
 			if (showRefresh) {
 				showRefresh = false;
 				location.reload();
@@ -664,7 +669,7 @@
 			loadingProgress.subscribe((value) => {
 				const progressBar = document.getElementById('progress-bar');
 
-				if (progressBar) {
+				if (progressBar && typeof value === 'number') {
 					progressBar.style.width = `${value}%`;
 				}
 			});
@@ -743,4 +748,3 @@
 
 <!-- Artifact Preview Panel -->
 <ArtifactPreviewPanel />
-/>

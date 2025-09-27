@@ -3,23 +3,24 @@
 
 	import { tick, getContext, onMount, createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
-	const i18n = getContext('i18n');
+	const i18n = getContext<I18nContext>('i18n');
 
 	import { settings } from '$lib/stores';
 	import { copyToClipboard } from '$lib/utils';
 
-	import MultiResponseMessages from './MultiResponseMessages.svelte';
-	import ResponseMessage from './ResponseMessage.svelte';
-	import UserMessage from './UserMessage.svelte';
+    import MultiResponseMessages from './MultiResponseMessages.svelte';
+    import ResponseMessage from './ResponseMessage.svelte';
+    import UserMessage from './UserMessage.svelte';
+    import type { HistoryType, ModelSelection, I18nContext } from '$lib/types';
 
-	export let chatId;
-	export let selectedModels = [];
-	export let idx = 0;
+    export let chatId: string;
+    export let selectedModels: ModelSelection = [];
+    export let idx: number = 0;
 
-	export let history;
-	export let messageId;
+    export let history: HistoryType;
+    export let messageId: string;
 
-	export let user;
+    export let user: any;
 
 	export let setInputText: Function = () => {};
 	export let gotoMessage;
@@ -40,9 +41,9 @@
 
 	export let addMessages;
 	export let triggerScroll;
-	export let readOnly = false;
-	export let editCodeBlock = true;
-	export let topPadding = false;
+    export let readOnly: boolean = false;
+    export let editCodeBlock: boolean = true;
+    export let topPadding: boolean = false;
 </script>
 
 <div

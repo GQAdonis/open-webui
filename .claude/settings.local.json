@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

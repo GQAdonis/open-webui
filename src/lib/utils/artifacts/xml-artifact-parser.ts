@@ -448,6 +448,12 @@ function parseArtifactBlockSecure(xmlBlock: string): ParsedArtifact | null {
 function extractArtifactBlocksOptimized(content: string): { blocks: string[], contentWithoutArtifacts: string } {
   const artifactBlocks: string[] = [];
 
+  // Type guard to ensure content is a string
+  if (typeof content !== 'string') {
+    console.warn('🔧 [XML Parser] Content is not a string:', typeof content);
+    return { blocks: [], contentWithoutArtifacts: '' };
+  }
+
   // Use the pre-compiled regex for better performance
   ARTIFACT_REGEX.lastIndex = 0; // Reset regex state
   let match;

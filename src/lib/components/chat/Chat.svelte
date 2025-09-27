@@ -1,17 +1,20 @@
 <script lang="ts">
 	import { v4 as uuidv4 } from 'uuid';
 	import { toast } from 'svelte-sonner';
-	import { PaneGroup, Pane, PaneResizer } from 'paneforge';
+	// import { PaneGroup, Pane } from 'paneforge';
 
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
-	const i18n: Writable<i18nType> = getContext('i18n');
-
-	import { goto } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 
 	import { get, type Unsubscriber, type Writable } from 'svelte/store';
 	import type { i18n as i18nType } from 'i18next';
 	import { WEBUI_BASE_URL } from '$lib/constants';
+	import type { FileItem, MessageType, HistoryType, FolderMeta, Folder, Draft, ModelSelection } from '$lib/types';
+
+	const i18n: Writable<i18nType> = getContext('i18n');
+	// Translation helper to keep code clean and satisfy TypeScript
+	const tr = (key: string) => (get(i18n) as i18nType).t(key);
 
 	import {
 		chatId,
@@ -40,6 +43,10 @@
 		selectedFolder,
 		pinnedChats
 	} from '$lib/stores';
+
+	// Reactive variable for selected folder meta
+	let selectedFolderMeta: FolderMeta | undefined;
+	$: selectedFolderMeta = ($selectedFolder as Folder | null | undefined)?.meta;
 	import {
 		convertMessagesToHistory,
 		copyToClipboard,
@@ -78,7 +85,7 @@
 
 	// Phase 3.4: Prompt Enhancement Integration
 	import { promptEnhancer } from '$lib/services/prompt-enhancer';
-	import type { PromptEnhancementRequest } from '$lib/types/enhanced-artifacts';
+	import type { PromptEnhancementRequest } from '$lib/services/prompt-enhancer';
 
 	import { fade } from 'svelte/transition';
 
@@ -101,10 +108,10 @@
 	let loading = true;
 
 	const eventTarget = new EventTarget();
-	let controlPane;
-	let controlPaneComponent;
+	let controlPane: any;
+	let controlPaneComponent: any;
 
-	let messageInput;
+	let messageInput: any;
 
 	let autoScroll = true;
 	let processing = '';
@@ -118,20 +125,20 @@
 	let eventConfirmationInput = false;
 	let eventConfirmationInputPlaceholder = '';
 	let eventConfirmationInputValue = '';
-	let eventCallback = null;
+	let eventCallback: any = null;
 
 	let chatIdUnsubscriber: Unsubscriber | undefined;
 
-	let selectedModels = [''];
+	let selectedModels: string[] = [''];
 	let atSelectedModel: Model | undefined;
 
 	// Initialize artifact integration
 	const { preprocessPrompt, postprocessResponse } = useArtifactIntegration();
-	let selectedModelIds = [];
+	let selectedModelIds: string[] = [];
 	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
 
-	let selectedToolIds = [];
-	let selectedFilterIds = [];
+	let selectedToolIds: string[] = [];
+	let selectedFilterIds: string[] = [];
 	let imageGenerationEnabled = false;
 	let webSearchEnabled = false;
 	let codeInterpreterEnabled = false;
@@ -139,23 +146,23 @@
 	let showCommands = false;
 
 	let generating = false;
-	let generationController = null;
+	let generationController: any = null;
 
-	let chat = null;
-	let tags = [];
+	let chat: any = null;
+	let tags: any[] = [];
 
-	let history = {
+	let history: HistoryType = {
 		messages: {},
 		currentId: null
 	};
 
-	let taskIds = null;
+	let taskIds: any = null;
 
 	// Chat Input
 	let prompt = '';
-	let chatFiles = [];
-	let files = [];
-	let params = {};
+	let chatFiles: FileItem[] = [];
+	let files: FileItem[] = [];
+	let params: any = {};
 
 	$: if (chatIdProp) {
 		navigateHandler();
@@ -207,13 +214,13 @@
 		}
 	};
 
-	const onSelect = async (e) => {
+	const onSelect = async (e: any) => {
 		const { type, data } = e;
 
 		if (type === 'prompt') {
 			// Handle prompt selection
 			messageInput?.setText(data, async () => {
-				if (!($settings?.insertSuggestionPrompt ?? false)) {
+				if (!(($settings as any)?.insertSuggestionPrompt ?? false)) {
 					await tick();
 					submitPrompt(prompt);
 				}
@@ -266,42 +273,53 @@
 			return;
 		}
 
-		const model = atSelectedModel ?? $models.find((m) => m.id === selectedModels[0]);
+		const model = atSelectedModel ?? $models.find((m: any) => m.id === selectedModels[0]);
 		if (model) {
 			// Set Default Tools
 			if (model?.info?.meta?.toolIds) {
 				selectedToolIds = [
 					...new Set(
-						[...(model?.info?.meta?.toolIds ?? [])].filter((id) => $tools.find((t) => t.id === id))
+						[...(model?.info?.meta?.toolIds ?? [])].filter((id) => $tools?.find((t: any) => t.id === id))
 					)
 				];
 			}
 
 			// Set Default Filters (Toggleable only)
-			if (model?.info?.meta?.defaultFilterIds) {
-				selectedFilterIds = model.info.meta.defaultFilterIds.filter((id) =>
-					model?.filters?.find((f) => f.id === id)
-				);
+			{
+				// Model meta may not include these fields in its declared type; use a safe local view
+				type ModelMetaExtra = { defaultFilterIds?: string[]; defaultFeatureIds?: string[]; capabilities?: Record<string, boolean> };
+				const meta = (model?.info?.meta as unknown as ModelMetaExtra) || {};
+				const modelFilters = (model as any)?.filters as { id: string }[] | undefined;
+
+				if (meta.defaultFilterIds && modelFilters) {
+					selectedFilterIds = meta.defaultFilterIds.filter((id) =>
+						modelFilters?.some((f) => f.id === id)
+					);
+				}
 			}
 
 			// Set Default Features
-			if (model?.info?.meta?.defaultFeatureIds) {
-				if (model.info?.meta?.capabilities?.['image_generation']) {
-					imageGenerationEnabled = model.info.meta.defaultFeatureIds.includes('image_generation');
-				}
+			{
+				// Reuse the safe meta view
+				type ModelMetaExtra = { defaultFilterIds?: string[]; defaultFeatureIds?: string[]; capabilities?: Record<string, boolean> };
+				const meta = (model?.info?.meta as unknown as ModelMetaExtra) || {};
+				const caps = meta.capabilities || {};
+				const featureIds = meta.defaultFeatureIds || [];
 
-				if (model.info?.meta?.capabilities?.['web_search']) {
-					webSearchEnabled = model.info.meta.defaultFeatureIds.includes('web_search');
+				if (caps['image_generation']) {
+					imageGenerationEnabled = featureIds.includes('image_generation');
 				}
-
-				if (model.info?.meta?.capabilities?.['code_interpreter']) {
-					codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
+				if (caps['web_search']) {
+					webSearchEnabled = featureIds.includes('web_search');
+				}
+				if (caps['code_interpreter']) {
+					codeInterpreterEnabled = featureIds.includes('code_interpreter');
 				}
 			}
 		}
 	};
 
-	const showMessage = async (message) => {
+	const showMessage = async (message: any) => {
 		await tick();
 
 		const _chatId = JSON.parse(JSON.stringify($chatId));
@@ -338,7 +356,7 @@
 		saveChatHandler(_chatId, history);
 	};
 
-	const chatEventHandler = async (event, cb) => {
+	const chatEventHandler = async (event: any, cb: any) => {
 		console.log(event);
 
 		if (event.chat_id === $chatId) {
@@ -359,10 +377,16 @@
 					chatCompletionEventHandler(data, message, event.chat_id);
 				} else if (type === 'chat:tasks:cancel') {
 					taskIds = null;
-					const responseMessage = history.messages[history.currentId];
+					const responseMessage = history.currentId ? history.messages[history.currentId] : null;
 					// Set all response messages to done
-					for (const messageId of history.messages[responseMessage.parentId].childrenIds) {
-						history.messages[messageId].done = true;
+					if (responseMessage?.parentId && history.messages[responseMessage.parentId]) {
+						for (const messageId of history.messages[responseMessage.parentId].childrenIds || []) {
+							if (history.messages[messageId]) {
+								history.messages[messageId].done = true;
+							}
+						}
+					} else {
+						console.error('Parent message not found for responseMessage:', responseMessage?.parentId);
 					}
 				} else if (type === 'chat:message:delta' || type === 'message') {
 					message.content += data.content;
@@ -393,7 +417,7 @@
 						}
 
 						const existingCodeExecutionIndex = message.code_executions.findIndex(
-							(execution) => execution.id === data.id
+							(execution: any) => execution.id === data.id
 						);
 
 						if (existingCodeExecutionIndex !== -1) {
@@ -504,7 +528,7 @@
 		}
 	};
 
-	let pageSubscribe = null;
+	let pageSubscribe: any = null;
 	onMount(async () => {
 		loading = true;
 		console.log('mounted');
@@ -588,13 +612,13 @@
 
 	// File upload functions
 
-	const uploadGoogleDriveFile = async (fileData) => {
+	const uploadGoogleDriveFile = async (fileData: any) => {
 		console.log('Starting uploadGoogleDriveFile with:', {
 			id: fileData.id,
 			name: fileData.name,
 			url: fileData.url,
 			headers: {
-				Authorization: `Bearer ${token}`
+				Authorization: `Bearer ${localStorage.token}`
 			}
 		});
 
@@ -698,25 +722,23 @@
 			fileItem.id = uploadedFile.id;
 			fileItem.size = file.size;
 			fileItem.collection_name = uploadedFile?.meta?.collection_name;
-			fileItem.url = `${WEBUI_API_BASE_URL}/files/${uploadedFile.id}`;
+			fileItem.url = `${WEBUI_BASE_URL}/files/${uploadedFile.id}`;
 
 			files = files;
-			toast.success($i18n.t('File uploaded successfully'));
-		} catch (e) {
+			toast.success('File uploaded successfully');
+		} catch (e: any) {
 			console.error('Error uploading file:', e);
 			files = files.filter((f) => f.itemId !== tempItemId);
 			toast.error(
-				$i18n.t('Error uploading file: {{error}}', {
-					error: e.message || 'Unknown error'
-				})
+				`Error uploading file: ${e.message || 'Unknown error'}`
 			);
 		}
 	};
 
-	const uploadWeb = async (url) => {
+	const uploadWeb = async (url: string) => {
 		console.log(url);
 
-		const fileItem = {
+		const fileItem: FileItem = {
 			type: 'text',
 			name: url,
 			collection_name: '',
@@ -746,10 +768,10 @@
 		}
 	};
 
-	const uploadYoutubeTranscription = async (url) => {
+	const uploadYoutubeTranscription = async (url: string) => {
 		console.log(url);
 
-		const fileItem = {
+		const fileItem: FileItem = {
 			type: 'text',
 			name: url,
 			collection_name: '',
@@ -788,7 +810,7 @@
 			await temporaryChatEnabled.set(true);
 		}
 
-		if ($settings?.temporaryChatByDefault ?? false) {
+		if (($settings as any)?.temporaryChatByDefault ?? false) {
 			if ($temporaryChatEnabled === false) {
 				await temporaryChatEnabled.set(true);
 			} else if ($temporaryChatEnabled === null) {
@@ -798,7 +820,7 @@
 		}
 
 		const availableModels = $models
-			.filter((m) => !(m?.info?.meta?.hidden ?? false))
+			.filter((m) => !((m?.info?.meta as any)?.hidden ?? false))
 			.map((m) => m.id);
 
 		if ($page.url.searchParams.get('models') || $page.url.searchParams.get('model')) {
@@ -819,7 +841,7 @@
 						const modelSelectorInput = document.getElementById('model-search-input');
 						if (modelSelectorInput) {
 							modelSelectorInput.focus();
-							modelSelectorInput.value = urlModels[0];
+							(modelSelectorInput as HTMLInputElement).value = urlModels[0];
 							modelSelectorInput.dispatchEvent(new Event('input'));
 						}
 					}
@@ -862,7 +884,7 @@
 		await showArtifacts.set(false);
 
 		if ($page.url.pathname.includes('/c/')) {
-			window.history.replaceState(history.state, '', `/`);
+			replaceState('/', {});
 		}
 
 		autoScroll = true;
@@ -885,8 +907,9 @@
 			);
 		}
 
-		if ($page.url.searchParams.get('load-url')) {
-			await uploadWeb($page.url.searchParams.get('load-url'));
+		const loadUrl = $page.url.searchParams.get('load-url');
+		if (loadUrl) {
+			await uploadWeb(loadUrl);
 		}
 
 		if ($page.url.searchParams.get('web-search') === 'true') {
@@ -906,13 +929,13 @@
 				.get('tools')
 				?.split(',')
 				.map((id) => id.trim())
-				.filter((id) => id);
+				.filter((id) => id) || [];
 		} else if ($page.url.searchParams.get('tool-ids')) {
 			selectedToolIds = $page.url.searchParams
 				.get('tool-ids')
 				?.split(',')
 				.map((id) => id.trim())
-				.filter((id) => id);
+				.filter((id) => id) || [];
 		}
 
 		if ($page.url.searchParams.get('call') === 'true') {
@@ -933,7 +956,7 @@
 		}
 
 		selectedModels = selectedModels.map((modelId) =>
-			$models.map((m) => m.id).includes(modelId) ? modelId : ''
+			$models.map((m: any) => m.id).includes(modelId) ? modelId : ''
 		);
 
 		const userSettings = await getUserSettings(localStorage.token);
@@ -1003,11 +1026,11 @@
 				await tick();
 
 				if (history.currentId) {
-					for (const message of Object.values(history.messages)) {
-						if (message.role === 'assistant') {
-							message.done = true;
-						}
+				for (const message of Object.values(history.messages)) {
+					if ((message as any).role === 'assistant') {
+						(message as any).done = true;
 					}
+				}
 				}
 
 				const taskRes = await getTaskIdsByChatId(localStorage.token, $chatId).catch((error) => {
@@ -1027,7 +1050,7 @@
 		}
 	};
 
-	const scrollToBottom = async (behavior = 'auto') => {
+	const scrollToBottom = async (behavior: ScrollBehavior = 'auto') => {
 		await tick();
 		if (messagesContainerElement) {
 			messagesContainerElement.scrollTo({
@@ -1036,10 +1059,10 @@
 			});
 		}
 	};
-	const chatCompletedHandler = async (chatId, modelId, responseMessageId, messages) => {
-		const res = await chatCompleted(localStorage.token, {
+	const chatCompletedHandler = async (chatId: string, modelId: string, responseMessageId: string, messages: any[]) => {
+		const payload: any = {
 			model: modelId,
-			messages: messages.map((m) => ({
+			messages: messages.map((m: any) => ({
 				id: m.id,
 				role: m.role,
 				content: m.content,
@@ -1051,9 +1074,11 @@
 			filter_ids: selectedFilterIds.length > 0 ? selectedFilterIds : undefined,
 			model_item: $models.find((m) => m.id === modelId),
 			chat_id: chatId,
-			session_id: $socket?.id,
+			session_id: ($socket as any)?.id,
 			id: responseMessageId
-		}).catch((error) => {
+		};
+
+		const res = await chatCompleted(localStorage.token, payload).catch((error) => {
 			toast.error(`${error}`);
 			messages.at(-1).error = { content: error };
 
@@ -1096,12 +1121,12 @@
 		taskIds = null;
 	};
 
-	const chatActionHandler = async (chatId, actionId, modelId, responseMessageId, event = null) => {
+	const chatActionHandler = async (chatId: string, actionId: string, modelId: string, responseMessageId: string, event: any = null) => {
 		const messages = createMessagesList(history, responseMessageId);
 
-		const res = await chatAction(localStorage.token, actionId, {
+		const actionPayload: any = {
 			model: modelId,
-			messages: messages.map((m) => ({
+			messages: messages.map((m: any) => ({
 				id: m.id,
 				role: m.role,
 				content: m.content,
@@ -1110,11 +1135,12 @@
 				...(m.sources ? { sources: m.sources } : {})
 			})),
 			...(event ? { event: event } : {}),
-			model_item: $models.find((m) => m.id === modelId),
 			chat_id: chatId,
-			session_id: $socket?.id,
+			session_id: ($socket as any)?.id,
 			id: responseMessageId
-		}).catch((error) => {
+		};
+
+		const res = await chatAction(localStorage.token, actionId, actionPayload).catch((error) => {
 			toast.error(`${error}`);
 			messages.at(-1).error = { content: error };
 			return null;
@@ -1159,10 +1185,10 @@
 		}, 1000);
 	};
 
-	const createMessagePair = async (userPrompt) => {
+	const createMessagePair = async (userPrompt: string) => {
 		messageInput?.setText('');
 		if (selectedModels.length === 0) {
-			toast.error($i18n.t('Model not selected'));
+			toast.error('Model not selected');
 		} else {
 			// Phase 1: Artifact Integration - Preprocess prompt for artifact enhancement
 			const { preprocessPrompt } = useArtifactIntegration();
@@ -1175,7 +1201,7 @@
 			});
 
 			const modelId = selectedModels[0];
-			const model = $models.filter((m) => m.id === modelId).at(0);
+			const model = $models.filter((m) => m.id === modelId).at(0)!;
 
 			const messages = createMessagesList(history, history.currentId);
 			const parentMessage = messages.length !== 0 ? messages.at(-1) : null;
@@ -1229,7 +1255,7 @@
 		}
 	};
 
-	const addMessages = async ({ modelId, parentId, messages }) => {
+	const addMessages = async ({ modelId, parentId, messages }: { modelId: string; parentId: string; messages: any[] }) => {
 		const model = $models.filter((m) => m.id === modelId).at(0);
 
 		let parentMessage = history.messages[parentId];
@@ -1255,6 +1281,11 @@
 				parentMessage = userMessage;
 				currentParentId = messageId;
 			} else {
+				// Ensure `model` is defined before accessing its properties
+				if (!model) {
+					console.error('Model is undefined when constructing responseMessage for', messageId);
+					continue;
+				}
 				const responseMessage = {
 					id: messageId,
 					parentId: currentParentId,
@@ -1292,7 +1323,7 @@
 		}
 	};
 
-	const chatCompletionEventHandler = async (data, message, chatId) => {
+	const chatCompletionEventHandler = async (data: any, message: any, chatId: string) => {
 		const { id, done, choices, content, sources, selected_model_id, error, usage } = data;
 
 		if (error) {
@@ -1322,7 +1353,7 @@
 					// Emit chat event for TTS
 					const messageContentParts = getMessageContentParts(
 						removeAllDetails(message.content),
-						$config?.audio?.tts?.split_on ?? 'punctuation'
+						($config as any)?.audio?.tts?.split_on ?? 'punctuation'
 					);
 					messageContentParts.pop();
 
@@ -1356,7 +1387,7 @@
 			// Emit chat event for TTS
 			const messageContentParts = getMessageContentParts(
 				removeAllDetails(message.content),
-				$config?.audio?.tts?.split_on ?? 'punctuation'
+				($config as any)?.audio?.tts?.split_on ?? 'punctuation'
 			);
 			messageContentParts.pop();
 
@@ -1392,12 +1423,12 @@
 			message.done = true;
 
 			// Process response for artifacts when message is complete
-			const artifactsEnabled = $config?.features?.enable_artifacts ?? true;
+			const artifactsEnabled = ($config as any)?.features?.enable_artifacts ?? true;
 			if (artifactsEnabled) {
 				try {
-					const artifacts = postprocessResponse(message.content, message.id);
-					if (artifacts.length > 0) {
-						console.log(`🚀 [Artifact Integration] Found ${artifacts.length} artifact(s) in response`);
+					const artifacts = await postprocessResponse(message.content, message.id, $chatId);
+					if ((artifacts as any).length > 0) {
+						console.log(`🚀 [Artifact Integration] Found ${(artifacts as any).length} artifact(s) in response`);
 					}
 				} catch (error) {
 					console.warn('[Artifact Integration] Error processing artifacts:', error);
@@ -1417,7 +1448,7 @@
 			let lastMessageContentPart =
 				getMessageContentParts(
 					removeAllDetails(message.content),
-					$config?.audio?.tts?.split_on ?? 'punctuation'
+					($config as any)?.audio?.tts?.split_on ?? 'punctuation'
 				)?.at(-1) ?? '';
 			if (lastMessageContentPart) {
 				eventTarget.dispatchEvent(
@@ -1462,11 +1493,11 @@
 	// Chat functions
 	//////////////////////////
 
-	const submitPrompt = async (userPrompt, { _raw = false } = {}) => {
+	const submitPrompt = async (userPrompt: string, { _raw = false }: { _raw?: boolean } = {}) => {
 		console.log('submitPrompt', userPrompt, $chatId);
 
 		// Apply artifact preprocessing if not raw mode and artifacts are enabled
-		const artifactsEnabled = $config?.features?.enable_artifacts ?? true; // Default to enabled
+		const artifactsEnabled = ($config as any)?.features?.enable_artifacts ?? true; // Default to enabled
 		let processedPrompt = userPrompt;
 
 		if (!_raw && artifactsEnabled) {
@@ -1503,24 +1534,17 @@
 
 					const enhancementRequest: PromptEnhancementRequest = {
 						originalPrompt: processedPrompt,
-						context: {
-							chatHistory: history?.messages || [],
-							sessionId: $chatId || 'default',
-							userIntent: 'create_artifact',
-							detectedKeywords: intentResult.detectedKeywords || []
-						},
-						enhancementType: 'artifact_creation',
-						targetFramework: intentResult.suggestedFramework || 'react'
+						sessionId: $chatId || 'default'
 					};
 
 					const enhancedResult = await promptEnhancer.enhancePrompt(enhancementRequest);
 
-					if (enhancedResult.wasEnhanced) {
-						processedPrompt = enhancedResult.enhancedPrompt;
+					if ((enhancedResult as any).wasEnhanced) {
+						processedPrompt = (enhancedResult as any).enhancedPrompt;
 						console.log('🚀 [Chat] Prompt successfully enhanced:', {
 							original: userPrompt.substring(0, 100) + '...',
 							enhanced: processedPrompt.substring(0, 100) + '...',
-							confidence: enhancedResult.confidence
+							confidence: (enhancedResult as any).confidence
 						});
 
 						// Clean up the cached intent data
@@ -1542,11 +1566,11 @@
 		}
 
 		if (userPrompt === '' && files.length === 0) {
-			toast.error($i18n.t('Please enter a prompt'));
+			toast.error('Please enter a prompt');
 			return;
 		}
 		if (selectedModels.includes('')) {
-			toast.error($i18n.t('Model not selected'));
+			toast.error('Model not selected');
 			return;
 		}
 
@@ -1555,33 +1579,31 @@
 			files.filter((file) => file.type !== 'image' && file.status === 'uploading').length > 0
 		) {
 			toast.error(
-				$i18n.t(`Oops! There are files still uploading. Please wait for the upload to complete.`)
+				'Oops! There are files still uploading. Please wait for the upload to complete.'
 			);
 			return;
 		}
 
 		if (
-			($config?.file?.max_count ?? null) !== null &&
-			files.length + chatFiles.length > $config?.file?.max_count
+			(($config as any)?.file?.max_count ?? null) !== null &&
+			files.length + chatFiles.length > ($config as any)?.file?.max_count
 		) {
 			toast.error(
-				$i18n.t(`You can only chat with a maximum of {{maxCount}} file(s) at a time.`, {
-					maxCount: $config?.file?.max_count
-				})
+				`You can only chat with a maximum of ${($config as any)?.file?.max_count} file(s) at a time.`
 			);
 			return;
 		}
 
 		if (history?.currentId) {
-			const lastMessage = history.messages[history.currentId];
-			if (lastMessage.done != true) {
+			const lastMessage = history.messages[history.currentId] as any;
+			if (lastMessage?.done != true) {
 				// Response not done
 				return;
 			}
 
-			if (lastMessage.error && !lastMessage.content) {
+			if (lastMessage?.error && !lastMessage?.content) {
 				// Error in response
-				toast.error($i18n.t(`Oops! There was an error in the previous response.`));
+				toast.error('Oops! There was an error in the previous response.');
 				return;
 			}
 		}
@@ -1593,7 +1615,7 @@
 		const _files = JSON.parse(JSON.stringify(files));
 
 		chatFiles.push(
-			..._files.filter((item) =>
+			..._files.filter((item: any) =>
 				['doc', 'text', 'file', 'note', 'chat', 'collection'].includes(item.type)
 			)
 		);
@@ -1625,7 +1647,18 @@
 
 		// Append messageId to childrenIds of parent message
 		if (messages.length !== 0) {
-			history.messages[messages.at(-1).id].childrenIds.push(userMessageId);
+			const lastMessage = messages.at(-1);
+			if (lastMessage?.id) {
+				const parentMessage = history.messages[lastMessage.id];
+				if (parentMessage) {
+					if (!parentMessage.childrenIds) {
+						parentMessage.childrenIds = [];
+					}
+					parentMessage.childrenIds.push(userMessageId);
+				} else {
+					console.error('Parent message not found for userMessage:', lastMessage.id);
+				}
+			}
 		}
 
 		// focus on chat input
@@ -1638,7 +1671,7 @@
 	};
 
 	const sendMessage = async (
-		_history,
+		_history: any,
 		parentId: string,
 		{
 			messages = null,
@@ -1652,12 +1685,19 @@
 			newChat?: boolean;
 		} = {}
 	) => {
+		console.log('🚀 [sendMessage] Starting with parentId:', parentId);
+		console.log('🚀 [sendMessage] History messages before deep copy:', Object.keys(_history.messages));
+		console.log('🚀 [sendMessage] Parent message exists before deep copy:', !!_history.messages[parentId]);
+
 		if (autoScroll) {
 			scrollToBottom();
 		}
 
 		let _chatId = JSON.parse(JSON.stringify($chatId));
 		_history = JSON.parse(JSON.stringify(_history));
+
+		console.log('🚀 [sendMessage] History messages after deep copy:', Object.keys(_history.messages));
+		console.log('🚀 [sendMessage] Parent message exists after deep copy:', !!_history.messages[parentId]);
 
 		const responseMessageIds: Record<PropertyKey, string> = {};
 		// If modelId is provided, use it, else use selected model
@@ -1669,36 +1709,57 @@
 
 		// Create response messages for each selected model
 		for (const [_modelIdx, modelId] of selectedModelIds.entries()) {
-			const model = $models.filter((m) => m.id === modelId).at(0);
+			const model = $models.filter((m) => m.id === modelId).at(0)!;
 
 			if (model) {
 				let responseMessageId = uuidv4();
+				console.log('🚀 [sendMessage] Creating responseMessage:', {
+					responseMessageId,
+					modelId,
+					parentId
+				});
+
 				let responseMessage = {
-					parentId: parentId,
 					id: responseMessageId,
+					parentId: parentId,
 					childrenIds: [],
 					role: 'assistant',
 					content: '',
 					model: model.id,
 					modelName: model.name ?? model.id,
-					modelIdx: modelIdx ? modelIdx : _modelIdx,
+					modelIdx: modelIdx !== undefined ? modelIdx : _modelIdx,
 					timestamp: Math.floor(Date.now() / 1000) // Unix epoch
 				};
 
 				// Add message to history and Set currentId to messageId
 				history.messages[responseMessageId] = responseMessage;
 				history.currentId = responseMessageId;
+				console.log('🚀 [sendMessage] Stored responseMessage in history:', {
+					responseMessageId,
+					historyKeysAfterStore: Object.keys(history.messages),
+					responseMessageExists: !!history.messages[responseMessageId]
+				});
 
 				// Append messageId to childrenIds of parent message
 				if (parentId !== null && history.messages[parentId]) {
 					// Add null check before accessing childrenIds
+					if (!history.messages[parentId].childrenIds) {
+						history.messages[parentId].childrenIds = [];
+					}
 					history.messages[parentId].childrenIds = [
 						...history.messages[parentId].childrenIds,
 						responseMessageId
 					];
+				} else {
+					console.error('Parent message not found for responseMessage:', parentId);
 				}
 
-				responseMessageIds[`${modelId}-${modelIdx ? modelIdx : _modelIdx}`] = responseMessageId;
+				responseMessageIds[`${modelId}-${modelIdx ?? _modelIdx}`] = responseMessageId;
+				console.log('🚀 [sendMessage] Added to responseMessageIds:', {
+					key: `${modelId}-${modelIdx ?? _modelIdx}`,
+					responseMessageId,
+					totalResponseMessageIds: Object.keys(responseMessageIds).length
+				});
 			}
 		}
 		history = history;
@@ -1721,20 +1782,18 @@
 
 				if (model) {
 					// If there are image files, check if model is vision capable
-					const hasImages = createMessagesList(_history, parentId).some((message) =>
-						message.files?.some((file) => file.type === 'image')
+					const hasImages = createMessagesList(_history, parentId).some((message: any) =>
+						((message.files as FileItem[] | undefined)?.some((file: FileItem) => file.type === 'image')) ?? false
 					);
 
-					if (hasImages && !(model.info?.meta?.capabilities?.vision ?? true)) {
+					if (hasImages && !((model.info?.meta as any)?.capabilities?.vision ?? true)) {
 						toast.error(
-							$i18n.t('Model {{modelName}} is not vision capable', {
-								modelName: model.name ?? model.id
-							})
+							`Model ${model.name ?? model.id} is not vision capable`
 						);
 					}
 
 					let responseMessageId =
-						responseMessageIds[`${modelId}-${modelIdx ? modelIdx : _modelIdx}`];
+						responseMessageIds[`${modelId}-${modelIdx ?? _modelIdx}`];
 					const chatEventEmitter = await getChatEventEmitter(model.id, _chatId);
 
 					scrollToBottom();
@@ -1750,7 +1809,7 @@
 
 					if (chatEventEmitter) clearInterval(chatEventEmitter);
 				} else {
-					toast.error($i18n.t(`Model {{modelId}} not found`, { modelId }));
+					toast.error(`Model ${modelId} not found`);
 				}
 			})
 		);
@@ -1762,21 +1821,21 @@
 	const getFeatures = () => {
 		let features = {};
 
-		if ($config?.features)
+		if (($config as any)?.features)
 			features = {
 				image_generation:
-					$config?.features?.enable_image_generation &&
-					($user?.role === 'admin' || $user?.permissions?.features?.image_generation)
+					($config as any)?.features?.enable_image_generation &&
+					($user?.role === 'admin' || ($user as any)?.permissions?.features?.image_generation)
 						? imageGenerationEnabled
 						: false,
 				code_interpreter:
-					$config?.features?.enable_code_interpreter &&
-					($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
+					($config as any)?.features?.enable_code_interpreter &&
+					($user?.role === 'admin' || ($user as any)?.permissions?.features?.code_interpreter)
 						? codeInterpreterEnabled
 						: false,
 				web_search:
-					$config?.features?.enable_web_search &&
-					($user?.role === 'admin' || $user?.permissions?.features?.web_search)
+					($config as any)?.features?.enable_web_search &&
+					($user?.role === 'admin' || ($user as any)?.permissions?.features?.web_search)
 						? webSearchEnabled
 						: false
 			};
@@ -1784,10 +1843,10 @@
 		const currentModels = atSelectedModel?.id ? [atSelectedModel.id] : selectedModels;
 		if (
 			currentModels.filter(
-				(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.web_search ?? true
+				(model) => ($models.find((m) => m.id === model)?.info?.meta as any)?.capabilities?.web_search ?? true
 			).length === currentModels.length
 		) {
-			if ($config?.features?.enable_web_search && ($settings?.webSearch ?? false) === 'always') {
+			if (($config as any)?.features?.enable_web_search && (($settings as any)?.webSearch ?? false) === 'always') {
 				features = { ...features, web_search: true };
 			}
 		}
@@ -1799,30 +1858,46 @@
 		return features;
 	};
 
-	const sendMessageSocket = async (model, _messages, _history, responseMessageId, _chatId) => {
+	const sendMessageSocket = async (model: any, _messages: any[], _history: any, responseMessageId: string, _chatId: string) => {
 		const responseMessage = _history.messages[responseMessageId];
+		if (!responseMessage) {
+			console.error('ResponseMessage not found for ID:', responseMessageId);
+			console.error('Available message IDs:', Object.keys(_history.messages));
+			return;
+		}
+
+		if (!responseMessage.parentId) {
+			console.error('ResponseMessage has no parentId:', responseMessage);
+			return;
+		}
+
 		const userMessage = _history.messages[responseMessage.parentId];
+		if (!userMessage) {
+			console.error('UserMessage not found for parentId:', responseMessage.parentId);
+			console.error('Available message IDs:', Object.keys(_history.messages));
+			return;
+		}
 
 		const chatMessageFiles = _messages
-			.filter((message) => message.files)
-			.flatMap((message) => message.files);
+			.filter((message: any) => message.files)
+			.flatMap((message: any) => message.files);
 
 		// Filter chatFiles to only include files that are in the chatMessageFiles
-		chatFiles = chatFiles.filter((item) => {
-			const fileExists = chatMessageFiles.some((messageFile) => messageFile.id === item.id);
+		chatFiles = chatFiles.filter((item: any) => {
+			const fileExists = chatMessageFiles.some((messageFile: any) => messageFile.id === item.id);
 			return fileExists;
 		});
 
 		let files = JSON.parse(JSON.stringify(chatFiles));
 		files.push(
-			...(userMessage?.files ?? []).filter((item) =>
+			...(userMessage?.files ?? []).filter((item: any) =>
 				['doc', 'text', 'file', 'note', 'chat', 'collection'].includes(item.type)
 			)
 		);
 		// Remove duplicates
 		files = files.filter(
-			(item, index, array) =>
-				array.findIndex((i) => JSON.stringify(i) === JSON.stringify(item)) === index
+			(item: any, index: number, array: any[]) =>
+				array.findIndex((i: any) => JSON.stringify(i) === JSON.stringify(item)) === index
 		);
 
 		scrollToBottom();
@@ -1844,28 +1919,28 @@
 		}
 
 		const stream =
-			model?.info?.params?.stream_response ??
-			$settings?.params?.stream_response ??
-			params?.stream_response ??
+			(model?.info?.params as any)?.stream_response ??
+			($settings as any)?.params?.stream_response ??
+			(params as any)?.stream_response ??
 			true;
 
 		let messages = [
-			params?.system || $settings.system
+			(params as any)?.system || ($settings as any).system
 				? {
 						role: 'system',
-						content: `${params?.system ?? $settings?.system ?? ''}`
+						content: `${(params as any)?.system ?? ($settings as any)?.system ?? ''}`
 					}
 				: undefined,
-			..._messages.map((message) => ({
+			..._messages.map((message: any) => ({
 				...message,
 				content: processDetails(message.content)
 			}))
-		].filter((message) => message);
+		].filter((message: any) => message);
 
 		messages = messages
-			.map((message, idx, arr) => ({
+			.map((message: any, idx: number, arr: any[]) => ({
 				role: message.role,
-				...((message.files?.filter((file) => file.type === 'image').length > 0 ?? false) &&
+				...((message.files?.filter((file: any) => file.type === 'image').length ?? 0) > 0 &&
 				message.role === 'user'
 					? {
 							content: [
@@ -1874,8 +1949,8 @@
 									text: message?.merged?.content ?? message.content
 								},
 								...message.files
-									.filter((file) => file.type === 'image')
-									.map((file) => ({
+									.filter((file: any) => file.type === 'image')
+									.map((file: any) => ({
 										type: 'image_url',
 										image_url: {
 											url: file.url
@@ -1887,10 +1962,10 @@
 							content: message?.merged?.content ?? message.content
 						})
 			}))
-			.filter((message) => message?.role === 'user' || message?.content?.trim());
+			.filter((message: any) => message?.role === 'user' || message?.content?.trim());
 
-		const toolIds = [];
-		const toolServerIds = [];
+		const toolIds: string[] = [];
+		const toolServerIds: any[] = [];
 
 		for (const toolId of selectedToolIds) {
 			if (toolId.startsWith('direct_server:')) {
@@ -1921,29 +1996,24 @@
 				model: model.id,
 				messages: messages,
 				params: {
-					...$settings?.params,
+					...($settings as any)?.params,
 					...params,
 					stop:
-						(params?.stop ?? $settings?.params?.stop ?? undefined)
-							? (params?.stop.split(',').map((token) => token.trim()) ?? $settings.params.stop).map(
-									(str) => decodeURIComponent(JSON.parse('"' + str.replace(/\"/g, '\\"') + '"'))
-								)
+						((params as any)?.stop ?? ($settings as any)?.params?.stop ?? undefined)
+							? ((params as any)?.stop.split(',').map((token: string) => token.trim()) ?? ($settings as any).params.stop)
 							: undefined
 				},
-
 				files: (files?.length ?? 0) > 0 ? files : undefined,
-
 				filter_ids: selectedFilterIds.length > 0 ? selectedFilterIds : undefined,
 				tool_ids: toolIds.length > 0 ? toolIds : undefined,
 				tool_servers: ($toolServers ?? []).filter(
-					(server, idx) => toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
+					(server: any, idx: number) => toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
 				),
 				features: getFeatures(),
 				variables: {
 					...getPromptVariables($user?.name, $settings?.userLocation ? userLocation : undefined)
 				},
 				model_item: $models.find((m) => m.id === model.id),
-
 				session_id: $socket?.id,
 				chat_id: $chatId,
 				id: responseMessageId,
@@ -1983,7 +2053,7 @@
 			}
 
 			if (typeof errorMessage === 'object') {
-				errorMessage = $i18n.t(`Uh-oh! There was an issue with the response.`);
+				errorMessage = `Uh-oh! There was an issue with the response.`;
 			}
 
 			toast.error(`${errorMessage}`);
@@ -2015,7 +2085,7 @@
 		scrollToBottom();
 	};
 
-	const handleOpenAIError = async (error, responseMessage) => {
+	const handleOpenAIError = async (error: any, responseMessage: MessageType) => {
 		let errorMessage = '';
 		let innerError;
 
@@ -2044,7 +2114,7 @@
 		}
 
 		responseMessage.error = {
-			content: $i18n.t(`Uh-oh! There was an issue with the response.`) + '\n' + errorMessage
+			content: `Uh-oh! There was an issue with the response.` + '\n' + errorMessage
 		};
 		responseMessage.done = true;
 
@@ -2068,16 +2138,24 @@
 
 			taskIds = null;
 
-			const responseMessage = history.messages[history.currentId];
-			// Set all response messages to done
-			for (const messageId of history.messages[responseMessage.parentId].childrenIds) {
-				history.messages[messageId].done = true;
-			}
+			if (history.currentId) {
+				const responseMessage = history.messages[history.currentId];
+				// Set all response messages to done
+				if (responseMessage?.parentId && history.messages[responseMessage.parentId]) {
+					for (const messageId of history.messages[responseMessage.parentId].childrenIds || []) {
+						if (history.messages[messageId]) {
+							history.messages[messageId].done = true;
+						}
+					}
+				} else {
+					console.error('Parent message not found for responseMessage in stopResponse:', responseMessage?.parentId);
+				}
 
-			history.messages[history.currentId] = responseMessage;
+				history.messages[history.currentId] = responseMessage;
 
-			if (autoScroll) {
-				scrollToBottom();
+				if (autoScroll) {
+					scrollToBottom();
+				}
 			}
 		}
 
@@ -2088,7 +2166,7 @@
 		}
 	};
 
-	const submitMessage = async (parentId, prompt) => {
+	const submitMessage = async (parentId: string | null, prompt: string) => {
 		// Apply artifact preprocessing for enhanced prompts
 		const { preprocessPrompt } = useArtifactIntegration();
 		let userPrompt = preprocessPrompt(prompt);
@@ -2109,11 +2187,16 @@
 			timestamp: Math.floor(Date.now() / 1000) // Unix epoch
 		};
 
-		if (parentId !== null) {
+		if (parentId !== null && history.messages[parentId]) {
+			if (!history.messages[parentId].childrenIds) {
+				history.messages[parentId].childrenIds = [];
+			}
 			history.messages[parentId].childrenIds = [
 				...history.messages[parentId].childrenIds,
 				userMessageId
 			];
+		} else if (parentId !== null) {
+			console.error('Parent message not found in submitMessage:', parentId);
 		}
 
 		history.messages[userMessageId] = userMessage;
@@ -2128,10 +2211,10 @@
 		await sendMessage(history, userMessageId);
 	};
 
-	const regenerateResponse = async (message, suggestionPrompt = null) => {
+	const regenerateResponse = async (message: MessageType, suggestionPrompt: string | null = null) => {
 		console.log('regenerateResponse');
 
-		if (history.currentId) {
+		if (history.currentId && message?.parentId && history.messages[message.parentId]) {
 			let userMessage = history.messages[message.parentId];
 
 			// Apply artifact preprocessing to suggestion prompt if provided
@@ -2196,9 +2279,13 @@
 		}
 	};
 
-	const mergeResponses = async (messageId, responses, _chatId) => {
+	const mergeResponses = async (messageId: string, responses: any[], _chatId: string) => {
 		console.log('mergeResponses', messageId, responses);
 		const message = history.messages[messageId];
+		if (!message) {
+			console.error('Message not found for mergeResponses:', messageId);
+			return;
+		}
 		const mergedResponse = {
 			status: true,
 			content: ''
@@ -2208,16 +2295,30 @@
 
 		try {
 			generating = true;
+			if (!message.parentId) {
+				console.error('No parent message ID for mergeResponses:', messageId);
+				return;
+			}
+			const parentMessage = history.messages[message.parentId];
+			if (!parentMessage) {
+				console.error('Parent message not found for mergeResponses:', message.parentId);
+				return;
+			}
+			if (!message.model) {
+				console.error('No model specified for mergeResponses:', messageId);
+				return;
+			}
 			const [res, controller] = await generateMoACompletion(
 				localStorage.token,
 				message.model,
-				history.messages[message.parentId].content,
+				parentMessage.content,
 				responses
 			);
 
-			if (res && res.ok && res.body && generating) {
+			if (res && res instanceof Response && res.ok && res.body && generating) {
 				generationController = controller;
-				const textStream = await createOpenAITextStream(res.body, $settings.splitLargeChunks);
+				const splitLargeChunks = typeof $settings.splitLargeChunks === 'boolean' ? $settings.splitLargeChunks : false;
+				const textStream = await createOpenAITextStream(res.body, splitLargeChunks);
 				for await (const update of textStream) {
 					const { value, done, sources, error, usage } = update;
 					if (error || done) {
@@ -2247,15 +2348,14 @@
 		}
 	};
 
-	const initChatHandler = async (history) => {
+	const initChatHandler = async (history: HistoryType) => {
 		let _chatId = $chatId;
-
 		if (!$temporaryChatEnabled) {
 			chat = await createNewChat(
 				localStorage.token,
 				{
-					id: _chatId,
-					title: $i18n.t('New Chat'),
+						id: _chatId,
+						title: tr('New Chat'),
 					models: selectedModels,
 					system: $settings.system ?? undefined,
 					params: params,
@@ -2264,13 +2364,13 @@
 					tags: [],
 					timestamp: Date.now()
 				},
-				$selectedFolder?.id
+				($selectedFolder as any)?.id
 			);
 
 			_chatId = chat.id;
 			await chatId.set(_chatId);
 
-			window.history.replaceState(history.state, '', `/c/${_chatId}`);
+			replaceState(`/c/${_chatId}`, {});
 
 			await tick();
 
@@ -2287,7 +2387,7 @@
 		return _chatId;
 	};
 
-	const saveChatHandler = async (_chatId, history) => {
+	const saveChatHandler = async (_chatId: string, history: HistoryType) => {
 		if ($chatId == _chatId) {
 			if (!$temporaryChatEnabled) {
 				chat = await updateChatById(localStorage.token, _chatId, {
@@ -2304,15 +2404,18 @@
 	};
 
 	const MAX_DRAFT_LENGTH = 5000;
-	let saveDraftTimeout = null;
+	let saveDraftTimeout: number | null = null;
 
-	const saveDraft = async (draft, chatId = null) => {
-		if (saveDraftTimeout) {
-			clearTimeout(saveDraftTimeout);
+	// Local type for draft persistence
+	type Draft = { prompt: string | null };
+
+	const saveDraft = async (draft: Draft, chatId: string | null = null) => {
+		if (saveDraftTimeout !== null) {
+			window.clearTimeout(saveDraftTimeout);
 		}
 
 		if (draft.prompt !== null && draft.prompt.length < MAX_DRAFT_LENGTH) {
-			saveDraftTimeout = setTimeout(async () => {
+			saveDraftTimeout = window.setTimeout(async () => {
 				await sessionStorage.setItem(
 					`chat-input${chatId ? `-${chatId}` : ''}`,
 					JSON.stringify(draft)
@@ -2323,14 +2426,14 @@
 		}
 	};
 
-	const clearDraft = async (chatId = null) => {
-		if (saveDraftTimeout) {
-			clearTimeout(saveDraftTimeout);
+	const clearDraft = async (chatId: string | null = null) => {
+		if (saveDraftTimeout !== null) {
+			window.clearTimeout(saveDraftTimeout);
 		}
 		await sessionStorage.removeItem(`chat-input${chatId ? `-${chatId}` : ''}`);
 	};
 
-	const moveChatHandler = async (chatId, folderId) => {
+	const moveChatHandler = async (chatId: string, folderId: string) => {
 		if (chatId && folderId) {
 			const res = await updateChatFolderIdById(localStorage.token, chatId, folderId).catch(
 				(error) => {
@@ -2344,10 +2447,10 @@
 				await chats.set(await getChatList(localStorage.token, $currentChatPage));
 				await pinnedChats.set(await getPinnedChatList(localStorage.token));
 
-				toast.success($i18n.t('Chat moved successfully'));
+				toast.success(tr('Chat moved successfully'));
 			}
 		} else {
-			toast.error($i18n.t('Failed to move chat'));
+			toast.error(tr('Failed to move chat'));
 		}
 	};
 </script>
@@ -2389,12 +2492,12 @@
 >
 	{#if !loading}
 		<div in:fade={{ duration: 50 }} class="w-full h-full flex flex-col">
-			{#if $selectedFolder && $selectedFolder?.meta?.background_image_url}
+			{#if selectedFolderMeta?.background_image_url}
 				<div
 					class="absolute {$showSidebar
 						? 'md:max-w-[calc(100%-260px)] md:translate-x-[260px]'
 						: ''} top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
-					style="background-image: url({$selectedFolder?.meta?.background_image_url})  "
+					style="background-image: url({selectedFolderMeta?.background_image_url})  "
 				/>
 
 				<div
@@ -2414,8 +2517,8 @@
 				/>
 			{/if}
 
-			<PaneGroup direction="horizontal" class="w-full h-full">
-				<Pane defaultSize={50} minSize={30} class="h-full flex relative max-w-full flex-col">
+			<div class="w-full h-full flex horizontal">
+				<div class="h-full flex relative max-w-full flex-col" style="flex: 1; min-width: 30%">
 					<Navbar
 						bind:this={navbarElement}
 						chat={{
@@ -2430,7 +2533,6 @@
 							}
 						}}
 						{history}
-						title={$chatTitle}
 						bind:selectedModels
 						shareEnabled={!!history.currentId}
 						{initNewChat}
@@ -2439,12 +2541,11 @@
 						onSaveTempChat={async () => {
 							try {
 								if (!history?.currentId || !Object.keys(history.messages).length) {
-									toast.error($i18n.t('No conversation to save'));
+									toast.error(tr('No conversation to save'));
 									return;
 								}
 								const messages = createMessagesList(history, history.currentId);
-								const title =
-									messages.find((m) => m.role === 'user')?.content ?? $i18n.t('New Chat');
+								const title = messages.find((m) => m.role === 'user')?.content ?? tr('New Chat');
 
 								const savedChat = await createNewChat(
 									localStorage.token,
@@ -2465,16 +2566,16 @@
 									chats.set(await getChatList(localStorage.token, $currentChatPage));
 
 									await goto(`/c/${savedChat.id}`);
-									toast.success($i18n.t('Conversation saved successfully'));
+									toast.success(tr('Conversation saved successfully'));
 								}
 							} catch (error) {
 								console.error('Error saving conversation:', error);
-								toast.error($i18n.t('Failed to save conversation'));
+								toast.error(tr('Failed to save conversation'));
 							}
 						}}
 					/>
 
-					<div class="flex flex-col flex-auto z-10 w-full @container overflow-auto">
+					<div class="flex flex-col flex-auto z-10 w-full overflow-auto">
 						{#if ($settings?.landingPageMode === 'chat' && !$selectedFolder) || createMessagesList(history, history.currentId).length > 0}
 							<div
 								class=" pb-2.5 flex flex-col justify-between w-full flex-auto overflow-auto h-0 max-w-full z-10 scrollbar-hidden"
@@ -2492,7 +2593,7 @@
 										bind:history
 										bind:autoScroll
 										bind:prompt
-										setInputText={(text) => {
+										setInputText={(text: string) => {
 											messageInput?.setText(text);
 										}}
 										{selectedModels}
@@ -2500,8 +2601,8 @@
 										{sendMessage}
 										{showMessage}
 										{submitMessage}
-										{continueResponse}
 										{regenerateResponse}
+										{continueResponse}
 										{mergeResponses}
 										{chatActionHandler}
 										{addMessages}
@@ -2596,7 +2697,6 @@
 									bind:prompt
 									bind:autoScroll
 									bind:selectedToolIds
-									bind:selectedFilterIds
 									bind:imageGenerationEnabled
 									bind:codeInterpreterEnabled
 									bind:webSearchEnabled
@@ -2632,7 +2732,7 @@
 							</div>
 						{/if}
 					</div>
-				</Pane>
+				</div>
 
 				<ChatControls
 					bind:this={controlPaneComponent}
@@ -2642,20 +2742,14 @@
 					bind:files
 					bind:pane={controlPane}
 					chatId={$chatId}
-					modelId={selectedModelIds?.at(0) ?? null}
-					models={selectedModelIds.reduce((a, e, i, arr) => {
-						const model = $models.find((m) => m.id === e);
-						if (model) {
-							return [...a, model];
-						}
-						return a;
-					}, [])}
+					modelId={selectedModelIds?.at(0) ?? undefined}
+					models={$models.filter((m) => selectedModelIds.includes(m.id))}
 					{submitPrompt}
 					{stopResponse}
 					{showMessage}
 					{eventTarget}
 				/>
-			</PaneGroup>
+			</div>
 		</div>
 	{:else if loading}
 		<div class=" flex items-center justify-center h-full w-full">

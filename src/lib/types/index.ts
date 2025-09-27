@@ -13,3 +13,7 @@ export enum TTS_RESPONSE_SPLIT {
 	PARAGRAPHS = 'paragraphs',
 	NONE = 'none'
 }
+
+// Export chat-related types
+export * from './chat';
+export * from './components';

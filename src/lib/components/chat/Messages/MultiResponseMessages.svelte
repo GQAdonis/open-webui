@@ -1,7 +1,7 @@
 <script lang="ts">
 	import dayjs from 'dayjs';
-	import { onMount, tick, getContext } from 'svelte';
-	import { createEventDispatcher } from 'svelte';
+    import { onMount, tick, getContext } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
 
 	import { mobile, models, settings } from '$lib/stores';
 
@@ -19,37 +19,39 @@
 	import localizedFormat from 'dayjs/plugin/localizedFormat';
 	import ProfileImage from './ProfileImage.svelte';
 	import { WEBUI_BASE_URL } from '$lib/constants';
-	const i18n = getContext('i18n');
+	const i18n = getContext<I18nContext>('i18n');
 	dayjs.extend(localizedFormat);
 
-	export let chatId;
-	export let history;
-	export let messageId;
-	export let selectedModels = [];
+    import type { HistoryType, ModelSelection, I18nContext } from '$lib/types';
 
-	export let isLastMessage;
-	export let readOnly = false;
-	export let editCodeBlock = true;
+    export let chatId: string;
+    export let history: HistoryType;
+    export let messageId: string;
+    export let selectedModels: ModelSelection = [];
 
-	export let setInputText: Function = () => {};
-	export let updateChat: Function;
-	export let editMessage: Function;
-	export let saveMessage: Function;
-	export let rateMessage: Function;
-	export let actionMessage: Function;
+    export let isLastMessage: boolean;
+    export let readOnly: boolean = false;
+    export let editCodeBlock: boolean = true;
 
-	export let submitMessage: Function;
-	export let deleteMessage: Function;
+    export let setInputText: Function = () => {};
+    export let updateChat: Function;
+    export let editMessage: Function;
+    export let saveMessage: Function;
+    export let rateMessage: Function;
+    export let actionMessage: Function;
 
-	export let continueResponse: Function;
-	export let regenerateResponse: Function;
-	export let mergeResponses: Function;
+    export let submitMessage: Function;
+    export let deleteMessage: Function;
 
-	export let addMessages: Function;
+    export let continueResponse: Function;
+    export let regenerateResponse: Function;
+    export let mergeResponses: Function;
 
-	export let triggerScroll: Function;
+    export let addMessages: Function;
 
-	export let topPadding = false;
+    export let triggerScroll: Function;
+
+    export let topPadding: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -79,10 +81,10 @@
 		console.log(messageId);
 
 		// Traverse the branch to find the deepest child message
-		let messageChildrenIds = history.messages[messageId].childrenIds;
+		let messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 		while (messageChildrenIds.length !== 0) {
 			messageId = messageChildrenIds.at(-1);
-			messageChildrenIds = history.messages[messageId].childrenIds;
+			messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 		}
 
 		// Update the current message ID in history
@@ -102,11 +104,11 @@
 		let messageId = groupedMessageIds[modelIdx].messageIds[groupedMessageIdsIdx[modelIdx]];
 		console.log(messageId);
 
-		let messageChildrenIds = history.messages[messageId].childrenIds;
+		let messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 
 		while (messageChildrenIds.length !== 0) {
 			messageId = messageChildrenIds.at(-1);
-			messageChildrenIds = history.messages[messageId].childrenIds;
+			messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 		}
 
 		history.currentId = messageId;
@@ -125,11 +127,11 @@
 		let messageId = groupedMessageIds[modelIdx].messageIds[groupedMessageIdsIdx[modelIdx]];
 		console.log(messageId);
 
-		let messageChildrenIds = history.messages[messageId].childrenIds;
+		let messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 
 		while (messageChildrenIds.length !== 0) {
 			messageId = messageChildrenIds.at(-1);
-			messageChildrenIds = history.messages[messageId].childrenIds;
+			messageChildrenIds = history.messages[messageId]?.childrenIds || [];
 		}
 
 		history.currentId = messageId;
@@ -150,7 +152,7 @@
 
 		groupedMessageIds = parentMessage?.models.reduce((a, model, modelIdx) => {
 			// Find all messages that are children of the parent message and have the same model
-			let modelMessageIds = parentMessage?.childrenIds
+			let modelMessageIds = (parentMessage?.childrenIds || [])
 				.map((id) => history.messages[id])
 				.filter((m) => m?.modelIdx === modelIdx)
 				.map((m) => m.id);
@@ -158,12 +160,12 @@
 			// Legacy support for messages that don't have a modelIdx
 			// Find all messages that are children of the parent message and have the same model
 			if (modelMessageIds.length === 0) {
-				let modelMessages = parentMessage?.childrenIds
+				let modelMessages = (parentMessage?.childrenIds || [])
 					.map((id) => history.messages[id])
 					.filter((m) => m?.model === model);
 
 				modelMessages.forEach((m) => {
-					m.modelIdx = modelIdx;
+					if (m) m.modelIdx = modelIdx;
 				});
 
 				modelMessageIds = modelMessages.map((m) => m.id);
@@ -200,10 +202,10 @@
 	const onGroupClick = async (_messageId, modelIdx) => {
 		if (messageId != _messageId) {
 			let currentMessageId = _messageId;
-			let messageChildrenIds = history.messages[currentMessageId].childrenIds;
+			let messageChildrenIds = history.messages[currentMessageId]?.childrenIds || [];
 			while (messageChildrenIds.length !== 0) {
 				currentMessageId = messageChildrenIds.at(-1);
-				messageChildrenIds = history.messages[currentMessageId].childrenIds;
+				messageChildrenIds = history.messages[currentMessageId]?.childrenIds || [];
 			}
 			history.currentId = currentMessageId;
 			selectedModelIdx = modelIdx;

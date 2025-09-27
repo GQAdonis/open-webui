@@ -267,7 +267,7 @@ permissions.execution = execution === 'true';
 
 // Extract scope array
 const scope = permissionsElement.getAttribute('scope');
-if (scope) {
+if (scope && typeof scope === 'string') {
 permissions.scope = scope.split(',').map(s => s.trim());
 }
 

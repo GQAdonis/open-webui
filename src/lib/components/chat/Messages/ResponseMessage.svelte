@@ -2,12 +2,11 @@
 	import { toast } from 'svelte-sonner';
 	import dayjs from 'dayjs';
 
-	import { createEventDispatcher } from 'svelte';
-	import { onMount, tick, getContext } from 'svelte';
-	import type { Writable } from 'svelte/store';
-	import type { i18n as i18nType, t } from 'i18next';
+    import { createEventDispatcher } from 'svelte';
+    import { onMount, tick, getContext } from 'svelte';
+    import type { MessageType, HistoryType, ModelSelection, I18nContext } from '$lib/types';
 
-	const i18n = getContext<Writable<i18nType>>('i18n');
+	const i18n = getContext<I18nContext>('i18n');
 
 	const dispatch = createEventDispatcher();
 
@@ -54,61 +53,10 @@
 	import RegenerateMenu from './ResponseMessage/RegenerateMenu.svelte';
 	import StatusHistory from './ResponseMessage/StatusHistory.svelte';
 
-	interface MessageType {
-		id: string;
-		model: string;
-		content: string;
-		files?: { type: string; url: string }[];
-		timestamp: number;
-		role: string;
-		statusHistory?: {
-			done: boolean;
-			action: string;
-			description: string;
-			urls?: string[];
-			query?: string;
-		}[];
-		status?: {
-			done: boolean;
-			action: string;
-			description: string;
-			urls?: string[];
-			query?: string;
-		};
-		done: boolean;
-		error?: boolean | { content: string };
-		sources?: string[];
-		code_executions?: {
-			uuid: string;
-			name: string;
-			code: string;
-			language?: string;
-			result?: {
-				error?: string;
-				output?: string;
-				files?: { name: string; url: string }[];
-			};
-		}[];
-		info?: {
-			openai?: boolean;
-			prompt_tokens?: number;
-			completion_tokens?: number;
-			total_tokens?: number;
-			eval_count?: number;
-			eval_duration?: number;
-			prompt_eval_count?: number;
-			prompt_eval_duration?: number;
-			total_duration?: number;
-			load_duration?: number;
-			usage?: unknown;
-		};
-		annotation?: { type: string; rating: number };
-	}
-
-	export let chatId = '';
-	export let history;
-	export let messageId;
-	export let selectedModels = [];
+    export let chatId: string = '';
+    export let history: HistoryType;
+    export let messageId: string;
+    export let selectedModels: ModelSelection = [];
 
 	let message: MessageType = JSON.parse(JSON.stringify(history.messages[messageId]));
 	$: if (history.messages) {
@@ -117,30 +65,30 @@
 		}
 	}
 
-	export let siblings;
+    export let siblings: string[];
 
 	export let setInputText: Function = () => {};
 	export let gotoMessage: Function = () => {};
-	export let showPreviousMessage: Function;
-	export let showNextMessage: Function;
+	export let showPreviousMessage: Function = () => {};
+	export let showNextMessage: Function = () => {};
 
-	export let updateChat: Function;
-	export let editMessage: Function;
-	export let saveMessage: Function;
-	export let rateMessage: Function;
-	export let actionMessage: Function;
-	export let deleteMessage: Function;
+	export let updateChat: Function = () => Promise.resolve();
+	export let editMessage: Function = () => {};
+	export let saveMessage: Function = () => {};
+	export let rateMessage: Function = () => {};
+	export let actionMessage: Function = () => {};
+	export let deleteMessage: Function = () => {};
 
-	export let submitMessage: Function;
-	export let continueResponse: Function;
-	export let regenerateResponse: Function;
+	export let submitMessage: Function = () => {};
+	export let continueResponse: Function = () => {};
+	export let regenerateResponse: Function = () => {};
 
-	export let addMessages: Function;
+	export let addMessages: Function = () => {};
 
-	export let isLastMessage = true;
-	export let readOnly = false;
-	export let editCodeBlock = true;
-	export let topPadding = false;
+    export let isLastMessage: boolean = true;
+    export let readOnly: boolean = false;
+    export let editCodeBlock: boolean = true;
+    export let topPadding: boolean = false;
 
 	let citationsElement: HTMLDivElement;
 	let buttonsContainerElement: HTMLDivElement;
@@ -469,7 +417,7 @@
 			data: {
 				...(updatedMessage?.annotation ? updatedMessage.annotation : {}),
 				model_id: message?.selectedModelId ?? message.model,
-				...(history.messages[message.parentId].childrenIds.length > 1
+				...(message.parentId && history.messages[message.parentId] && history.messages[message.parentId].childrenIds.length > 1
 					? {
 							sibling_model_ids: history.messages[message.parentId].childrenIds
 								.filter((id) => id !== message.id)

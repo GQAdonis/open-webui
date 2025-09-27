@@ -7,18 +7,18 @@
  * Complete implementation - no stubs!
  */
 
-import { get } from 'svelte/store';
-import { chatId } from '$lib/stores';
 import { classifyIntent, enhancePromptForArtifacts } from './intent-classifier';
-import { detectArtifactsUnified, detectArtifactsFromText, type DetectedArtifact, type ArtifactDetectionResult } from '$lib/artifacts/detectArtifacts';
-import { artifactActions, type ArtifactContainer } from '$lib/stores/artifacts/artifact-store';
+import { detectArtifactsUnified, detectArtifactsFromText } from '$lib/artifacts/detectArtifacts';
+import { artifactActions } from '$lib/stores/artifacts/artifact-store';
+import type { 
+  ArtifactIntegration, 
+  ArtifactContainer, 
+  ParsedArtifact, 
+  DetectedArtifact
+} from '$lib/types/artifacts';
 
-export interface ArtifactIntegration {
-  shouldEnhancePrompt: (prompt: string) => boolean;
-  enhancePrompt: (prompt: string) => string;
-  processResponse: (response: string, messageId: string, chatId: string) => Promise<ArtifactContainer[]>;
-  showArtifactButton: (messageId: string) => boolean;
-}
+// Type for prompt input that can be either string or object with prompt property
+type PromptInput = string | { prompt: string; [key: string]: unknown };
 
 /**
  * Main integration class for artifact system
@@ -30,16 +30,27 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
   /**
    * Check if a prompt should be enhanced with artifact instructions
    */
-  shouldEnhancePrompt(prompt: string): boolean {
-    console.log("🚀 [Artifact Integration] shouldEnhancePrompt called with:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
+  shouldEnhancePrompt(prompt: PromptInput): boolean {
+    // Extract string from object if needed
+    let promptText: string;
+    if (typeof prompt === 'string') {
+      promptText = prompt;
+    } else if (prompt && typeof prompt === 'object' && prompt.prompt) {
+      promptText = prompt.prompt;
+    } else {
+      console.warn('🚀 [Artifact Integration] shouldEnhancePrompt called with invalid input:', typeof prompt, prompt);
+      return false;
+    }
+
+    console.log("🚀 [Artifact Integration] shouldEnhancePrompt called with:", promptText.substring(0, 100) + (promptText.length > 100 ? "..." : ""));
     try {
-      const classification = classifyIntent(prompt);
+      const classification = classifyIntent(promptText);
       console.log("🚀 [Artifact Integration] Classification result:", classification);
       const shouldEnhance = classification.confidence >= this.confidenceThreshold;
 
       if (this.debugMode) {
         console.log('Intent classification:', {
-          prompt: prompt.substring(0, 100) + '...',
+          prompt: promptText.substring(0, 100) + '...',
           intent: classification.intent,
           confidence: classification.confidence,
           shouldEnhance
@@ -56,16 +67,27 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
   /**
    * Enhance prompt with artifact generation instructions
    */
-  enhancePrompt(prompt: string): string {
+  enhancePrompt(prompt: PromptInput): string {
+    // Extract string from object if needed
+    let promptText: string;
+    if (typeof prompt === 'string') {
+      promptText = prompt;
+    } else if (prompt && typeof prompt === 'object' && prompt.prompt) {
+      promptText = prompt.prompt;
+    } else {
+      console.warn('🚀 [Artifact Integration] enhancePrompt called with invalid input:', typeof prompt, prompt);
+      return String(prompt || '');
+    }
+
     console.log("🚀 [Artifact Integration] enhancePrompt called");
     try {
-      const classification = classifyIntent(prompt);
-      const enhanced = enhancePromptForArtifacts(prompt, classification);
+      const classification = classifyIntent(promptText);
+      const enhanced = enhancePromptForArtifacts(promptText, classification);
       console.log("🚀 [Artifact Integration] Enhanced prompt length:", enhanced.length);
       return enhanced;
     } catch (error) {
       console.warn('Error enhancing prompt for artifacts:', error);
-      return prompt;
+      return promptText;
     }
   }
 
@@ -127,7 +149,7 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
   /**
    * Convert detected artifact to unified format for storage
    */
-  private convertToUnifiedArtifact(artifact: DetectedArtifact, identifier: string, messageId: string, chatId: string): any {
+  private convertToUnifiedArtifact(artifact: DetectedArtifact, identifier: string, messageId: string, chatId: string): ParsedArtifact {
     const timestamp = Date.now();
 
     if (artifact.type === 'react' || artifact.type === 'svelte') {
@@ -136,6 +158,7 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
         type: artifact.type === 'react' ? 'application/vnd.react+jsx' : 'application/vnd.svelte',
         title: artifact.title || `${artifact.type} Component`,
         description: `Generated ${artifact.type} component`,
+        dependencies: artifact.dependencies ? Object.entries(artifact.dependencies).map(([name, version]) => ({ name, version })) : [],
         files: [
           {
             path: artifact.type === 'react' ? '/App.jsx' : '/App.svelte',
@@ -147,7 +170,6 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
           })) : []),
           ...(artifact.css ? [{ path: '/styles.css', content: artifact.css }] : [])
         ],
-        dependencies: artifact.dependencies ? Object.entries(artifact.dependencies).map(([name, version]) => ({ name, version })) : [],
         metadata: {
           style: 'legacy',
           originalFormat: 'code-block',
@@ -158,8 +180,7 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
           renderCount: 0,
           errorCount: 0
         },
-        rawSource: artifact.entryCode,
-        sourceFormat: 'legacy'
+        raw: artifact.entryCode
       };
     } else if (artifact.type === 'html' || artifact.type === 'svg' || artifact.type === 'mermaid') {
       return {
@@ -167,13 +188,13 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
         type: artifact.type === 'html' ? 'text/html' : artifact.type === 'svg' ? 'image/svg+xml' : 'application/vnd.mermaid',
         title: `${artifact.type.toUpperCase()} Content`,
         description: `Generated ${artifact.type} content`,
+        dependencies: [],
         files: [
           {
             path: artifact.type === 'html' ? '/index.html' : artifact.type === 'svg' ? '/image.svg' : '/diagram.mmd',
             content: artifact.content
           }
         ],
-        dependencies: [],
         metadata: {
           style: 'legacy',
           originalFormat: 'code-block',
@@ -184,8 +205,7 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
           renderCount: 0,
           errorCount: 0
         },
-        rawSource: artifact.content,
-        sourceFormat: 'legacy'
+        raw: artifact.content
       };
     }
 
@@ -195,8 +215,8 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
       type: 'text/plain',
       title: 'Unknown Artifact',
       description: 'Artifact with unknown type',
-      files: [{ path: '/content.txt', content: JSON.stringify(artifact) }],
       dependencies: [],
+      files: [{ path: '/content.txt', content: JSON.stringify(artifact) }],
       metadata: {
         style: 'legacy',
         originalFormat: 'unknown',
@@ -207,8 +227,7 @@ class ArtifactIntegrationImpl implements ArtifactIntegration {
         renderCount: 0,
         errorCount: 0
       },
-      rawSource: JSON.stringify(artifact),
-      sourceFormat: 'legacy'
+      raw: JSON.stringify(artifact)
     };
   }
 
@@ -341,15 +360,26 @@ export function getChatArtifacts(chatId: string): ArtifactContainer[] {
  */
 export function useArtifactIntegration() {
   return {
-    preprocessPrompt: (prompt: string) => {
+    preprocessPrompt: (prompt: PromptInput) => {
       console.log("🎯 [useArtifactIntegration] Preprocessing prompt");
 
-      // Check if prompt should be enhanced with artifact instructions
-      if (artifactIntegration.shouldEnhancePrompt(prompt)) {
-        return artifactIntegration.enhancePrompt(prompt);
+      // Extract string from object if needed
+      let promptText: string;
+      if (typeof prompt === 'string') {
+        promptText = prompt;
+      } else if (prompt && typeof prompt === 'object' && prompt.prompt) {
+        promptText = prompt.prompt;
+      } else {
+        console.warn('🎯 [useArtifactIntegration] preprocessPrompt called with invalid input:', typeof prompt, prompt);
+        return String(prompt || '');
       }
 
-      return prompt;
+      // Check if prompt should be enhanced with artifact instructions
+      if (artifactIntegration.shouldEnhancePrompt(promptText)) {
+        return artifactIntegration.enhancePrompt(promptText);
+      }
+
+      return promptText;
     },
 
     postprocessResponse: async (response: string, messageId: string, chatId: string) => {

@@ -33,6 +33,10 @@ function escapeRegExp(string: string): string {
 }
 
 export const replaceTokens = (content, sourceIds, char, user) => {
+	if (typeof content !== 'string') {
+		console.warn('replaceTokens received non-string content:', typeof content);
+		return content;
+	}
 	const tokens = [
 		{ regex: /{{char}}/gi, replacement: char },
 		{ regex: /{{user}}/gi, replacement: user },
@@ -49,6 +53,10 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 
 	// Replace tokens outside code blocks only
 	const processOutsideCodeBlocks = (text, replacementFn) => {
+		if (typeof text !== 'string') {
+			console.warn('processOutsideCodeBlocks received non-string text:', typeof text);
+			return text;
+		}
 		return text
 			.split(/(```[\s\S]*?```|`[\s\S]*?`)/)
 			.map((segment) => {
@@ -106,6 +114,10 @@ function isChineseChar(char: string): boolean {
 // Tackle "Model output issue not following the standard Markdown/LaTeX format" in Chinese.
 function processChineseContent(content: string): string {
 	// This function is used to process the response content before the response content is rendered.
+	if (typeof content !== 'string') {
+		console.warn('processChineseContent received non-string input:', typeof content);
+		return '';
+	}
 	const lines = content.split('\n');
 	const processedLines = lines.map((line) => {
 		if (/[\u4e00-\u9fa5]/.test(line)) {
@@ -850,6 +862,11 @@ export const cleanText = (content: string) => {
 };
 
 export const removeDetails = (content, types) => {
+	if (typeof content !== 'string') {
+		console.warn('removeDetails received non-string content:', typeof content);
+		return content;
+	}
+
 	for (const type of types) {
 		content = content.replace(
 			new RegExp(`<details\\s+type="${type}"[^>]*>.*?<\\/details>`, 'gis'),
@@ -861,6 +878,10 @@ export const removeDetails = (content, types) => {
 };
 
 export const removeAllDetails = (content) => {
+	if (typeof content !== 'string') {
+		console.warn('removeAllDetails received non-string content:', typeof content);
+		return content;
+	}
 	content = content.replace(/<details[^>]*>.*?<\/details>/gis, '');
 	return content;
 };
