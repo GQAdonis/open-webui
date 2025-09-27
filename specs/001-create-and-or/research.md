@@ -2,6 +2,7 @@
 
 **Date**: 2025-01-27
 **Feature**: 001-create-and-or
+**Update**: Enhanced with Advanced Artifact Dependency Resolution System validation requirements
 
 ## Technical Decisions
 
@@ -169,14 +170,110 @@
 - **Detection**: Schema validation tests
 - **Recovery**: Graceful degradation to legacy formats
 
+## Advanced Dependency Resolution System Research
+
+### 4-Tier Strategy System Architecture
+**Decision**: Priority-based strategy execution (100 → 90 → 80 → 10)
+**Rationale**:
+- CSS module conversion highest priority (most common issue)
+- Direct CSS injection as secondary approach
+- JSON data inlining for data dependencies
+- Import removal as final fallback
+
+**Implementation Details**:
+- **Priority 100**: CSS Module Conversion
+  - Pattern: `import styles from "./file.module.css"`
+  - Conversion: `const styles = { className: { property: 'value' } }`
+  - CSS property transformation: `background-color` → `backgroundColor`
+- **Priority 90**: Direct CSS Injection
+  - Find CSS blocks in message content
+  - Inject as inline styles
+- **Priority 80**: JSON Data Injection
+  - Replace JSON imports with inline data objects
+- **Priority 10**: Import Removal Fallback
+  - Clean removal of problematic imports
+
+### Enhanced Error Recovery UI
+**Decision**: Two-stage recovery process with progress indication
+**Components**:
+- **EnhancedErrorRecovery.svelte**: Main recovery interface
+- Auto-resolution button triggering dependency strategies
+- AI Fix button for LLM-powered fixing
+- Progress indicators for both stages
+- Result display with strategy information
+- Reset functionality for user control
+
+### LLM Auto-fix Service Integration
+**Decision**: AI-powered code fixing with confidence scoring
+**Features**:
+- Context-aware prompt generation for different error types
+- API failure graceful handling
+- Basic syntax validation of fixed code
+- Confidence scores and explanations
+- Retry limits to prevent infinite loops
+- Security validation of generated code
+
+### Circuit Breaker Pattern Enhancement
+**Decision**: Prevent infinite retry loops with state management
+**Implementation**:
+- Track failure counts per artifact
+- Temporary disable auto-recovery after threshold
+- State reset after successful fixes
+- Integration with existing error handling
+
+## Validation Testing Strategy
+
+### Core Functionality Tests
+- Regex-based code block extraction validation
+- CSS module import identification accuracy
+- CSS property camelCase conversion correctness
+- JSON import inlining functionality
+- Import removal fallback behavior
+
+### Error Recovery UI Tests
+- Conditional display for appropriate error conditions
+- Two-stage process progression validation
+- Button state management (processing, success, failed)
+- Result display with meaningful information
+- Reset functionality operation
+
+### Integration Tests
+- Message content passing to resolution system
+- Smart recovery triggering for specific errors
+- Artifact structure preservation during updates
+- Circuit breaker state management
+- Re-rendering after successful fixes
+
+### Strategy System Tests
+- Priority execution order verification (100 → 90 → 80 → 10)
+- First-success termination validation
+- Strategy failure handling
+- Dependency type handling per strategy
+
+### Performance Benchmarks
+- Auto-resolution completion time (<1 second target)
+- Intent classification time (<5 seconds requirement)
+- UI responsiveness during processing
+- Success rate measurement (>85% target for CSS modules)
+
+### Edge Case Testing
+- Empty or malformed message content
+- CSS blocks without matching imports
+- Multiple CSS files with same class names
+- Nested CSS selectors and pseudo-elements
+- TypeScript vs JavaScript artifact types
+- Large code blocks performance
+- Circular dependency scenarios
+
 ## Implementation Readiness
 
 All technical unknowns have been resolved through this research phase. The implementation can proceed with:
 
-1. **Clear architectural patterns** for each component
-2. **Proven technology choices** based on existing codebase
-3. **Comprehensive testing strategy** with real-world validation
-4. **Risk mitigation plans** for identified failure modes
-5. **Performance optimization approaches** for user experience
+1. **Clear architectural patterns** for each component including the advanced dependency resolution system
+2. **Proven technology choices** based on existing codebase with validation-specific enhancements
+3. **Comprehensive testing strategy** covering all validation requirements with real-world scenarios
+4. **Risk mitigation plans** for identified failure modes including dependency resolution failures
+5. **Performance optimization approaches** meeting specified target metrics
+6. **Detailed validation checklist** covering core functionality, UI, integration, and edge cases
 
-**Status**: ✅ Ready for Phase 1 (Design & Contracts)
+**Status**: ✅ Ready for Phase 1 (Design & Contracts) with Advanced Dependency Resolution System validation focus

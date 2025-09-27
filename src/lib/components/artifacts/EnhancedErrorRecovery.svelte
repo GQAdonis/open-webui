@@ -1,353 +1,349 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { dependencyResolver } from '$lib/services/artifact-dependency-resolver/dependency-resolver';
-  import { llmAutoFixService } from '$lib/services/artifact-dependency-resolver/llm-autofix-service';
-  import type { ResolutionResult } from '$lib/services/artifact-dependency-resolver/dependency-resolver';
-  import type { AutoFixResult } from '$lib/services/artifact-dependency-resolver/llm-autofix-service';
-  
-  export let originalCode: string;
+  import { createEventDispatcher, onMount } from 'svelte';
+  import { defaultStrategyExecutor, type RecoveryRequest, type RecoveryResult } from '../../services/artifact-dependency-resolver/strategy-executor';
+  import ProgressIndicator from './ProgressIndicator.svelte';
+  import RecoveryButton from './RecoveryButton.svelte';
+  import RecoveryResults from './RecoveryResults.svelte';
+
+  export let artifactId: string;
+  export let artifactCode: string;
   export let errorMessage: string;
   export let messageContent: string = '';
-  export let language: string = 'tsx';
+  export let language: string = 'javascript';
+  export let autoStart: boolean = false;
+  export let showAdvancedOptions: boolean = false;
   
   const dispatch = createEventDispatcher<{
-    'recovery-attempt': { method: string; success: boolean; result?: any; error?: string };
-    'code-fixed': { fixedCode: string; method: string; details: any };
+    recovery_started: { artifactId: string; request: RecoveryRequest };
+    recovery_completed: { artifactId: string; result: RecoveryResult };
+    recovery_failed: { artifactId: string; error: string };
+    code_applied: { artifactId: string; code: string; strategy: string };
+    manual_retry: { artifactId: string };
   }>();
+
+  // Recovery state
+  let recoveryState: 'idle' | 'running' | 'completed' | 'failed' = 'idle';
+  let currentRecoveryResult: RecoveryResult | null = null;
+  let recoveryError: string | null = null;
+  let isAutoResolutionPhase = true;
+  let recoveryStartTime: number = 0;
+
+  // UI state
+  let showDetails = false;
+  let userConfirmationRequired = false;
   
-  let isProcessing = false;
-  let currentStep = '';
-  let currentMethod: 'auto-resolution' | 'llm-fix' | null = null;
-  let lastResults: {
-    resolution?: ResolutionResult;
-    llmFix?: AutoFixResult;
-  } = {};
-  
-  // Recovery steps for user feedback
-  const resolutionSteps = [
-    'Scanning for dependencies...',
-    'Analyzing code blocks...',
-    'Applying resolution strategies...',
-    'Validating results...'
-  ];
-  
-  const llmSteps = [
-    'Preparing context for AI...',
-    'Generating fix with AI...',
-    'Validating AI solution...',
-    'Applying improvements...'
-  ];
-  
-  async function attemptAutoResolution() {
-    if (isProcessing) return;
-    
-    isProcessing = true;
-    currentMethod = 'auto-resolution';
-    
+  /**
+   * Start the recovery process
+   */
+  async function startRecovery() {
+    console.log(`🚀 [Enhanced Recovery] Starting recovery for artifact: ${artifactId}`);
+
+    recoveryState = 'running';
+    currentRecoveryResult = null;
+    recoveryError = null;
+    isAutoResolutionPhase = true;
+    recoveryStartTime = Date.now();
+
+    const request: RecoveryRequest = {
+      artifactId,
+      artifactCode,
+      errorMessage,
+      messageContent,
+      language,
+      attemptId: `${artifactId}-${Date.now()}`
+    };
+
+    dispatch('recovery_started', { artifactId, request });
+
     try {
-      // Step through resolution process
-      for (let i = 0; i < resolutionSteps.length; i++) {
-        currentStep = resolutionSteps[i];
-        await delay(400);
-        
-        if (i === 1 && messageContent) {
-          dependencyResolver.setMessageContent(messageContent);
+      const result = await defaultStrategyExecutor.executeRecovery(request);
+
+      currentRecoveryResult = result;
+      recoveryState = result.success ? 'completed' : 'failed';
+
+      if (result.success) {
+        console.log(`✅ [Enhanced Recovery] Recovery succeeded with strategy: ${result.strategy}`);
+        dispatch('recovery_completed', { artifactId, result });
+
+        // For high-confidence results, auto-apply the fix
+        if (result.confidence > 0.8 && !userConfirmationRequired) {
+          applyRecoveredCode();
         }
-        
-        if (i === 2) {
-          const result = await dependencyResolver.resolveDependencies(originalCode, language);
-          lastResults.resolution = result;
-          
-          // Check if we made improvements
-          const hasImprovements = result.fallbacksUsed.length > 0 || result.dependencies.some(d => d.found);
-          
-          if (hasImprovements && result.resolvedCode !== originalCode) {
-            dispatch('recovery-attempt', { method: 'auto-resolution', success: true, result });
-            dispatch('code-fixed', { 
-              fixedCode: result.resolvedCode, 
-              method: 'auto-resolution',
-              details: result 
-            });
-            return;
-          }
-        }
+      } else {
+        console.log(`❌ [Enhanced Recovery] Recovery failed: ${result.errors.join(', ')}`);
+        recoveryError = result.errors.join(', ') || 'Recovery failed for unknown reasons';
+        dispatch('recovery_failed', { artifactId, error: recoveryError });
       }
-      
-      // If auto-resolution didn't work, automatically try LLM fix
-      await attemptLLMFix();
-      
+
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error during resolution';
-      dispatch('recovery-attempt', { method: 'auto-resolution', success: false, error: errorMsg });
-    } finally {
-      if (currentMethod === 'auto-resolution') {
-        isProcessing = false;
-        currentMethod = null;
-        currentStep = '';
-      }
+      const errorMsg = error instanceof Error ? error.message : 'Unknown recovery error';
+      console.error('🔥 [Enhanced Recovery] Fatal recovery error:', errorMsg);
+
+      recoveryState = 'failed';
+      recoveryError = errorMsg;
+      dispatch('recovery_failed', { artifactId, error: errorMsg });
     }
   }
-  
-  async function attemptLLMFix() {
-    if (isProcessing && currentMethod !== 'auto-resolution') return;
-    
-    if (!isProcessing) {
-      isProcessing = true;
+
+  /**
+   * Apply the recovered code to the artifact
+   */
+  function applyRecoveredCode() {
+    if (!currentRecoveryResult?.finalCode) {
+      console.warn('⚠️ [Enhanced Recovery] No recovered code to apply');
+      return;
     }
-    currentMethod = 'llm-fix';
-    
-    try {
-      // Step through LLM fix process
-      for (let i = 0; i < llmSteps.length; i++) {
-        currentStep = llmSteps[i];
-        await delay(500);
-        
-        if (i === 1) {
-          const fixRequest = {
-            originalCode,
-            errorMessage,
-            language,
-            messageContent
-          };
-          
-          const result = await llmAutoFixService.attemptAutoFix(fixRequest);
-          lastResults.llmFix = result;
-          
-          if (result.success && result.fixedCode) {
-            dispatch('recovery-attempt', { method: 'llm-fix', success: true, result });
-            dispatch('code-fixed', { 
-              fixedCode: result.fixedCode, 
-              method: 'llm-fix',
-              details: result 
-            });
-            return;
-          }
-        }
-      }
-      
-      // If we reach here, LLM fix also failed
-      dispatch('recovery-attempt', { 
-        method: 'llm-fix', 
-        success: false, 
-        error: lastResults.llmFix?.errors?.[0] || 'LLM auto-fix failed'
-      });
-      
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error during LLM fix';
-      dispatch('recovery-attempt', { method: 'llm-fix', success: false, error: errorMsg });
-    } finally {
-      isProcessing = false;
-      currentMethod = null;
-      currentStep = '';
-    }
+
+    console.log(`🔧 [Enhanced Recovery] Applying recovered code using strategy: ${currentRecoveryResult.strategy}`);
+
+    dispatch('code_applied', {
+      artifactId,
+      code: currentRecoveryResult.finalCode,
+      strategy: currentRecoveryResult.strategy
+    });
   }
-  
-  function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+
+  /**
+   * Retry the recovery process
+   */
+  function retryRecovery() {
+    console.log(`🔄 [Enhanced Recovery] Retrying recovery for artifact: ${artifactId}`);
+    dispatch('manual_retry', { artifactId });
+    startRecovery();
   }
-  
-  function getButtonText(): string {
-    if (isProcessing) {
-      switch (currentMethod) {
-        case 'auto-resolution': return 'Auto-Resolving...';
-        case 'llm-fix': return 'AI Fixing...';
-        default: return 'Processing...';
-      }
-    }
-    
-    if (hasAttempted()) {
-      return 'Try Again';
-    }
-    
-    return 'Smart Auto-Fix';
+
+  /**
+   * Reset circuit breaker for this artifact
+   */
+  function resetCircuitBreaker() {
+    console.log(`🔄 [Enhanced Recovery] Resetting circuit breaker for artifact: ${artifactId}`);
+    defaultStrategyExecutor.resetCircuitBreaker(artifactId);
+    retryRecovery();
   }
-  
-  function hasAttempted(): boolean {
-    return !!(lastResults.resolution || lastResults.llmFix);
+
+  /**
+   * Get recovery statistics
+   */
+  function getRecoveryStats() {
+    return defaultStrategyExecutor.getRecoveryStats(artifactId);
   }
-  
-  function getSuccessfulResult(): { method: string; result: any } | null {
-    if (lastResults.resolution?.success) {
-      return { method: 'Auto-Resolution', result: lastResults.resolution };
-    }
-    if (lastResults.llmFix?.success) {
-      return { method: 'AI Fix', result: lastResults.llmFix };
-    }
-    return null;
+
+  /**
+   * Format processing time for display
+   */
+  function formatProcessingTime(timeMs: number): string {
+    if (timeMs < 1000) return `${timeMs}ms`;
+    return `${(timeMs / 1000).toFixed(1)}s`;
   }
-  
-  function getButtonIcon(): string {
-    if (isProcessing) {
-      return `
-        <div class="spinner-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.23"/>
-          </svg>
-        </div>
-      `;
-    }
-    
-    const successResult = getSuccessfulResult();
-    if (successResult) {
-      return `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-      `;
-    }
-    
-    return `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-      </svg>
-    `;
+
+  /**
+   * Get strategy display name
+   */
+  function getStrategyDisplayName(strategy: string): string {
+    const strategyNames: Record<string, string> = {
+      'CSS_MODULE_CONVERSION': 'CSS Module Conversion',
+      'DIRECT_CSS_INJECTION': 'Direct CSS Injection',
+      'JSON_DATA_INLINING': 'JSON Data Inlining',
+      'IMPORT_REMOVAL': 'Import Removal',
+      'LLM_css-module-fix': 'AI CSS Module Fix',
+      'LLM_dependency-fix': 'AI Dependency Fix',
+      'LLM_syntax-fix': 'AI Syntax Fix',
+      'LLM_generic-fix': 'AI Generic Fix',
+      'CIRCUIT_BREAKER_BLOCKED': 'Blocked (Too Many Failures)',
+      'CLASSIFICATION_FAILED': 'Error Classification Failed',
+      'ALL_STRATEGIES_FAILED': 'All Strategies Failed',
+      'EXECUTION_ERROR': 'Execution Error'
+    };
+    return strategyNames[strategy] || strategy;
   }
-  
-  function reset() {
-    lastResults = {};
-    currentStep = '';
-    currentMethod = null;
-  }
+
+  // Auto-start recovery if enabled
+  onMount(() => {
+    if (autoStart) {
+      startRecovery();
+    }
+  });
 </script>
 
-<div class="enhanced-recovery-container">
-  <button 
-    class="smart-recovery-btn" 
-    class:processing={isProcessing}
-    class:success={!!getSuccessfulResult()}
-    class:failed={hasAttempted() && !getSuccessfulResult()}
-    on:click={attemptAutoResolution}
-    disabled={isProcessing}
-    title={isProcessing ? currentStep : 'Intelligent auto-fix using multiple strategies'}
-  >
-    <div class="btn-icon">
-      {@html getButtonIcon()}
-    </div>
-    <div class="btn-content">
-      <span class="btn-text">{getButtonText()}</span>
-      {#if !isProcessing && hasAttempted()}
-        <span class="btn-subtitle">
-          {#if getSuccessfulResult()}
-            Fixed with {getSuccessfulResult()?.method}
-          {:else}
-            Multiple attempts failed
-          {/if}
-        </span>
+<div class="enhanced-error-recovery">
+  <div class="recovery-header">
+    <div class="error-info">
+      <h3 class="error-title">Artifact Recovery Assistant</h3>
+      <p class="error-message">{errorMessage}</p>
+      {#if artifactId}
+        <p class="artifact-info">
+          <span class="artifact-id">Artifact: {artifactId}</span>
+          <span class="language-badge">{language}</span>
+        </p>
       {/if}
     </div>
-    {#if hasAttempted() && !isProcessing}
-      <button class="reset-btn" on:click|stopPropagation={reset} title="Reset and try again">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 4v6h6"/>
-          <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
-        </svg>
-      </button>
+
+    {#if recoveryState === 'idle'}
+      <RecoveryButton
+        variant="primary"
+        size="medium"
+        on:click={startRecovery}
+        disabled={!artifactCode || !errorMessage}
+      >
+        Start Recovery
+      </RecoveryButton>
+    {:else if recoveryState === 'running'}
+      <RecoveryButton
+        variant="secondary"
+        size="medium"
+        loading={true}
+        disabled={true}
+        loadingText="Processing..."
+      >
+        Processing...
+      </RecoveryButton>
+    {:else if recoveryState === 'completed'}
+      <RecoveryButton
+        variant="success"
+        size="medium"
+        success={true}
+        on:click={retryRecovery}
+      >
+        Success
+      </RecoveryButton>
+    {:else if recoveryState === 'failed'}
+      <RecoveryButton
+        variant="danger"
+        size="medium"
+        on:click={retryRecovery}
+      >
+        Retry Recovery
+      </RecoveryButton>
     {/if}
-  </button>
+  </div>
   
-  {#if isProcessing}
-    <div class="processing-status">
-      <div class="method-indicator">
-        <div class="method-badge" class:active={currentMethod === 'auto-resolution'}>
-          <span class="method-number">1</span>
-          <span class="method-name">Auto-Resolution</span>
-        </div>
-        <div class="method-arrow" class:active={currentMethod === 'llm-fix'}>→</div>
-        <div class="method-badge" class:active={currentMethod === 'llm-fix'}>
-          <span class="method-number">2</span>
-          <span class="method-name">AI Fix</span>
-        </div>
-      </div>
-      
-      <div class="current-step">{currentStep}</div>
-      
-      <div class="progress-container">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: {getProgressPercentage()}%"></div>
-        </div>
-        <span class="progress-text">{Math.round(getProgressPercentage())}%</span>
-      </div>
+  {#if recoveryState === 'running'}
+    <div class="recovery-progress">
+      <ProgressIndicator
+        progress={currentRecoveryResult?.stages ? Math.round((currentRecoveryResult.stages.filter(s => s.status === 'completed').length / currentRecoveryResult.stages.length) * 100) : 0}
+        stage={isAutoResolutionPhase ? 'Auto-Resolution' : 'AI Fallback'}
+        animated={true}
+        showPercentage={true}
+        size="medium"
+        variant="linear"
+        color="primary"
+      />
     </div>
   {/if}
   
-  {#if hasAttempted()}
-    <div class="results-summary">
-      <div class="results-header">
-        <h4>Recovery Attempt Results</h4>
-      </div>
-      
-      <div class="results-grid">
-        {#if lastResults.resolution}
-          <div class="result-item" class:success={lastResults.resolution.success}>
-            <div class="result-status">
-              <span class="status-icon">{lastResults.resolution.success ? '✅' : '⚠️'}</span>
-              <span class="status-title">Auto-Resolution</span>
-            </div>
-            <div class="result-details">
-              {#if lastResults.resolution.dependencies.length > 0}
-                <p>Dependencies: {lastResults.resolution.dependencies.filter(d => d.found).length}/{lastResults.resolution.dependencies.length} resolved</p>
-              {/if}
-              {#if lastResults.resolution.fallbacksUsed.length > 0}
-                <p>Strategies: {lastResults.resolution.fallbacksUsed.join(', ')}</p>
-              {/if}
-              {#if lastResults.resolution.errors.length > 0}
-                <p class="error-count">{lastResults.resolution.errors.length} unresolved issues</p>
-              {/if}
-            </div>
-          </div>
-        {/if}
-        
-        {#if lastResults.llmFix}
-          <div class="result-item" class:success={lastResults.llmFix.success}>
-            <div class="result-status">
-              <span class="status-icon">{lastResults.llmFix.success ? '✅' : '❌'}</span>
-              <span class="status-title">AI Fix</span>
-            </div>
-            <div class="result-details">
-              <p>Strategy: {lastResults.llmFix.strategy}</p>
-              <p>Confidence: {Math.round(lastResults.llmFix.confidence * 100)}%</p>
-              {#if lastResults.llmFix.explanation}
-                <p class="explanation">{lastResults.llmFix.explanation}</p>
-              {/if}
-            </div>
-          </div>
-        {/if}
-      </div>
-      
-      {#if !getSuccessfulResult()}
-        <div class="fallback-options">
-          <p class="fallback-title">Alternative Solutions:</p>
-          <ul class="fallback-list">
-            <li>Try simplifying the component structure</li>
-            <li>Remove complex dependencies and use basic React features</li>
-            <li>Check for syntax errors in the original code</li>
-            <li>Consider rewriting the component from scratch</li>
-          </ul>
+  {#if currentRecoveryResult}
+    <div class="recovery-results">
+      <RecoveryResults
+        result={currentRecoveryResult}
+        showDiagnostics={showDetails}
+        showPerformanceMetrics={true}
+        compact={false}
+        on:apply_code={applyRecoveredCode}
+        on:toggle_details={() => showDetails = !showDetails}
+      />
+
+      {#if currentRecoveryResult.success}
+        <div class="success-actions">
+          <button
+            class="apply-button primary"
+            on:click={applyRecoveredCode}
+          >
+            Apply Fix ({getStrategyDisplayName(currentRecoveryResult.strategy)})
+          </button>
+
+          <button
+            class="details-button secondary"
+            on:click={() => showDetails = !showDetails}
+          >
+            {showDetails ? 'Hide' : 'Show'} Details
+          </button>
+        </div>
+      {:else}
+        <div class="failure-actions">
+          <button
+            class="retry-button secondary"
+            on:click={retryRecovery}
+          >
+            Try Again
+          </button>
+
+          {#if currentRecoveryResult.circuitState === 'OPEN'}
+            <button
+              class="reset-button warning"
+              on:click={resetCircuitBreaker}
+            >
+              Reset & Retry
+            </button>
+          {/if}
+
+          <button
+            class="details-button secondary"
+            on:click={() => showDetails = !showDetails}
+          >
+            {showDetails ? 'Hide' : 'Show'} Error Details
+          </button>
         </div>
       {/if}
+    </div>
+  {/if}
+
+  {#if recoveryError && !currentRecoveryResult}
+    <div class="error-display">
+      <div class="error-icon">⚠️</div>
+      <div class="error-content">
+        <h4>Recovery Failed</h4>
+        <p>{recoveryError}</p>
+        <div class="error-actions">
+          <button class="retry-button secondary" on:click={retryRecovery}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showAdvancedOptions}
+    <div class="advanced-options">
+      <h4>Advanced Options</h4>
+      <div class="option-row">
+        <label>
+          <input
+            type="checkbox"
+            bind:checked={userConfirmationRequired}
+          />
+          Require confirmation before applying fixes
+        </label>
+      </div>
+
+      <div class="stats-section">
+        <h5>Recovery Statistics</h5>
+        {#if recoveryState !== 'idle'}
+          {@const stats = getRecoveryStats()}
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-label">Circuit State:</span>
+              <span class="stat-value {stats.circuitState.toLowerCase()}">{stats.circuitState}</span>
+            </div>
+            {#if currentRecoveryResult}
+              <div class="stat-item">
+                <span class="stat-label">Processing Time:</span>
+                <span class="stat-value">{formatProcessingTime(currentRecoveryResult.processingTimeMs)}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Confidence:</span>
+                <span class="stat-value">{Math.round(currentRecoveryResult.confidence * 100)}%</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Stages Completed:</span>
+                <span class="stat-value">{currentRecoveryResult.stages.filter(s => s.status === 'completed').length}/{currentRecoveryResult.stages.length}</span>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
-
-<script>
-  function getProgressPercentage(): number {
-    if (!currentMethod || !currentStep) return 0;
-    
-    const steps = currentMethod === 'auto-resolution' ? resolutionSteps : llmSteps;
-    const currentIndex = steps.indexOf(currentStep);
-    
-    if (currentIndex === -1) return 0;
-    
-    const methodProgress = (currentIndex + 1) / steps.length;
-    
-    // If we're on LLM fix after auto-resolution, show overall progress
-    if (currentMethod === 'llm-fix' && lastResults.resolution) {
-      return 50 + (methodProgress * 50); // Second half of overall progress
-    }
-    
-    return methodProgress * (currentMethod === 'auto-resolution' && !lastResults.resolution ? 50 : 100);
-  }
-</script>
 
 <style>
   .enhanced-recovery-container {

@@ -1,11 +1,13 @@
 <!--
 Artifact Error Boundary Component
 Provides comprehensive error handling and recovery for artifact rendering failures
+Enhanced with smart dependency resolution integration
 -->
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from 'svelte';
   import { retryLoopMonitor } from '$lib/services/retry-loop-monitor';
   import type { ComponentState } from '$lib/types/retry-monitoring';
+  import EnhancedErrorRecovery from './EnhancedErrorRecovery.svelte';
 
   export let artifactId: string;
   export let componentId: string = `error-boundary-${artifactId}`;
@@ -13,6 +15,12 @@ Provides comprehensive error handling and recovery for artifact rendering failur
   export let showDetails = false;
   export let autoRetry = false;
   export let retryDelay = 2000;
+
+  // NEW: Enhanced error recovery props
+  export let artifactCode: string = '';
+  export let messageContent: string = '';
+  export let language: string = 'javascript';
+  export let enableSmartRecovery = true;
 
   const dispatch = createEventDispatcher();
 
@@ -23,6 +31,11 @@ Provides comprehensive error handling and recovery for artifact rendering failur
   let isRetrying = false;
   let retryTimer: NodeJS.Timeout | null = null;
   let componentState: ComponentState | null = null;
+
+  // NEW: Enhanced error recovery state
+  let showSmartRecovery = false;
+  let smartRecoveryAttempts = 0;
+  let recoveryInProgress = false;
 
   // Error types for better handling
   interface ArtifactError extends Error {
@@ -61,16 +74,23 @@ Provides comprehensive error handling and recovery for artifact rendering failur
     // Record the error in retry monitor
     retryLoopMonitor.recordRetry(componentId, err.message);
 
+    // NEW: Check if smart recovery should be shown
+    if (enableSmartRecovery && shouldShowSmartRecovery(enhancedError)) {
+      showSmartRecovery = true;
+      console.log('🧠 [ArtifactErrorBoundary] Smart recovery enabled for error:', errorType);
+    }
+
     // Emit error event
     dispatch('error', {
       error: enhancedError,
       errorInfo: info,
       componentId,
-      artifactId
+      artifactId,
+      showSmartRecovery
     });
 
-    // Auto-retry if enabled and error is retryable
-    if (autoRetry && enhancedError.retryable && retryCount < maxRetries) {
+    // Auto-retry if enabled and error is retryable (but not if smart recovery is active)
+    if (autoRetry && enhancedError.retryable && retryCount < maxRetries && !showSmartRecovery) {
       scheduleRetry();
     }
   }
@@ -294,6 +314,133 @@ Provides comprehensive error handling and recovery for artifact rendering failur
     return actions;
   }
 
+  // NEW: Check if smart recovery should be shown for this error
+  function shouldShowSmartRecovery(error: ArtifactError): boolean {
+    if (!enableSmartRecovery || !artifactCode) return false;
+
+    const errorType = error.type;
+    const errorMessage = error.message.toLowerCase();
+
+    // Show smart recovery for dependency-related errors
+    const isDependencyError =
+      errorMessage.includes('cannot resolve') ||
+      errorMessage.includes('module not found') ||
+      errorMessage.includes('import') ||
+      errorMessage.includes('css') ||
+      errorMessage.includes('dependency') ||
+      errorType === 'parsing' ||
+      errorType === 'validation';
+
+    // Only show for supported languages
+    const supportedLanguages = ['javascript', 'typescript', 'jsx', 'tsx'];
+    const isSupported = supportedLanguages.includes(language.toLowerCase());
+
+    return isDependencyError && isSupported;
+  }
+
+  // NEW: Handle smart recovery events
+  function handleSmartRecoveryStarted(event: CustomEvent) {
+    recoveryInProgress = true;
+    smartRecoveryAttempts++;
+
+    console.log('🧠 [ArtifactErrorBoundary] Smart recovery started:', {
+      attempt: smartRecoveryAttempts,
+      request: event.detail.request
+    });
+
+    dispatch('smart-recovery-started', {
+      componentId,
+      artifactId,
+      attempt: smartRecoveryAttempts,
+      request: event.detail.request
+    });
+  }
+
+  function handleSmartRecoveryCompleted(event: CustomEvent) {
+    recoveryInProgress = false;
+    const { result } = event.detail;
+
+    console.log('🧠 [ArtifactErrorBoundary] Smart recovery completed:', {
+      success: result.success,
+      strategy: result.strategy,
+      confidence: result.confidence
+    });
+
+    dispatch('smart-recovery-completed', {
+      componentId,
+      artifactId,
+      result
+    });
+
+    // If recovery was successful, hide smart recovery but keep the boundary active
+    // The parent component should handle applying the fixed code
+    if (result.success) {
+      showSmartRecovery = false;
+    }
+  }
+
+  function handleSmartRecoveryFailed(event: CustomEvent) {
+    recoveryInProgress = false;
+    const { error: recoveryError } = event.detail;
+
+    console.error('🧠 [ArtifactErrorBoundary] Smart recovery failed:', recoveryError);
+
+    dispatch('smart-recovery-failed', {
+      componentId,
+      artifactId,
+      error: recoveryError
+    });
+  }
+
+  function handleCodeApplied(event: CustomEvent) {
+    const { code, strategy } = event.detail;
+
+    console.log('🔧 [ArtifactErrorBoundary] Code applied from smart recovery:', {
+      strategy,
+      codeLength: code.length
+    });
+
+    // Reset error state since we have new code
+    error = null;
+    errorInfo = null;
+    hasError = false;
+    showSmartRecovery = false;
+    recoveryInProgress = false;
+
+    // Reset retry counters
+    retryCount = 0;
+    retryLoopMonitor.resetCircuit(componentId);
+
+    dispatch('code-applied', {
+      componentId,
+      artifactId,
+      code,
+      strategy
+    });
+
+    // The parent should re-render with the new code
+    dispatch('recovery-success', {
+      componentId,
+      artifactId,
+      fixedCode: code,
+      strategy
+    });
+  }
+
+  // NEW: Manual smart recovery trigger
+  function triggerSmartRecovery() {
+    if (!enableSmartRecovery || !error) return;
+
+    showSmartRecovery = true;
+    console.log('🧠 [ArtifactErrorBoundary] Manual smart recovery triggered');
+
+    dispatch('smart-recovery-triggered', {
+      componentId,
+      artifactId,
+      errorType: (error as ArtifactError).type
+    });
+  }
+
   onDestroy(() => {
     clearRetryTimer();
   });
@@ -354,12 +501,22 @@ Provides comprehensive error handling and recovery for artifact rendering failur
           <div class="spinner"></div>
           <span>Retrying...</span>
         </div>
-      {:else if (error as ArtifactError).retryable && retryCount < maxRetries}
+      {:else if (error as ArtifactError).retryable && retryCount < maxRetries && !showSmartRecovery}
         <button class="retry-btn" on:click={retry}>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
           Retry ({retryCount}/{maxRetries})
+        </button>
+      {/if}
+
+      <!-- NEW: Smart Recovery trigger button -->
+      {#if enableSmartRecovery && !showSmartRecovery && shouldShowSmartRecovery(error as ArtifactError)}
+        <button class="smart-recovery-btn" on:click={triggerSmartRecovery} disabled={recoveryInProgress}>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9h2m6 0h2m-6 6h2m6 0h2M13 3h6a2 2 0 012 2v6a2 2 0 01-2 2h-6m-4 0H3a2 2 0 01-2-2V5a2 2 0 012-2h6m4 0v8a2 2 0 01-2 2H9a2 2 0 01-2-2V3h8z"/>
+          </svg>
+          {recoveryInProgress ? 'Recovery in Progress...' : 'Try Smart Recovery'}
         </button>
       {/if}
 
@@ -381,6 +538,29 @@ Provides comprehensive error handling and recovery for artifact rendering failur
         {showDetails ? 'Hide' : 'Show'} Details
       </button>
     </div>
+
+    <!-- NEW: Enhanced Error Recovery Component -->
+    {#if showSmartRecovery && enableSmartRecovery && artifactCode}
+      <div class="smart-recovery-section">
+        <h4 class="recovery-title">🧠 Smart Recovery Assistant</h4>
+        <p class="recovery-description">
+          Our AI-powered recovery system can automatically fix common dependency and import issues.
+        </p>
+        <EnhancedErrorRecovery
+          {artifactId}
+          artifactCode={artifactCode}
+          errorMessage={error.message}
+          {messageContent}
+          {language}
+          autoStart={false}
+          showAdvancedOptions={showDetails}
+          on:recovery_started={handleSmartRecoveryStarted}
+          on:recovery_completed={handleSmartRecoveryCompleted}
+          on:recovery_failed={handleSmartRecoveryFailed}
+          on:code_applied={handleCodeApplied}
+        />
+      </div>
+    {/if}
   </div>
 {:else}
   <!-- Render children when no error -->
@@ -582,6 +762,52 @@ Provides comprehensive error handling and recovery for artifact rendering failur
     background: #4b5563;
   }
 
+  .smart-recovery-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    border-color: #7c3aed;
+    position: relative;
+  }
+
+  .smart-recovery-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+
+  .smart-recovery-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .smart-recovery-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e5e7eb;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+  }
+
+  .recovery-title {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .recovery-description {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -617,6 +843,29 @@ Provides comprehensive error handling and recovery for artifact rendering failur
 
     button:hover {
       background: #4b5563;
+    }
+
+    .smart-recovery-btn {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      border-color: #6d28d9;
+    }
+
+    .smart-recovery-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    }
+
+    .smart-recovery-section {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border-color: #374151;
+    }
+
+    .recovery-title {
+      color: #f9fafb;
+    }
+
+    .recovery-description {
+      color: #9ca3af;
     }
   }
 </style>

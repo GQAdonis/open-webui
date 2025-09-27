@@ -473,6 +473,15 @@
 			return;
 		}
 
+		if (event.data.type === 'action:submit') {
+			console.debug(event.data.text);
+
+			if (prompt !== '') {
+				await tick();
+				submitPrompt(prompt);
+			}
+		}
+
 		// Replace with your iframe's origin
 		if (event.data.type === 'input:prompt') {
 			console.debug(event.data.text);
@@ -482,15 +491,6 @@
 			if (inputElement) {
 				messageInput?.setText(event.data.text);
 				inputElement.focus();
-			}
-		}
-
-		if (event.data.type === 'action:submit') {
-			console.debug(event.data.text);
-
-			if (prompt !== '') {
-				await tick();
-				submitPrompt(prompt);
 			}
 		}
 
@@ -1593,7 +1593,9 @@
 		const _files = JSON.parse(JSON.stringify(files));
 
 		chatFiles.push(
-			..._files.filter((item) => ['doc', 'text', 'file', 'collection'].includes(item.type))
+			..._files.filter((item) =>
+				['doc', 'text', 'file', 'note', 'chat', 'collection'].includes(item.type)
+			)
 		);
 		chatFiles = chatFiles.filter(
 			// Remove duplicates
@@ -2622,7 +2624,8 @@
 										clearDraft();
 										if (e.detail || files.length > 0) {
 											await tick();
-											submitPrompt(e.detail.replaceAll('\n\n', '\n'));
+											const prompt = typeof e.detail === 'string' ? e.detail.replaceAll('\n\n', '\n') : e.detail;
+											submitPrompt(prompt);
 										}
 									}}
 								/>

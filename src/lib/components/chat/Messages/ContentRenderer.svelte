@@ -231,7 +231,7 @@ function processContentUpdate(newContent: string) {
 async function tryAddToLegacyStore(artifact: any) {
 	try {
 		// Convert to legacy format and add to store
-		const { artifactStore } = await import('$lib/stores/artifacts/artifact-store');
+		const { artifactActions } = await import('$lib/stores/artifacts/artifact-store');
 		const legacyArtifact = {
 			identifier: artifact.attrs.id || `artifact-${Date.now()}`,
 			type: artifact.attrs.type || 'application/vnd.react+jsx',
@@ -245,14 +245,8 @@ async function tryAddToLegacyStore(artifact: any) {
 			rawXml: artifact.raw
 		};
 
-		const container = {
-			messageId,
-			chatId: $chatId,
-			artifact: legacyArtifact,
-			createdAt: Date.now()
-		};
-
-		artifactStore.addArtifact(container);
+		// Use artifactActions.addArtifact with the correct parameters: (artifact, chatId, messageId)
+		artifactActions.addArtifact(legacyArtifact, $chatId, messageId);
 		console.log('🔄 [ContentRenderer] Added to legacy store:', legacyArtifact.identifier);
 	} catch (error) {
 		console.warn('Failed to add artifact to legacy store:', error);
@@ -323,7 +317,7 @@ async function processContentWithUnifiedDetection(content: string) {
 				tryAddToLegacyStore({ attrs: { type: artifact.type }, code: artifact.entryCode || artifact.content, raw: legacyArtifact.rawXml });
 
 				// Emit events for other components
-				artifactEvents.emitArtifact(messageId, { artifact: legacyArtifact });
+				artifactEvents.emitArtifact(messageId, legacyArtifact);
 				incrementArtifactCount();
 			});
 

@@ -30,7 +30,7 @@
   }
 
   // Process messages for PAS 3.0 artifacts
-  const processMessages = () => {
+  const processMessages = async () => {
     if (!messages?.length) {
       return;
     }
@@ -41,19 +41,24 @@
     }
 
     // Process each assistant message for artifacts
-    messages.forEach((message, messageIndex) => {
+    for (const [messageIndex, message] of messages.entries()) {
       if (message?.role !== 'user' && message?.content) {
-        const artifacts = artifactIntegration.processResponse(
-          message.content,
-          message.id || `msg_${messageIndex}`
-        );
+        try {
+          const artifacts = await artifactIntegration.processResponse(
+            message.content,
+            message.id || `msg_${messageIndex}`,
+            $chatId || 'unknown'
+          );
 
-        // Add artifacts to the store
-        artifacts.forEach(artifact => {
-          artifactActions.addArtifact(artifact, $chatId || 'unknown', message.id || `msg_${messageIndex}`);
-        });
+          // Add artifacts to the store
+          artifacts.forEach(artifact => {
+            artifactActions.addArtifact(artifact, $chatId || 'unknown', message.id || `msg_${messageIndex}`);
+          });
+        } catch (error) {
+          console.error('Error processing artifacts for message:', message.id, error);
+        }
       }
-    });
+    }
 
     // Show artifact panel if artifacts were found
     const currentArtifacts = $artifactStore;

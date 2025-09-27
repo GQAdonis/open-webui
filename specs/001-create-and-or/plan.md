@@ -31,28 +31,36 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-Enhanced artifact creation and preview system that intelligently detects user intent for code generation, enhances prompts for PAS 3.0 XML compliance, parses artifacts from LLM responses, and renders interactive previews using Sandpack. Includes comprehensive E2E testing to eliminate infinite loading retry loops.
+Enhance the artifact creation and preview system with intelligent intent classification, prompt enhancement for PAS 3.0 XML compliance, robust artifact parsing, and comprehensive end-to-end testing. The system validates an Advanced Artifact Dependency Resolution System that resolves multi-block artifact bundling failures through a 4-tier strategy system, AI-powered code fixing, and enhanced error recovery UI components.
 
 ## Technical Context
-**Language/Version**: TypeScript 5.0+, JavaScript ES2022, Python 3.11 (backend)
-**Primary Dependencies**: SvelteKit 2.5+, Vite 5.0+, Sandpack 2.20+, Playwright 1.55+, fast-xml-parser 5.2+, React 19+
-**Storage**: Browser localStorage/sessionStorage for artifacts, in-memory stores for state management
-**Testing**: Vitest (unit), Playwright (E2E), existing artifact test suite
-**Target Platform**: Web browsers (Chrome/Firefox/Safari), SvelteKit static deployment
-**Project Type**: web - SvelteKit frontend with Python backend API
-**Performance Goals**: Intent classification <5s, artifact parsing <1s, non-blocking UI rendering
-**Constraints**: PAS 3.0 XML schema compliance, production LLM API usage, browser sandboxing security
-**Scale/Scope**: Single-user chat sessions, artifact previews, real-time LLM integration
+**Language/Version**: TypeScript 5.x, Python 3.11 (backend), Svelte 4.x
+**Primary Dependencies**: SvelteKit, FastAPI, Sandpack, PAS 3.0 XML parser, Playwright, OpenAI/Claude APIs
+**Storage**: Browser storage for artifacts metadata, server-side session management
+**Testing**: Vitest (frontend unit), Playwright (E2E), pytest (backend)
+**Target Platform**: Web browsers (Chrome/Firefox/Safari), Linux server backend
+**Project Type**: web - full-stack SvelteKit frontend with FastAPI backend
+**Performance Goals**: Intent classification <5s, artifact parsing <1s, dependency resolution <1s
+**Constraints**: PAS 3.0 XML schema compliance, prevent infinite retry loops, browser sandboxing compatibility
+**Scale/Scope**: Chat interface with real-time artifact preview, multi-block dependency resolution, comprehensive E2E coverage
+
+**Validation Focus**: Advanced Artifact Dependency Resolution System implementation including:
+- `dependency-resolver.ts` - 4-tier strategy system (CSS modules, direct injection, JSON inlining, import removal)
+- `llm-autofix-service.ts` - AI-powered code fixing with confidence scoring
+- `EnhancedErrorRecovery.svelte` - Two-stage recovery UI (Auto-resolution → AI Fix)
+- `ArtifactRenderer.svelte` - Smart recovery integration with circuit breaker pattern
+- Comprehensive test coverage for dependency resolution, error recovery, and strategy system
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Status**: PASS - No constitutional violations detected
-- Uses existing SvelteKit/TypeScript stack (no new technology introduction)
-- Extends existing artifact system (incremental enhancement)
-- Follows test-first approach with Playwright E2E tests
-- Maintains security through browser sandboxing
-- No unnecessary complexity introduced
+**Constitution Gates**:
+- Constitution file is a template - no specific gates defined
+- Following general software engineering principles:
+  - Test-driven development for new functionality
+  - Modular, maintainable code architecture
+  - Clear separation of concerns between components
+  - Comprehensive error handling and user feedback
 
 ## Project Structure
 
@@ -104,7 +112,7 @@ ios/ or android/
 └── [platform-specific structure]
 ```
 
-**Structure Decision**: Option 2 (Web application) - SvelteKit frontend with existing backend structure
+**Structure Decision**: Option 2 (Web application) - Frontend SvelteKit + Backend FastAPI detected
 
 ## Phase 0: Outline & Research
 1. **Extract unknowns from Technical Context** above:
@@ -166,34 +174,61 @@ ios/ or android/
 **Task Generation Strategy**:
 - Load `.specify/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
-- Intent classification service → contract tests + implementation [P]
-- Artifact parser service → contract tests + XML parsing enhancement [P]
-- Sandpack renderer → contract tests + retry loop prevention
-- Preview button components → UI component tests + integration
-- E2E test framework → Playwright test implementation
-- Each user story from spec → integration test task
+- Each contract → contract test task [P]
+- Each entity → model creation task [P]
+- Each user story → integration test task
+- Implementation tasks to make tests pass
+- **Special focus**: Advanced Dependency Resolution System validation tasks
+
+**Advanced System Task Categories**:
+1. **Core Functionality Validation**:
+   - Dependency resolver contract tests
+   - Strategy system implementation tests
+   - Code transformation validation tests
+   - Performance benchmark tests
+
+2. **Error Recovery UI Validation**:
+   - EnhancedErrorRecovery component tests
+   - Two-stage recovery process tests
+   - Progress indicator validation tests
+   - User interaction scenario tests
+
+3. **Integration Validation**:
+   - ArtifactRenderer integration tests
+   - Circuit breaker integration tests
+   - Message content processing tests
+   - Re-rendering validation tests
+
+4. **LLM Integration Validation**:
+   - AI-powered code fixing tests
+   - API failure handling tests
+   - Confidence scoring validation tests
+   - Security validation tests
+
+5. **Edge Case Validation**:
+   - Malformed input handling tests
+   - Performance stress tests
+   - Browser compatibility tests
+   - Memory usage validation tests
 
 **Ordering Strategy**:
-- TDD order: Contract tests → Unit tests → Implementation → Integration tests
-- Dependency order: Core services (parser, classifier) → UI components → E2E tests
-- Mark [P] for parallel execution of independent services
-- Sequential UI integration after core services complete
+- TDD order: Tests before implementation
+- Dependency order: Models → Services → UI → Integration
+- Mark [P] for parallel execution (independent files)
+- Validation tests after each component implementation
+- End-to-end validation tests last
 
-**Task Categories**:
-1. **Service Layer** (8-10 tasks): Intent classifier, artifact parser, Sandpack renderer
-2. **UI Components** (6-8 tasks): Preview buttons, error handling, retry mechanisms
-3. **Integration** (4-6 tasks): Chat interface integration, workflow orchestration
-4. **Testing** (8-10 tasks): E2E tests, contract validation, performance tests
-5. **Bug Fixes** (2-3 tasks): Retry loop prevention, timeout handling
+**Validation-Specific Tasks**:
+- CSS module import conversion validation
+- CSS property camelCase transformation validation
+- JSON import inlining validation
+- Import removal fallback validation
+- Strategy priority execution validation
+- Circuit breaker functionality validation
+- Auto-resolution performance validation
+- UI responsiveness validation
 
-**Estimated Output**: 28-35 numbered, ordered tasks in tasks.md
-
-**Key Implementation Priorities**:
-- High: Retry loop prevention (critical bug fix)
-- High: E2E testing with real LLM endpoints
-- Medium: PAS 3.0 XML parsing enhancements
-- Medium: Intent classification keyword detection
-- Low: UI polish and error message improvements
+**Estimated Output**: 35-45 numbered, ordered tasks in tasks.md with comprehensive validation coverage
 
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
@@ -228,14 +263,7 @@ ios/ or android/
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
-- [x] Complexity deviations documented (none required)
-
-**Artifacts Generated**:
-- [x] research.md - Technical decisions and architecture patterns
-- [x] data-model.md - Core entities and relationships
-- [x] contracts/ - Service interfaces and API contracts
-- [x] quickstart.md - Validation test procedures
-- [x] CLAUDE.md - Updated agent context
+- [ ] Complexity deviations documented
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*

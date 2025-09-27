@@ -14,6 +14,8 @@ import type {
   ValidationErrorType,
   ArtifactType
 } from '$lib/types/enhanced-artifacts';
+import { defaultStrategyExecutor } from '$lib/services/artifact-dependency-resolver/strategy-executor';
+import type { RecoveryRequest } from '$lib/services/artifact-dependency-resolver/strategy-executor';
 
 export interface ArtifactFile {
   path: string;
@@ -41,6 +43,26 @@ export interface ArtifactParseResult {
   hasArtifacts: boolean;
   validationErrors: ValidationError[];
   parsingTimeMs: number;
+  dependencyResolutionResults?: DependencyResolutionResult[];
+}
+
+export interface DependencyResolutionResult {
+  artifactId: string;
+  originalCode: string;
+  resolvedCode?: string;
+  success: boolean;
+  strategy?: string;
+  confidence?: number;
+  errors?: string[];
+  processingTimeMs: number;
+}
+
+export interface EnhancedParsingOptions {
+  validateSchema?: boolean;
+  enableDependencyResolution?: boolean;
+  messageContent?: string;
+  preemptiveResolution?: boolean;
+  skipValidation?: boolean;
 }
 
 /**
@@ -1130,7 +1152,7 @@ export function getSecurityConfig(): SecurityConfig {
 }
 
 /**
- * Enhanced artifact parsing with validation
+ * Enhanced artifact parsing with validation and dependency resolution
  */
 export function parseArtifactsWithValidation(request: ArtifactParsingRequest): ArtifactParsingResponse {
   const startTime = performance.now();
@@ -1169,6 +1191,257 @@ export function parseArtifactsWithValidation(request: ArtifactParsingRequest): A
     validationErrors: parseResult.validationErrors,
     parsingTimeMs,
     hasArtifacts: parseResult.hasArtifacts
+  };
+}
+
+/**
+ * Enhanced artifact parsing with dependency resolution integration (T046)
+ */
+export async function parseArtifactsWithDependencyResolution(
+  content: string,
+  options: EnhancedParsingOptions = {}
+): Promise<ArtifactParseResult> {
+  const startTime = performance.now();
+
+  console.log('🔧 [Enhanced Parser] Starting enhanced parsing with dependency resolution');
+
+  // Parse artifacts normally first
+  const parseResult = parseArtifactsFromContent(content, options.validateSchema !== false);
+
+  // If dependency resolution is enabled and we have artifacts, process them
+  if (options.enableDependencyResolution && parseResult.artifacts.length > 0) {
+    const dependencyResolutionResults: DependencyResolutionResult[] = [];
+
+    for (const artifact of parseResult.artifacts) {
+      const resolutionResult = await performDependencyResolution(artifact, options);
+      dependencyResolutionResults.push(resolutionResult);
+
+      // If resolution was successful, update the artifact
+      if (resolutionResult.success && resolutionResult.resolvedCode) {
+        artifact.files[0].content = resolutionResult.resolvedCode;
+        console.log(`✅ [Enhanced Parser] Applied dependency resolution for artifact: ${artifact.identifier}`);
+      }
+    }
+
+    parseResult.dependencyResolutionResults = dependencyResolutionResults;
+  }
+
+  const totalParsingTimeMs = performance.now() - startTime;
+  parseResult.parsingTimeMs = totalParsingTimeMs;
+
+  console.log(`🔧 [Enhanced Parser] Enhanced parsing completed in ${totalParsingTimeMs.toFixed(2)}ms`);
+
+  return parseResult;
+}
+
+/**
+ * Perform dependency resolution for a single artifact
+ */
+async function performDependencyResolution(
+  artifact: ParsedArtifact,
+  options: EnhancedParsingOptions
+): Promise<DependencyResolutionResult> {
+  const startTime = performance.now();
+
+  try {
+    const primaryFile = artifact.files[0];
+    if (!primaryFile) {
+      return {
+        artifactId: artifact.identifier,
+        originalCode: '',
+        success: false,
+        errors: ['No primary file found in artifact'],
+        processingTimeMs: performance.now() - startTime
+      };
+    }
+
+    // Check if this artifact type supports dependency resolution
+    if (!shouldAttemptDependencyResolution(artifact.type)) {
+      return {
+        artifactId: artifact.identifier,
+        originalCode: primaryFile.content,
+        success: false,
+        errors: [`Dependency resolution not supported for artifact type: ${artifact.type}`],
+        processingTimeMs: performance.now() - startTime
+      };
+    }
+
+    // Create recovery request
+    const recoveryRequest: RecoveryRequest = {
+      artifactId: artifact.identifier,
+      artifactCode: primaryFile.content,
+      errorMessage: generatePreemptiveErrorMessage(primaryFile.content),
+      messageContent: options.messageContent || '',
+      language: extractLanguage(artifact.type),
+      attemptId: `preemptive-${artifact.identifier}-${Date.now()}`
+    };
+
+    console.log(`🔧 [Dependency Resolution] Processing artifact: ${artifact.identifier}`);
+
+    // Execute dependency resolution
+    const result = await defaultStrategyExecutor.executeRecovery(recoveryRequest);
+
+    const processingTimeMs = performance.now() - startTime;
+
+    return {
+      artifactId: artifact.identifier,
+      originalCode: primaryFile.content,
+      resolvedCode: result.finalCode,
+      success: result.success,
+      strategy: result.strategy,
+      confidence: result.confidence,
+      errors: result.errors,
+      processingTimeMs
+    };
+
+  } catch (error) {
+    const processingTimeMs = performance.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown dependency resolution error';
+
+    console.error(`❌ [Dependency Resolution] Failed for artifact ${artifact.identifier}:`, errorMessage);
+
+    return {
+      artifactId: artifact.identifier,
+      originalCode: artifact.files[0]?.content || '',
+      success: false,
+      errors: [errorMessage],
+      processingTimeMs
+    };
+  }
+}
+
+/**
+ * Check if artifact type supports dependency resolution
+ */
+function shouldAttemptDependencyResolution(artifactType: string): boolean {
+  const supportedTypes = [
+    'application/vnd.react+jsx',
+    'application/vnd.react+tsx',
+    'application/vnd.svelte',
+    'application/vnd.svelte+ts',
+    'text/html'
+  ];
+
+  return supportedTypes.includes(artifactType);
+}
+
+/**
+ * Generate a preemptive error message for proactive dependency resolution
+ */
+function generatePreemptiveErrorMessage(code: string): string {
+  const importStatements = code.match(/import.*from\s+['"][^'"]+['"]/g) || [];
+  const cssImports = importStatements.filter(imp => imp.includes('.css'));
+  const jsonImports = importStatements.filter(imp => imp.includes('.json'));
+  const moduleImports = importStatements.filter(imp => !imp.includes('.css') && !imp.includes('.json'));
+
+  if (cssImports.length > 0) {
+    return `Potential CSS module import issues detected: ${cssImports[0]}`;
+  }
+
+  if (jsonImports.length > 0) {
+    return `Potential JSON import issues detected: ${jsonImports[0]}`;
+  }
+
+  if (moduleImports.length > 0) {
+    return `Potential module import issues detected: ${moduleImports[0]}`;
+  }
+
+  return 'Preemptive dependency resolution check';
+}
+
+/**
+ * Detect potential dependency issues in artifact code
+ */
+export function detectPotentialDependencyIssues(artifact: ParsedArtifact): string[] {
+  const issues: string[] = [];
+  const primaryFile = artifact.files[0];
+
+  if (!primaryFile) return issues;
+
+  const code = primaryFile.content;
+
+  // Check for CSS module imports
+  const cssModuleImports = code.match(/import\s+\w+\s+from\s+['"][^'"]*\.module\.css['"]/g);
+  if (cssModuleImports) {
+    issues.push(`CSS module imports detected: ${cssModuleImports.length} imports may need conversion`);
+  }
+
+  // Check for JSON imports
+  const jsonImports = code.match(/import\s+\w+\s+from\s+['"][^'"]*\.json['"]/g);
+  if (jsonImports) {
+    issues.push(`JSON imports detected: ${jsonImports.length} imports may need inlining`);
+  }
+
+  // Check for relative imports
+  const relativeImports = code.match(/import.*from\s+['"]\.\/[^'"]+['"]/g);
+  if (relativeImports) {
+    issues.push(`Relative imports detected: ${relativeImports.length} imports may not resolve`);
+  }
+
+  // Check for external dependencies not in artifact dependencies
+  const externalImports = code.match(/import.*from\s+['"][^.\/][^'"]+['"]/g);
+  if (externalImports) {
+    const declaredDeps = artifact.dependencies.map(d => d.name);
+    const undeclaredDeps = externalImports
+      .map(imp => imp.match(/from\s+['"]([^'"]+)['"]/)?.[1])
+      .filter(dep => dep && !declaredDeps.includes(dep.split('/')[0]));
+
+    if (undeclaredDeps.length > 0) {
+      issues.push(`Undeclared dependencies: ${undeclaredDeps.join(', ')}`);
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Preemptive dependency resolution for artifacts (T046)
+ */
+export async function performPreemptiveDependencyResolution(
+  artifacts: ParsedArtifact[],
+  messageContent: string = ''
+): Promise<{ resolved: ParsedArtifact[]; results: DependencyResolutionResult[] }> {
+  console.log('🔮 [Preemptive Resolution] Starting preemptive dependency resolution');
+
+  const results: DependencyResolutionResult[] = [];
+  const resolvedArtifacts: ParsedArtifact[] = [];
+
+  for (const artifact of artifacts) {
+    const issues = detectPotentialDependencyIssues(artifact);
+
+    if (issues.length > 0) {
+      console.log(`🔮 [Preemptive Resolution] Issues detected for ${artifact.identifier}:`, issues);
+
+      const resolutionResult = await performDependencyResolution(artifact, {
+        enableDependencyResolution: true,
+        messageContent,
+        preemptiveResolution: true
+      });
+
+      results.push(resolutionResult);
+
+      // Create resolved artifact
+      const resolvedArtifact = { ...artifact };
+      if (resolutionResult.success && resolutionResult.resolvedCode) {
+        resolvedArtifact.files = [...artifact.files];
+        resolvedArtifact.files[0] = {
+          ...resolvedArtifact.files[0],
+          content: resolutionResult.resolvedCode
+        };
+      }
+
+      resolvedArtifacts.push(resolvedArtifact);
+    } else {
+      // No issues detected, keep original artifact
+      resolvedArtifacts.push(artifact);
+    }
+  }
+
+  console.log(`🔮 [Preemptive Resolution] Completed. Processed ${results.length} artifacts with issues`);
+
+  return {
+    resolved: resolvedArtifacts,
+    results
   };
 }
 

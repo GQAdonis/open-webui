@@ -2,6 +2,7 @@
 
 **Date**: 2025-01-27
 **Feature**: 001-create-and-or
+**Update**: Enhanced with Advanced Artifact Dependency Resolution System entities
 
 ## Core Entities
 
@@ -281,4 +282,236 @@ Rendered Preview
 - CSP headers restrict artifact execution
 - Network access limited for artifacts
 
-**Status**: ✅ Ready for contract generation
+## Advanced Dependency Resolution System Entities
+
+### DependencyResolver
+**Purpose**: Core resolution engine with 4-tier strategy system for artifact dependencies
+
+**Fields**:
+- `messageContent: string` - Source message containing code blocks and dependencies
+- `strategies: ResolutionStrategy[]` - Available resolution strategies by priority
+- `resolvedArtifacts: ResolvedArtifact[]` - Successfully processed artifacts
+- `failedResolutions: FailedResolution[]` - Unsuccessful resolution attempts
+- `processingTimeMs: number` - Total resolution time
+
+**Validation Rules**:
+- messageContent must be non-empty string
+- strategies must be ordered by priority (100 → 90 → 80 → 10)
+- processingTimeMs must be positive integer
+- Failed resolutions must include error details
+
+**State Transitions**:
+```
+IDLE → EXTRACTING_BLOCKS → APPLYING_STRATEGIES → COMPLETED
+    ↓                    ↓                   ↓
+  ERROR ← STRATEGY_FAILED ← ALL_STRATEGIES_FAILED
+```
+
+### ResolutionStrategy
+**Purpose**: Individual strategy for resolving specific dependency types
+
+**Fields**:
+- `name: string` - Strategy identifier ("CSS_MODULE_CONVERSION", "DIRECT_CSS_INJECTION", etc.)
+- `priority: number` - Execution priority (100, 90, 80, 10)
+- `targetPattern: RegExp` - Pattern to match dependency types
+- `canHandle: (code: string) => boolean` - Capability check function
+- `apply: (code: string, context: ResolutionContext) => ResolutionResult` - Resolution logic
+
+**Validation Rules**:
+- name must be unique within strategy set
+- priority must be one of: 100, 90, 80, 10
+- targetPattern must be valid RegExp
+- canHandle and apply functions must be defined
+
+### ResolutionResult
+**Purpose**: Result of applying a resolution strategy
+
+**Fields**:
+- `success: boolean` - Whether resolution succeeded
+- `transformedCode: string` - Modified code after resolution
+- `appliedChanges: CodeChange[]` - List of transformations applied
+- `confidence: number` - Success confidence score (0-1)
+- `errorMessage?: string` - Error details if failed
+- `strategyUsed: string` - Name of strategy that produced result
+
+**Validation Rules**:
+- transformedCode required when success is true
+- appliedChanges array can be empty but not null
+- confidence must be between 0 and 1
+- errorMessage required when success is false
+
+### CodeChange
+**Purpose**: Individual code transformation applied during resolution
+
+**Fields**:
+- `type: ChangeType` - Type of change applied
+- `originalText: string` - Text before transformation
+- `newText: string` - Text after transformation
+- `lineNumber: number` - Location of change
+- `description: string` - Human-readable change description
+
+**Validation Rules**:
+- type must be valid ChangeType enum
+- originalText and newText must be different
+- lineNumber must be positive integer
+- description must be under 200 characters
+
+### EnhancedErrorRecovery
+**Purpose**: UI component managing two-stage recovery process
+
+**Fields**:
+- `artifactId: string` - Reference to failing artifact
+- `currentStage: RecoveryStage` - Current recovery stage
+- `autoResolutionResult?: ResolutionResult` - Result from automatic resolution
+- `llmFixResult?: LLMFixResult` - Result from AI-powered fixing
+- `isProcessing: boolean` - Whether recovery is in progress
+- `userCanReset: boolean` - Whether reset option is available
+
+**State Transitions**:
+```
+HIDDEN → AUTO_RESOLUTION → LLM_FIXING → COMPLETED
+      ↑                ↓             ↓
+    RESET ← FAILED ← AUTO_FAILED ← LLM_FAILED
+```
+
+### LLMFixService
+**Purpose**: AI-powered code fixing service with confidence scoring
+
+**Fields**:
+- `apiEndpoint: string` - LLM service endpoint URL
+- `apiKey: string` - Authentication credentials
+- `currentRequest?: FixRequest` - Active fix request
+- `retryCount: number` - Current retry attempt count
+- `maxRetries: number` - Maximum retry limit
+- `confidenceThreshold: number` - Minimum confidence for acceptance
+
+**Validation Rules**:
+- apiEndpoint must be valid URL
+- apiKey must be non-empty (encrypted in storage)
+- retryCount must not exceed maxRetries
+- confidenceThreshold must be between 0 and 1
+
+### FixRequest
+**Purpose**: Request for LLM-powered code fixing
+
+**Fields**:
+- `errorType: string` - Type of error to fix
+- `failingCode: string` - Code that failed to render
+- `errorMessage: string` - Original error message
+- `context: string` - Additional context for fixing
+- `timestamp: Date` - When request was created
+
+**Validation Rules**:
+- errorType must be recognized error category
+- failingCode must be non-empty string
+- errorMessage must contain diagnostic information
+- context should include relevant imports/dependencies
+
+### LLMFixResult
+**Purpose**: Result from LLM-powered code fixing attempt
+
+**Fields**:
+- `success: boolean` - Whether fix was successful
+- `fixedCode: string` - Corrected code from LLM
+- `confidence: number` - LLM confidence in fix (0-1)
+- `explanation: string` - Description of changes made
+- `validationErrors: string[]` - Basic syntax validation issues
+- `processingTimeMs: number` - Time taken for fix
+
+**Validation Rules**:
+- fixedCode required when success is true
+- confidence must be between 0 and 1
+- explanation must be under 500 characters
+- processingTimeMs must be positive integer
+
+### CircuitBreaker
+**Purpose**: Prevents infinite retry loops with state management
+
+**Fields**:
+- `artifactId: string` - Artifact being monitored
+- `state: CircuitState` - Current breaker state (CLOSED, OPEN, HALF_OPEN)
+- `failureCount: number` - Consecutive failure count
+- `failureThreshold: number` - Failures before opening circuit
+- `lastFailureTime: Date` - Timestamp of most recent failure
+- `resetTimeoutMs: number` - Time before attempting reset
+
+**State Transitions**:
+```
+CLOSED → OPEN → HALF_OPEN → CLOSED
+     ↓      ↓         ↓         ↑
+   FAIL → TIMEOUT ← FAIL ← SUCCESS
+```
+
+## Advanced Resolution Strategy Enumerations
+
+### ChangeType
+```typescript
+enum ChangeType {
+  CSS_MODULE_IMPORT_REPLACEMENT = 'css_module_import_replacement',
+  CSS_PROPERTY_CAMELCASE = 'css_property_camelcase',
+  JSON_DATA_INLINE = 'json_data_inline',
+  IMPORT_REMOVAL = 'import_removal',
+  DIRECT_CSS_INJECTION = 'direct_css_injection'
+}
+```
+
+### RecoveryStage
+```typescript
+enum RecoveryStage {
+  HIDDEN = 'hidden',
+  AUTO_RESOLUTION = 'auto_resolution',
+  LLM_FIXING = 'llm_fixing',
+  COMPLETED = 'completed',
+  FAILED = 'failed'
+}
+```
+
+### CircuitState
+```typescript
+enum CircuitState {
+  CLOSED = 'closed',
+  OPEN = 'open',
+  HALF_OPEN = 'half_open'
+}
+```
+
+## Advanced Data Flow Relationships
+
+```
+Message Content → DependencyResolver → ResolutionStrategies
+                                           ↓
+Artifact Error → EnhancedErrorRecovery → AutoResolution Success
+     ↓                                         ↓
+CircuitBreaker ← LLMFixService ← AutoResolution Failure
+     ↓                ↓
+State Management → Fixed Code → Artifact Re-render
+```
+
+## Validation Testing Data Structures
+
+### ValidationTest
+**Purpose**: Structure for systematic validation testing
+
+**Fields**:
+- `testId: string` - Unique test identifier
+- `category: ValidationCategory` - Test category
+- `inputCode: string` - Test input code
+- `expectedOutput: string` - Expected transformation result
+- `actualOutput?: string` - Actual test result
+- `passed: boolean` - Whether test passed
+- `errorDetails?: string` - Failure information
+
+### ValidationCategory
+```typescript
+enum ValidationCategory {
+  CORE_FUNCTIONALITY = 'core_functionality',
+  ERROR_RECOVERY_UI = 'error_recovery_ui',
+  INTEGRATION = 'integration',
+  STRATEGY_SYSTEM = 'strategy_system',
+  LLM_INTEGRATION = 'llm_integration',
+  EDGE_CASES = 'edge_cases',
+  USER_EXPERIENCE = 'user_experience'
+}
+```
+
+**Status**: ✅ Ready for contract generation with Advanced Dependency Resolution System
